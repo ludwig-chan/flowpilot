@@ -1,0 +1,255 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: #f0f4f8;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: 32px 0;
+}
+
+.card {
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+  padding: 48px 40px;
+  max-width: 520px;
+  width: 90%;
+  text-align: center;
+}
+
+.logo {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+h1 {
+  font-size: 28px;
+  color: #1a202c;
+  margin-bottom: 8px;
+}
+
+.subtitle {
+  color: #718096;
+  font-size: 15px;
+  margin-bottom: 32px;
+  line-height: 1.6;
+}
+
+.download-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: #4f46e5;
+  color: #ffffff;
+  text-decoration: none;
+  font-size: 16px;
+  font-weight: 600;
+  padding: 14px 32px;
+  border-radius: 10px;
+  transition: background 0.2s, transform 0.1s;
+}
+
+.download-btn:hover {
+  background: #4338ca;
+  transform: translateY(-1px);
+}
+
+.download-btn:active {
+  transform: translateY(0);
+}
+
+.download-btn svg {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+/* 安装步骤 */
+.steps {
+  margin-top: 36px;
+  text-align: left;
+}
+
+.steps-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #4a5568;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.step {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: 10px;
+  transition: background 0.15s;
+}
+
+.step:hover {
+  background: #f7fafc;
+}
+
+.step + .step {
+  margin-top: 4px;
+}
+
+.step-num {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  background: #ebf4ff;
+  color: #4f46e5;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  margin-top: 1px;
+}
+
+.step-body {
+  flex: 1;
+}
+
+.step-body strong {
+  display: block;
+  color: #2d3748;
+  font-size: 14px;
+  margin-bottom: 2px;
+}
+
+.step-body span {
+  color: #718096;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.step-body a {
+  color: #4f46e5;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.step-body a:hover {
+  text-decoration: underline;
+}
+
+.copy-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: 1px solid #cbd5e0;
+  border-radius: 5px;
+  padding: 2px 5px;
+  cursor: pointer;
+  color: #718096;
+  vertical-align: middle;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  margin-left: 4px;
+}
+
+.copy-btn:hover {
+  background: #ebf4ff;
+  color: #4f46e5;
+  border-color: #4f46e5;
+}
+
+.copy-btn svg {
+  width: 13px;
+  height: 13px;
+}
+
+.copy-btn.copied {
+  color: #38a169;
+  border-color: #38a169;
+  background: #f0fff4;
+}
+
+.tag {
+  display: inline-block;
+  background: #e9d8fd;
+  color: #6b46c1;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 1px 7px;
+  border-radius: 4px;
+}
+
+/* 更新日志 */
+.changelog {
+  margin-top: 36px;
+  text-align: left;
+}
+
+.changelog-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #4a5568;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.changelog-item {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+}
+
+.changelog-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.changelog-version {
+  font-size: 14px;
+  font-weight: 700;
+  color: #4f46e5;
+  background: #ebf4ff;
+  padding: 2px 9px;
+  border-radius: 5px;
+}
+
+.changelog-date {
+  font-size: 12px;
+  color: #a0aec0;
+}
+
+.changelog-changes {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.changelog-changes li {
+  font-size: 13px;
+  color: #4a5568;
+  line-height: 1.6;
+  padding: 2px 0;
+  padding-left: 14px;
+  position: relative;
+}
+
+.changelog-changes li::before {
+  content: "–";
+  position: absolute;
+  left: 0;
+  color: #a0aec0;
+}
