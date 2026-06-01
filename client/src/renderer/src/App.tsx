@@ -1,9 +1,8 @@
 import React, { useState, useCallback } from 'react'
 import Home from './pages/Home'
-import Settings from './pages/Settings'
 import Tutorial from './pages/Tutorial'
 
-type Page = 'home' | 'settings' | 'tutorial'
+type Page = 'home' | 'tutorial'
 
 interface Toast {
   id: number
@@ -36,12 +35,6 @@ export default function App(): React.JSX.Element {
             <span className="nav-icon">🏠</span> 主页
           </div>
           <div
-            className={`nav-item ${page === 'settings' ? 'active' : ''}`}
-            onClick={() => setPage('settings')}
-          >
-            <span className="nav-icon">⚙️</span> 设置
-          </div>
-          <div
             className={`nav-item ${page === 'tutorial' ? 'active' : ''}`}
             onClick={() => setPage('tutorial')}
           >
@@ -52,7 +45,6 @@ export default function App(): React.JSX.Element {
 
       <main className="content">
         {page === 'home' && <Home showToast={showToast} />}
-        {page === 'settings' && <Settings showToast={showToast} />}
         {page === 'tutorial' && <Tutorial showToast={showToast} />}
       </main>
 

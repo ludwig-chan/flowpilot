@@ -29,7 +29,6 @@ export default function Home(_props: HomeProps): React.JSX.Element {
               <span className="value">{currentVersion || '—'}</span>
             </div>
           </div>
-          <span className="status-dot up-to-date">✓ 已是最新</span>
         </div>
 
         <div className="btn-group" style={{ marginTop: 16 }}>
