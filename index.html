@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FlowPilot 下载</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="card">
+    <div class="logo">🚀</div>
+    <h1>FlowPilot</h1>
+    <p class="subtitle">
+      浏览器扩展插件，下载后按照以下步骤完成安装。
+    </p>
+    <a class="download-btn" href="flowpilot.zip" download="flowpilot.zip">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3" />
+      </svg>
+      下载 FlowPilot.zip
+    </a>
+
+    <div class="steps">
+      <p class="steps-title">安装步骤</p>
+
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <strong>解压下载的文件</strong>
+          <span>将 <code>flowpilot.zip</code> 解压到一个固定的文件夹，之后不要移动或删除该文件夹。</span>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <strong>打开浏览器扩展管理页面</strong>
+          <span>在地址栏输入并访问
+            <a href="chrome://extensions" target="_blank">chrome://extensions</a>
+            <button class="copy-btn" data-copy="chrome://extensions" title="复制地址">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+              </svg>
+            </button>
+          </span>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <strong>开启「开发者模式」</strong>
+          <span>点击页面右上角的 <span class="tag">开发者模式</span> 开关，将其打开。</span>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <strong>拖入解压后的文件夹</strong>
+          <span>将第 1 步解压得到的文件夹直接拖拽到扩展管理页面中，即可完成安装。</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 更新日志（由 changelog.json 动态加载） -->
+    <div class="changelog">
+      <p class="changelog-title">更新日志</p>
+      <div id="changelog-list"><p style="text-align:center;color:#a0aec0;font-size:13px;">加载中…</p></div>
+    </div>
+  </div>
+
+  <script src="main.js"></script>
+</body>
+</html>
