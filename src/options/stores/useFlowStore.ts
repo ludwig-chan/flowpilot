@@ -1,0 +1,254 @@
+/**
+ * useFlowStore.ts
+ * 流程列表的 Pinia store，直接与 chrome.storage.local 同步
+ * 支持嵌套分组（文件夹）结构
+ */
+import { defineStore } from 'pinia'
+import { ref } from 'vue'
+import type { FlowStep, StepDelayLevel, FlowTrigger } from '@shared/types/flow'
+
+export interface LocalFlow {
+  id:               string
+  kind:             'flow'
+  name:             string
+  steps:            FlowStep[]
+  stepDelayLevel?:  StepDelayLevel        // 步骤间隔档位
+  stepDelayRange?:  [number, number]      // 自定义范围（仅 custom 时有效）
+  waitTimeout?:     number                // 等待元素出现的默认超时 ms（默认 10000）
+  pinnedInMenu?:    boolean               // 是否钉选到悬浮按钮菜单
+  trigger?:         FlowTrigger           // 自动触发配置
+}
+
+export interface FlowFolder {
+  id:       string
+  kind:     'folder'
+  name:     string
+  children: FlowNode[]
+}
+
+export type FlowNode = LocalFlow | FlowFolder
+
+// ── 递归工具函数 ──────────────────────────────────────────────────
+function findNode(nodes: FlowNode[], id: string): FlowNode | null {
+  for (const n of nodes) {
+    if (n.id === id) return n
+    if (n.kind === 'folder') {
+      const found = findNode(n.children, id)
+      if (found) return found
+    }
+  }
+  return null
+}
+
+function findParentList(nodes: FlowNode[], id: string): FlowNode[] | null {
+  for (const n of nodes) {
+    if (n.id === id) return nodes
+    if (n.kind === 'folder') {
+      const found = findParentList(n.children, id)
+      if (found) return found
+    }
+  }
+  return null
+}
+
+export interface ExportPayload {
+  version:    1
+  exportedAt: string
+  nodes:      FlowNode[]
+}
+
+/** 按 ID 集合递归过滤树，保留选中节点及其子节点结构 */
+export function filterNodesByIds(nodes: FlowNode[], ids: Set<string>): FlowNode[] {
+  const result: FlowNode[] = []
+  for (const n of nodes) {
+    if (!ids.has(n.id)) continue
+    if (n.kind === 'folder') {
+      result.push({
+        ...n,
+        children: filterNodesByIds((n as FlowFolder).children, ids),
+      } as FlowFolder)
+    } else {
+      result.push(JSON.parse(JSON.stringify(n)) as LocalFlow)
+    }
+  }
+  return result
+}
+
+function cloneWithNewIds(nodes: FlowNode[]): FlowNode[] {
+  return nodes.map(n => {
+    const sfx = `_${Math.random().toString(36).slice(2, 7)}`
+    if (n.kind === 'folder') {
+      return {
+        id: `fd_${Date.now()}${sfx}`, kind: 'folder', name: n.name,
+        children: cloneWithNewIds((n as FlowFolder).children),
+      } as FlowFolder
+    }
+    return {
+      id: `bf_${Date.now()}${sfx}`, kind: 'flow', name: (n as LocalFlow).name,
+      steps: JSON.parse(JSON.stringify((n as LocalFlow).steps)),
+    } as LocalFlow
+  })
+}
+
+// 迁移旧格式：{ id, name, steps } → { id, kind:'flow', name, steps }
+function migrate(raw: unknown[]): FlowNode[] {
+  if (!Array.isArray(raw)) return []
+  return (raw as Array<Record<string, unknown>>).map(item => {
+    if (item.kind === 'folder') {
+      return {
+        id: item.id, kind: 'folder', name: item.name,
+        children: migrate((item.children as unknown[]) ?? []),
+      } as FlowFolder
+    }
+    return { kind: 'flow', id: item.id, name: item.name, steps: item.steps ?? [], pinnedInMenu: (item.pinnedInMenu as boolean | undefined) } as LocalFlow
+  })
+}
+
+export const useFlowStore = defineStore('flows', () => {
+  const tree    = ref<FlowNode[]>([])
+  const loading = ref(false)
+
+  async function load() {
+    loading.value = true
+    const data = await chrome.storage.local.get({ builtFlows: [] })
+    const raw = data.builtFlows
+    tree.value = migrate(Array.isArray(raw) ? raw : [])
+    loading.value = false
+  }
+
+  async function persist() {
+    await chrome.storage.local.set({ builtFlows: JSON.parse(JSON.stringify(tree.value)) })
+  }
+
+  function getContainer(parentId?: string): FlowNode[] {
+    if (!parentId) return tree.value
+    const parent = findNode(tree.value, parentId)
+    if (parent?.kind === 'folder') return parent.children
+    return tree.value
+  }
+
+  async function saveFlow(name: string, steps: FlowStep[], parentId?: string): Promise<string> {
+    const id = `bf_${Date.now()}`
+    getContainer(parentId).push({ id, kind: 'flow', name, steps })
+    await persist()
+    return id
+  }
+
+  async function saveFolder(name: string, parentId?: string): Promise<string> {
+    const id = `fd_${Date.now()}`
+    getContainer(parentId).push({ id, kind: 'folder', name, children: [] })
+    await persist()
+    return id
+  }
+
+  async function update(id: string, patch: Partial<Omit<LocalFlow, 'id' | 'kind'>>) {
+    const node = findNode(tree.value, id)
+    if (!node) return
+    Object.assign(node, patch)
+    await persist()
+  }
+
+  async function togglePin(id: string) {
+    const node = findNode(tree.value, id)
+    if (!node || node.kind !== 'flow') return
+    ;(node as LocalFlow).pinnedInMenu = !(node as LocalFlow).pinnedInMenu
+    await persist()
+  }
+
+  async function remove(id: string) {
+    const parent = findParentList(tree.value, id)
+    if (!parent) return
+    const idx = parent.findIndex(n => n.id === id)
+    if (idx >= 0) parent.splice(idx, 1)
+    await persist()
+  }
+
+  /** 将节点移动到新的父级（newParentId 为 undefined 表示移至根目录） */
+  async function moveNode(nodeId: string, newParentId?: string) {
+    if (nodeId === newParentId) return
+    const node = findNode(tree.value, nodeId)
+    if (!node) return
+    // 防止将分组移入自身的子孙
+    if (node.kind === 'folder' && newParentId && findNode(node.children, newParentId)) return
+    const parent = findParentList(tree.value, nodeId)
+    if (!parent) return
+    const idx = parent.findIndex(n => n.id === nodeId)
+    if (idx < 0) return
+    parent.splice(idx, 1)
+    getContainer(newParentId).push(node)
+    await persist()
+  }
+
+  /** 返回给定节点所在的父分组 id（根目录返回 undefined） */
+  function getParentFolderId(nodeId: string): string | undefined {
+    if (tree.value.some(n => n.id === nodeId)) return undefined
+    function walk(nodes: FlowNode[]): string | undefined {
+      for (const n of nodes) {
+        if (n.kind !== 'folder') continue
+        if (n.children.some(c => c.id === nodeId)) return n.id
+        const r = walk(n.children)
+        if (r !== undefined) return r
+      }
+    }
+    return walk(tree.value)
+  }
+
+  function allFlows(): LocalFlow[] {
+    const result: LocalFlow[] = []
+    function walk(nodes: FlowNode[]) {
+      for (const n of nodes) {
+        if (n.kind === 'flow') result.push(n)
+        else walk(n.children)
+      }
+    }
+    walk(tree.value)
+    return result
+  }
+
+  /** 返回所有分组（带层级路径标签，用于下拉选择） */
+  function allFolders(): Array<{ id: string; label: string }> {
+    const result: Array<{ id: string; label: string }> = []
+    function walk(nodes: FlowNode[], prefix: string) {
+      for (const n of nodes) {
+        if (n.kind === 'folder') {
+          const label = prefix ? `${prefix} / ${n.name}` : n.name
+          result.push({ id: n.id, label })
+          walk(n.children, label)
+        }
+      }
+    }
+    walk(tree.value, '')
+    return result
+  }
+
+  function exportNode(id: string): ExportPayload | null {
+    const node = findNode(tree.value, id)
+    if (!node) return null
+    return { version: 1, exportedAt: new Date().toISOString(), nodes: [JSON.parse(JSON.stringify(node))] }
+  }
+
+  async function importInto(payload: ExportPayload, parentId?: string): Promise<number> {
+    const cloned = cloneWithNewIds(payload.nodes)
+    getContainer(parentId).push(...cloned)
+    await persist()
+    return cloned.length
+  }
+
+  function exportSelected(ids: Set<string>): ExportPayload {
+    return {
+      version:    1,
+      exportedAt: new Date().toISOString(),
+      nodes:      filterNodesByIds(tree.value, ids),
+    }
+  }
+
+  async function renameNode(id: string, newName: string): Promise<void> {
+    const node = findNode(tree.value, id)
+    if (!node || !newName.trim()) return
+    node.name = newName.trim()
+    await persist()
+  }
+
+  return { tree, loading, load, saveFlow, saveFolder, update, remove, togglePin, moveNode, getParentFolderId, allFlows, allFolders, exportNode, exportSelected, importInto, renameNode }
+})
+

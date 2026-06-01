@@ -1,0 +1,10 @@
+{
+  "tag_name": "v0.1.0",
+  "name": "FlowPilot Extension v0.1.0",
+  "assets": [
+    {
+      "name": "flowpilot.zip",
+      "browser_download_url": "https://github.com/ludwig-chan/flowpilot/releases/download/v0.1.0/flowpilot.zip"
+    }
+  ]
+}
