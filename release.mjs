@@ -2,8 +2,14 @@
 /**
  * release.mjs — FlowPilot 一键构建脚本
  *
+ * 版本号以根目录 package.json 为唯一来源，发布时自动同步到：
+ *   - extension/package.json
+ *   - extension/public/manifest.json
+ *   - extension/update.json
+ *   - client/package.json
+ *
  * 执行顺序：
- *   1. 同步三个子项目的版本号（可选，用 --version=x.x.x 指定）
+ *   1. 同步所有子项目的版本号（可选，用 --version=x.x.x 指定新版本）
  *   2. 构建浏览器扩展
  *   3. 将扩展产物部署到 client/resources/extension
  *   4. 构建 Electron 客户端（Windows portable）
@@ -24,7 +30,8 @@ function run(cmd, cwd = __dirname) {
 }
 
 function readJson(filePath) {
-  return JSON.parse(readFileSync(filePath, 'utf-8'))
+  const content = readFileSync(filePath, 'utf-8').replace(/^\uFEFF/, '')
+  return JSON.parse(content)
 }
 
 function writeJson(filePath, data) {
@@ -44,20 +51,55 @@ const args = process.argv.slice(2)
 const versionArg = args.find(a => a.startsWith('--version='))
 const targetVersion = versionArg ? versionArg.split('=')[1] : null
 
+const rootDir   = __dirname
 const extDir    = join(__dirname, 'extension')
 const clientDir = join(__dirname, 'client')
 
-// ── 步骤 1：同步版本号（仅在传入 --version 时执行）──────────────────────────
+const GITHUB_REPO = 'ludwig-chan/flowpilot'
+
+// ── 同步所有版本号 ────────────────────────────────────────────────────────────
+
+function syncAllVersions(version) {
+  const tag = `v${version}`
+
+  // 根目录
+  bumpVersion(join(rootDir, 'package.json'), version)
+
+  // extension/package.json
+  bumpVersion(join(extDir, 'package.json'), version)
+
+  // extension/public/manifest.json（Chrome 扩展清单）
+  const manifestPath = join(extDir, 'public', 'manifest.json')
+  const manifest = readJson(manifestPath)
+  manifest.version = version
+  writeJson(manifestPath, manifest)
+  console.log(`  版本号已更新：${manifestPath} → ${version}`)
+
+  // extension/update.json（自动更新检测文件）
+  const updatePath = join(extDir, 'update.json')
+  const update = readJson(updatePath)
+  update.tag_name = tag
+  update.name = `FlowPilot Extension ${tag}`
+  update.assets[0].browser_download_url =
+    `https://github.com/${GITHUB_REPO}/releases/download/${tag}/flowpilot.zip`
+  writeJson(updatePath, update)
+  console.log(`  版本号已更新：${updatePath} → ${tag}`)
+
+  // client/package.json
+  bumpVersion(join(clientDir, 'package.json'), version)
+}
+
+// ── 步骤 1：同步版本号 ────────────────────────────────────────────────────────
+
+const rootVersion = readJson(join(rootDir, 'package.json')).version
 
 if (targetVersion) {
   console.log(`\n📌 同步版本号 → ${targetVersion}`)
-  bumpVersion(join(extDir,    'package.json'), targetVersion)
-  bumpVersion(join(clientDir, 'package.json'), targetVersion)
+  syncAllVersions(targetVersion)
 } else {
-  const extVersion    = readJson(join(extDir,    'package.json')).version
-  const clientVersion = readJson(join(clientDir, 'package.json')).version
-  console.log(`\n📌 当前版本：extension=${extVersion}  client=${clientVersion}`)
-  console.log('   如需统一版本，请传入 --version=x.x.x 参数')
+  console.log(`\n📌 当前版本（来源：根目录 package.json）：v${rootVersion}`)
+  console.log('   如需升级版本，请传入 --version=x.x.x 参数')
+  syncAllVersions(rootVersion)
 }
 
 // ── 步骤 2：构建扩展 ──────────────────────────────────────────────────────────
