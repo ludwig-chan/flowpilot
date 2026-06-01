@@ -1,0 +1,11 @@
+{
+  "name": "flowpilot-workspace",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build:ext": "cd extension && npm run build",
+    "deploy:ext": "cd extension && npm run deploy",
+    "build:client": "cd client && npm run build:win",
+    "release": "node release.mjs"
+  }
+}
