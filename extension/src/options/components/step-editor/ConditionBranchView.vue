@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { FlowStep } from '@shared/types/flow'
+import BaseButton from '@shared/components/BaseButton.vue'
 
 defineProps<{
   step:           FlowStep
@@ -38,7 +39,7 @@ const emit = defineEmits<{
           </div>
         </div>
       </div>
-      <button class="btn btn--sm cond-branch__add-btn" @click="emit('open-picker', step.id, 'if')">+ 选择元素</button>
+      <BaseButton size="sm" class="cond-branch__add-btn" @click="emit('open-picker', step.id, 'if')">+ 选择元素</BaseButton>
     </div>
     <!-- ELSE 分支 -->
     <div class="cond-branch cond-branch--else">
@@ -63,7 +64,7 @@ const emit = defineEmits<{
           </div>
         </div>
       </div>
-      <button class="btn btn--sm cond-branch__add-btn" @click="emit('open-picker', step.id, 'else')">+ 选择元素</button>
+      <BaseButton size="sm" class="cond-branch__add-btn" @click="emit('open-picker', step.id, 'else')">+ 选择元素</BaseButton>
     </div>
   </div>
 </template>

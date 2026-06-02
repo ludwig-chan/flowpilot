@@ -3,6 +3,7 @@ import { ref, computed, watch } from 'vue'
 import type { FlowNode, FlowFolder } from '../stores/useFlowStore'
 import CheckableFlowTree from '../flow-tree/CheckableFlowTree.vue'
 import BaseModal from '@shared/components/BaseModal.vue'
+import BaseButton from '@shared/components/BaseButton.vue'
 
 const props = defineProps<{
   visible: boolean
@@ -59,8 +60,8 @@ const selectedFlowCount = computed(() => {
   >
     <!-- 工具行 -->
     <div class="export-modal__toolbar">
-      <button class="btn btn--sm" @click="selectAll">全选</button>
-      <button class="btn btn--sm" @click="selectNone">取消全选</button>
+      <BaseButton size="sm" @click="selectAll">全选</BaseButton>
+      <BaseButton size="sm" @click="selectNone">取消全选</BaseButton>
       <span class="export-modal__count">已选 {{ selectedFlowCount }} 个流程</span>
     </div>
 
@@ -76,12 +77,12 @@ const selectedFlowCount = computed(() => {
     </div>
 
     <template #footer>
-      <button class="btn" @click="emit('close')">取消</button>
-      <button
-        class="btn btn--primary"
+      <BaseButton @click="emit('close')">取消</BaseButton>
+      <BaseButton
+        variant="primary"
         :disabled="selectedIds.size === 0"
         @click="emit('export', selectedIds)"
-      >导出 {{ selectedIds.size }} 项</button>
+      >导出 {{ selectedIds.size }} 项</BaseButton>
     </template>
   </BaseModal>
 </template>

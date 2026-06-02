@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import BaseModal from '@shared/components/BaseModal.vue'
+import BaseButton from '@shared/components/BaseButton.vue'
 
 defineProps<{
   tabs: chrome.tabs.Tab[]
@@ -26,7 +27,7 @@ const emit = defineEmits<{
       </select>
     </div>
     <template #footer>
-      <button class="btn btn--ghost btn--sm" @click="emit('cancel')">取消</button>
+      <BaseButton variant="ghost" size="sm" @click="emit('cancel')">取消</BaseButton>
     </template>
   </BaseModal>
 </template>

@@ -515,7 +515,7 @@ const stepTypeLabels: Record<string, string> = {
           <option value="" disabled>选择目标 Tab…</option>
           <option v-for="tab in tabs" :key="tab.id" :value="tab.id">{{ tab.title?.slice(0, 60) ?? tab.url }}</option>
         </select>
-        <button class="btn btn--ghost" @click="refreshTabs">↻</button>
+        <BaseButton variant="ghost" @click="refreshTabs">↻</BaseButton>
       </div>
       <div class="app__actions">
         <BaseButton
@@ -530,12 +530,12 @@ const stepTypeLabels: Record<string, string> = {
         <div class="panel">
           <div class="panel__toolbar">
             <span class="panel__title">已保存流程</span>
-            <button
+            <BaseButton
               v-if="BUILTIN_PRESETS.length > 0"
-              class="btn btn--sm"
+              size="sm"
               title="浏览内置预设库"
               @click="showPresetsModal = true"
-            >📦 预设</button>
+            >📦 预设</BaseButton>
             <BaseButton size="sm" title="导入流程" @click="showImportModal = true">📥 导入</BaseButton>
             <BaseButton size="sm" title="导出流程" @click="showExportModal = true">📤 导出</BaseButton>
             <BaseButton size="sm" variant="primary" @click="openCreateModal()">&#xFF0B; 新增</BaseButton>

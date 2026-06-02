@@ -208,13 +208,13 @@ function tryAction() {
 
       <template #footer>
         <BaseButton @click="emit('cancel')">取消</BaseButton>
-        <button
-          :class="['btn', 'btn--try', { 'btn--try--done': tryState === 'done' }]"
+          <BaseButton
+          :class="['btn--try', { 'btn--try--done': tryState === 'done' }]"
           :disabled="tryState === 'running'"
           @click="tryAction"
         >
           {{ tryState === 'running' ? '⏳ 执行中…' : tryState === 'done' ? '✓ 已执行' : '▷ 试一下' }}
-        </button>
+        </BaseButton>
         <BaseButton variant="primary" @click="confirm">确定</BaseButton>
       </template>
 

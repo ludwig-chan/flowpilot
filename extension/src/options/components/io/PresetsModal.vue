@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import { BUILTIN_PRESETS, type BuiltinPreset } from '@/presets/index'
 import BaseModal from '@shared/components/BaseModal.vue'
 import BaseInput from '@shared/components/BaseInput.vue'
+import BaseButton from '@shared/components/BaseButton.vue'
 
 const emit = defineEmits<{
   (e: 'install', preset: BuiltinPreset): void
@@ -73,16 +74,17 @@ function install(preset: BuiltinPreset) {
             </div>
           </div>
           <div class="preset-card__actions">
-            <button
+            <BaseButton
               v-if="installedIds.has(preset.id)"
-              class="btn btn--sm"
+              size="sm"
               disabled
-            >✓ 已安装</button>
-            <button
+            >✓ 已安装</BaseButton>
+            <BaseButton
               v-else
-              class="btn btn--sm btn--primary"
+              size="sm"
+              variant="primary"
               @click="install(preset)"
-            >⬇ 安装</button>
+            >⬇ 安裃</BaseButton>
           </div>
         </div>
       </template>

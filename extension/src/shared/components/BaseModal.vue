@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import BaseButton from './BaseButton.vue'
+
 withDefaults(defineProps<{
   title:      string
   width?:     string
@@ -24,7 +26,7 @@ const emit = defineEmits<{ (e: 'close'): void }>()
     >
       <div class="bm-modal__header">
         <span class="bm-modal__title">{{ title }}</span>
-        <button class="btn btn--ghost btn--icon" @click="emit('close')">✖</button>
+        <BaseButton variant="ghost" size="icon" @click="emit('close')">✖</BaseButton>
       </div>
       <slot />
       <div v-if="$slots.footer" class="bm-modal__footer">

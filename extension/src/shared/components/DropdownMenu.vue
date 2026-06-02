@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { ref, nextTick, onMounted, onUnmounted } from 'vue'
+import BaseButton from './BaseButton.vue'
 
 withDefaults(defineProps<{
-  /** 触发按钮的额外 class，默认使用 .btn 样式 */
-  triggerClass?: string
   /** 菜单列表相对触发按钮的对齐方式 */
   align?: 'left' | 'right'
 }>(), {
@@ -47,9 +46,9 @@ onUnmounted(() => document.removeEventListener('click', onDocClick))
   <div class="dm" ref="triggerRef">
     <!-- 触发区域：支持外部自定义按钮 -->
     <slot name="trigger" :toggle="toggle" :is-open="isOpen">
-      <button class="btn" :class="triggerClass" @click="toggle">
+      <BaseButton @click="toggle">
         <slot name="label">菜单</slot>
-      </button>
+      </BaseButton>
     </slot>
 
     <!-- 下拉列表 -->

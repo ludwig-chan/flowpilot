@@ -4,6 +4,7 @@ import type { FlowNode, FlowFolder, ExportPayload } from '../stores/useFlowStore
 import CheckableFlowTree from '../flow-tree/CheckableFlowTree.vue'
 import FolderPickerNode from '../flow-tree/FolderPickerNode.vue'
 import BaseModal from '@shared/components/BaseModal.vue'
+import BaseButton from '@shared/components/BaseButton.vue'
 
 const props = defineProps<{
   visible: boolean
@@ -112,7 +113,7 @@ function confirm() {
       <!-- 文件信息 -->
       <div class="import-modal__file-info">
         <span class="import-modal__filename">📄 {{ filename }}</span>
-        <button class="btn btn--sm" @click="reset">重新选择</button>
+        <BaseButton size="sm" @click="reset">重新选择</BaseButton>
       </div>
 
       <!-- 内容树 -->
@@ -150,16 +151,16 @@ function confirm() {
     </template>
 
     <template #footer>
-      <button class="btn" @click="emit('cancel')">取消</button>
+      <BaseButton @click="emit('cancel')">取消</BaseButton>
       <template v-if="phase === 'pick'">
-        <button class="btn btn--primary" @click="openFilePicker">选择文件</button>
+        <BaseButton variant="primary" @click="openFilePicker">选择文件</BaseButton>
       </template>
       <template v-else>
-        <button
-          class="btn btn--primary"
+        <BaseButton
+          variant="primary"
           :disabled="parsedSelected.size === 0"
           @click="confirm"
-        >确认导入 {{ selectedFlowCount }} 个流程</button>
+        >确认导入 {{ selectedFlowCount }} 个流程</BaseButton>
       </template>
     </template>
 

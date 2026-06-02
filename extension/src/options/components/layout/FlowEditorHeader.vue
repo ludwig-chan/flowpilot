@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { LocalFlow } from '../stores/useFlowStore'
 import type { TriggerType, UrlMatchMode } from '@shared/types/flow'
+import BaseButton from '@shared/components/BaseButton.vue'
 
 const props = defineProps<{
   flow:          LocalFlow
@@ -34,9 +35,9 @@ function toggleTrigger() {
     <div class="editor__header-row">
       <span class="editor__name-display">{{ flow.name }}</span>
       <span v-if="estimatedTime" class="editor__est-time">⏱ {{ estimatedTime }}</span>
-      <button class="btn btn--sm" @click="emit('open-settings')">⚙ 设置</button>
-      <button class="btn btn--primary" @click="emit('save')">💾 保存</button>
-      <button class="btn" @click="emit('close')">✖ 关闭</button>
+      <BaseButton size="sm" @click="emit('open-settings')">⚙ 设置</BaseButton>
+      <BaseButton variant="primary" @click="emit('save')">💾 保存</BaseButton>
+      <BaseButton @click="emit('close')">✖ 关闭</BaseButton>
     </div>
     <!-- 触发器配置 -->
     <div class="editor__delay-row editor__trigger-row">

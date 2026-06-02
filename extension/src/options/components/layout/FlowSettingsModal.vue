@@ -4,6 +4,7 @@ import type { LocalFlow } from '../stores/useFlowStore'
 import type { StepDelayLevel } from '@shared/types/flow'
 import { STEP_DELAY_PRESETS } from '@shared/types/flow'
 import BaseModal from '@shared/components/BaseModal.vue'
+import BaseButton from '@shared/components/BaseButton.vue'
 
 const DELAY_LEVELS: { value: StepDelayLevel; label: string; hint?: string }[] = [
   { value: 'none',   label: '无' },
@@ -104,8 +105,8 @@ function onConfirm() {
     </div>
 
     <template #footer>
-      <button class="btn" @click="emit('close')">取消</button>
-      <button class="btn btn--primary" @click="onConfirm">确认</button>
+      <BaseButton @click="emit('close')">取消</BaseButton>
+      <BaseButton variant="primary" @click="onConfirm">确认</BaseButton>
     </template>
 
   </BaseModal>
