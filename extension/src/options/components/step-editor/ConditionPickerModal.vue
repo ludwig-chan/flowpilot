@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import ElementPickerDrawer from './ElementPickerDrawer.vue'
+import ElementPickerDrawer from '../element-picker/ElementPickerDrawer.vue'
 import type { SerializedDomNode } from '@shared/types/dom'
 
 // ── Props / Emits ────────────────────────────────────────────────────────────

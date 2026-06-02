@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import type { FlowNode, FlowFolder } from '../stores/useFlowStore'
-import CheckableFlowTree from './CheckableFlowTree.vue'
+import CheckableFlowTree from '../flow-tree/CheckableFlowTree.vue'
 
 const props = defineProps<{
   visible: boolean
