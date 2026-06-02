@@ -500,7 +500,7 @@ const { sidebarWidth, logDrawerHeight, startResize, startLogResize } = useResiza
 const stepTypeLabels: Record<string, string> = {
   click: '点击', input: '输入', select: '选择', focus: '聚焦',
   get_text: '获取文字', wait_appear: '等待出现', wait_disappear: '等待消失',
-  scroll_to: '滚动到', navigate: '导航', loop_items: '选择列表', condition: '条件判断',
+  scroll_to: '滚动到', navigate: '导航', loop_items: '循环列表项', condition: '条件判断',
   delay: '等待', press_key: '按键', call_flow: '嵌入流程', save_canvas: '截图',
 }
 </script>
@@ -639,7 +639,6 @@ const stepTypeLabels: Record<string, string> = {
               </template>
               <template #default="{ close }">
                 <button class="dm-item" @click="openPicker(); close()">🖱 选择元素</button>
-                <button class="dm-item" @click="openPicker(); close()">📋 选择列表</button>
                 <button class="dm-item" @click="requireTab(openSmartPicker); close()">🔁 依次点击列表项</button>
                 <button class="dm-item" @click="addConditionStep(); close()">🔀 条件判断</button>
                 <button class="dm-item" @click="addCallFlowStep(); close()">▶ 嵌入流程</button>
