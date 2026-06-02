@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import type { FlowStep } from '@shared/types/flow'
+import BaseModal from '@shared/components/BaseModal.vue'
 
 const props = defineProps<{
   step: FlowStep
@@ -56,12 +57,7 @@ function onDeleteChild(idx: number) {
 </script>
 
 <template>
-  <div class="elm-overlay" @click.self="emit('close')">
-    <div class="elm-modal">
-      <div class="elm-modal__header">
-        <span class="elm-modal__title">✏ 编辑循环步骤</span>
-        <button class="btn btn--ghost btn--icon" @click="emit('close')">✖</button>
-      </div>
+  <BaseModal title="✏ 编辑循环步骤" width="500px" :z-index="1070" @close="emit('close')">
 
       <!-- 步骤名称 -->
       <div class="elm-section">
@@ -134,40 +130,15 @@ function onDeleteChild(idx: number) {
       </div>
 
       <!-- 底部 -->
-      <div class="elm-modal__footer">
+      <template #footer>
         <button class="btn" @click="emit('close')">取消</button>
         <button class="btn btn--primary" @click="onSave">保存</button>
-      </div>
-    </div>
-  </div>
+      </template>
+
+  </BaseModal>
 </template>
 
 <style lang="scss" scoped>
-.elm-overlay {
-  position: fixed; inset: 0; z-index: 1070;
-  background: rgba(0, 0, 0, .6);
-  display: flex; align-items: center; justify-content: center;
-}
-
-.elm-modal {
-  width: 500px; max-width: 95vw;
-  background: #1e1e2e; border: 1px solid #45475a; border-radius: 8px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, .5);
-  display: flex; flex-direction: column; overflow: hidden;
-
-  &__header {
-    display: flex; align-items: center; gap: 8px;
-    padding: 10px 14px; border-bottom: 1px solid #313244;
-  }
-
-  &__title { font-weight: 700; font-size: 14px; flex: 1; }
-
-  &__footer {
-    display: flex; justify-content: flex-end; gap: 8px;
-    padding: 10px 14px; border-top: 1px solid #313244;
-  }
-}
-
 .elm-section {
   padding: 10px 14px;
   border-bottom: 1px solid #1a1a28;
@@ -175,7 +146,7 @@ function onDeleteChild(idx: number) {
 }
 
 .elm-label {
-  display: block; font-size: 11px; color: #6c7086; margin-bottom: 6px; font-weight: 600;
+  display: block; font-size: 11px; color: $color-text-muted; margin-bottom: 6px; font-weight: 600;
 }
 
 .elm-input { width: 100%; box-sizing: border-box; }
@@ -186,14 +157,14 @@ function onDeleteChild(idx: number) {
 
 .elm-selector-val {
   flex: 1; min-width: 0;
-  font-family: 'Cascadia Code', monospace; font-size: 11px; color: #a6e3a1;
+  font-family: 'Cascadia Code', monospace; font-size: 11px; color: $color-green;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 
 .elm-resel-btn { font-size: 11px; padding: 3px 10px; flex-shrink: 0; }
 
 .elm-empty {
-  font-size: 11px; color: #585b70; text-align: center; padding: 8px 0;
+  font-size: 11px; color: $color-text-muted-2; text-align: center; padding: 8px 0;
 }
 
 .elm-child-row {
@@ -203,16 +174,16 @@ function onDeleteChild(idx: number) {
 }
 
 .elm-selector-empty {
-  flex: 1; font-size: 11px; color: #585b70; font-style: italic;
+  flex: 1; font-size: 11px; color: $color-text-muted-2; font-style: italic;
 }
 
 .elm-child-type {
-  font-size: 10px; background: #313244; color: #89b4fa;
-  padding: 1px 5px; border-radius: 3px; flex-shrink: 0;
+  font-size: 10px; background: $color-surface-1; color: $color-blue;
+  padding: 1px 5px; border-radius: $radius-sm; flex-shrink: 0;
 }
 
 .elm-child-label {
-  flex: 1; min-width: 0; font-size: 11px; color: #cdd6f4;
+  flex: 1; min-width: 0; font-size: 11px; color: $color-text;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 
@@ -220,28 +191,28 @@ function onDeleteChild(idx: number) {
 
 .elm-child-btn {
   padding: 1px 5px; font-size: 11px;
-  &--del { color: #585b70; &:hover { color: #f38ba8 !important; } }
+  &--del { color: $color-text-muted-2; &:hover { color: $color-red !important; } }
 }
 
 .elm-child-add { padding: 4px 14px 8px; }
 .elm-add-btn {
   width: 100%; font-size: 11px; padding: 4px;
-  border: 1px dashed #45475a !important; background: transparent; color: #6c7086;
-  &:hover { border-color: #89b4fa !important; color: #89b4fa; }
+  border: 1px dashed $color-surface-2 !important; background: transparent; color: $color-text-muted;
+  &:hover { border-color: $color-blue !important; color: $color-blue; }
 }
 
 .elm-check-label {
   display: flex; align-items: center; gap: 6px;
-  font-size: 12px; color: #cdd6f4; cursor: pointer;
+  font-size: 12px; color: $color-text; cursor: pointer;
 }
 
-.elm-checkbox { accent-color: #89b4fa; cursor: pointer; }
+.elm-checkbox { accent-color: $color-blue; cursor: pointer; }
 
 .elm-delay-row {
   display: flex; align-items: center; gap: 6px;
 }
 
-.elm-delay-hint { font-size: 11px; color: #6c7086; flex-shrink: 0; }
+.elm-delay-hint { font-size: 11px; color: $color-text-muted; flex-shrink: 0; }
 
 .elm-delay-input { width: 80px; }
 </style>

@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue'
 import type { SerializedElement } from '@shared/types/dom'
 import type { FlowStep, ActionType } from '@shared/types/flow'
+import BaseModal from '@shared/components/BaseModal.vue'
 
 interface ActionOption {
   type:              ActionType
@@ -132,13 +133,7 @@ function tryAction() {
 </script>
 
 <template>
-  <div class="action-overlay" @click.self="emit('cancel')">
-    <div class="action-modal">
-
-      <div class="action-modal__header">
-        <span class="action-modal__title">选择动作</span>
-        <button class="btn btn--ghost btn--icon" @click="emit('cancel')">✖</button>
-      </div>
+  <BaseModal title="选择动作" :z-index="1100" @close="emit('cancel')">
 
       <div class="action-modal__sel">
         <span class="action-modal__sel-label">选中元素：</span>
@@ -210,7 +205,7 @@ function tryAction() {
         </div>
       </div>
 
-      <div class="action-modal__footer">
+      <template #footer>
         <button class="btn" @click="emit('cancel')">取消</button>
         <button
           :class="['btn', 'btn--try', { 'btn--try--done': tryState === 'done' }]"
@@ -220,43 +215,25 @@ function tryAction() {
           {{ tryState === 'running' ? '⏳ 执行中…' : tryState === 'done' ? '✓ 已执行' : '▷ 试一下' }}
         </button>
         <button class="btn btn--primary" @click="confirm">确定</button>
-      </div>
+      </template>
 
-    </div>
-  </div>
+  </BaseModal>
 </template>
 
 <style lang="scss" scoped>
-.action-overlay {
-  position: fixed; inset: 0; z-index: 1100;
-  background: rgba(0, 0, 0, .55);
-  display: flex; align-items: center; justify-content: center;
-}
-
 .action-modal {
-  width: 480px; max-width: 92vw;
-  background: #1e1e2e; border: 1px solid #45475a; border-radius: 8px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, .5);
-  display: flex; flex-direction: column; overflow: hidden;
-
-  &__header {
-    display: flex; align-items: center; gap: 8px;
-    padding: 10px 14px; border-bottom: 1px solid #313244; flex-shrink: 0;
-  }
-  &__title { font-weight: 700; font-size: 14px; flex: 1; }
-
   &__sel {
     display: flex; align-items: center; gap: 6px;
-    padding: 7px 14px; background: #181825; border-bottom: 1px solid #313244; flex-shrink: 0;
+    padding: 7px 14px; background: $color-base; border-bottom: 1px solid $color-surface-1; flex-shrink: 0;
   }
-  &__sel-label { font-size: 11px; color: #6c7086; flex-shrink: 0; }
+  &__sel-label { font-size: 11px; color: $color-text-muted; flex-shrink: 0; }
   &__sel-code {
-    font-family: 'Cascadia Code', monospace; font-size: 11px; color: #89dceb;
+    font-family: 'Cascadia Code', monospace; font-size: 11px; color: $color-teal;
     overflow-x: auto; white-space: nowrap; flex: 1; min-width: 0;
-    scrollbar-width: thin; scrollbar-color: #45475a transparent;
+    scrollbar-width: thin; scrollbar-color: $color-surface-2 transparent;
   }
   &__rel-badge {
-    font-size: 10px; background: #1e3a5f; color: #89b4fa;
+    font-size: 10px; background: $color-focus-bg; color: $color-blue;
     padding: 1px 6px; border-radius: 99px; flex-shrink: 0;
   }
 
@@ -266,42 +243,37 @@ function tryAction() {
     padding: 12px 14px; display: flex; flex-direction: column; gap: 10px;
   }
   &__name-row   { display: flex; align-items: center; gap: 8px; }
-  &__name-label { font-size: 11px; color: #6c7086; flex-shrink: 0; width: 52px; }
+  &__name-label { font-size: 11px; color: $color-text-muted; flex-shrink: 0; width: 52px; }
   &__name-input { flex: 1; }
   &__action-row { display: flex; align-items: center; gap: 8px; }
-  &__action-label { font-size: 11px; color: #6c7086; flex-shrink: 0; width: 52px; }
+  &__action-label { font-size: 11px; color: $color-text-muted; flex-shrink: 0; width: 52px; }
   &__action-select {
-    flex: 1; background: #313244; border: 1px solid #45475a; border-radius: 4px;
-    color: #cdd6f4; padding: 5px 8px; font-size: 12px; cursor: pointer;
-    &:focus { outline: none; border-color: #89b4fa; }
+    flex: 1; background: $color-surface-1; border: 1px solid $color-surface-2; border-radius: $radius;
+    color: $color-text; padding: 5px 8px; font-size: 12px; cursor: pointer;
+    &:focus { outline: none; border-color: $color-blue; }
   }
   &__value-row { display: flex; align-items: center; gap: 8px; }
-  &__value-label { font-size: 11px; color: #6c7086; flex-shrink: 0; width: 52px; }
+  &__value-label { font-size: 11px; color: $color-text-muted; flex-shrink: 0; width: 52px; }
 
   &__timing-row {
     display: flex; align-items: center; flex-wrap: wrap; gap: 5px;
-    padding-top: 8px; border-top: 1px solid #313244;
+    padding-top: 8px; border-top: 1px solid $color-surface-1;
   }
-  &__timing-label { font-size: 11px; color: #6c7086; flex-shrink: 0; }
-  &__timing-sep   { font-size: 11px; color: #6c7086; flex-shrink: 0; margin-left: 2px; }
-  &__timing-tilde { font-size: 11px; color: #6c7086; }
-  &__timing-unit  { font-size: 11px; color: #6c7086; }
+  &__timing-label { font-size: 11px; color: $color-text-muted; flex-shrink: 0; }
+  &__timing-sep   { font-size: 11px; color: $color-text-muted; flex-shrink: 0; margin-left: 2px; }
+  &__timing-tilde { font-size: 11px; color: $color-text-muted; }
+  &__timing-unit  { font-size: 11px; color: $color-text-muted; }
   &__timing-input {
-    width: 88px; background: #313244; border: 1px solid #45475a; border-radius: 3px;
-    color: #a6adc8; padding: 3px 5px; font-size: 11px; text-align: right;
-    &:focus { outline: none; border-color: #89b4fa; }
-  }
-
-  &__footer {
-    display: flex; justify-content: flex-end; gap: 8px;
-    padding: 8px 14px; border-top: 1px solid #313244; flex-shrink: 0;
+    width: 88px; background: $color-surface-1; border: 1px solid $color-surface-2; border-radius: $radius-sm;
+    color: $color-text-secondary; padding: 3px 5px; font-size: 11px; text-align: right;
+    &:focus { outline: none; border-color: $color-blue; }
   }
 }
 
 .btn--try {
-  background: #2a3a28; border-color: #a6e3a1; color: #a6e3a1;
+  background: #2a3a28; border-color: $color-green; color: $color-green;
   &:hover:not(:disabled) { background: #3a4a38; }
   &:disabled { opacity: .5; cursor: not-allowed; }
-  &--done { background: #1e3a2a; border-color: #a6e3a1; color: #a6e3a1; }
+  &--done { background: #1e3a2a; border-color: $color-green; color: $color-green; }
 }
 </style>

@@ -1,0 +1,45 @@
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// FlowPilot Design Tokens — Catppuccin Mocha
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+// ── Background layers ───────────────────────
+$color-base:      #181825;   // deepest: input / card bg
+$color-surface-0: #1e1e2e;   // modal body
+$color-surface-1: #313244;   // hover, button bg, input bg
+$color-surface-2: #45475a;   // borders
+$color-surface-3: #585b70;   // muted elements
+
+// ── Text ────────────────────────────────────
+$color-text:           #cdd6f4;
+$color-text-secondary: #a6adc8;
+$color-text-muted:     #6c7086;
+$color-text-muted-2:   #585b70;
+
+// ── Accent colors ────────────────────────────
+$color-blue:   #89b4fa;
+$color-green:  #a6e3a1;
+$color-red:    #f38ba8;
+$color-orange: #fab387;
+$color-yellow: #f9e2af;
+$color-teal:   #89dceb;
+$color-mauve:  #cba6f7;
+
+// ── Semantic states ──────────────────────────
+$color-focus-bg:        #1e3a5f;
+$color-focus-bg-hover:  #264a7a;
+$color-danger-bg:       #3a1e1e;
+$color-danger-bg-hover: #4a2828;
+
+// ── Overlay ──────────────────────────────────
+$color-overlay: rgba(0, 0, 0, 0.55);
+
+// ── Z-index layers ───────────────────────────
+$z-modal:     1000;
+$z-modal-top: 1200;
+
+// ── Border radius ────────────────────────────
+$radius-sm: 3px;
+$radius:    4px;
+$radius-md: 6px;
+$radius-lg: 8px;
+$radius-xl: 10px;

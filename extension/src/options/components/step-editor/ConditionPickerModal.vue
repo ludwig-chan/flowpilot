@@ -2,6 +2,7 @@
 import { ref, computed, watch } from 'vue'
 import ElementPickerDrawer from '../element-picker/ElementPickerDrawer.vue'
 import type { SerializedDomNode } from '@shared/types/dom'
+import BaseModal from '@shared/components/BaseModal.vue'
 
 // ── Props / Emits ────────────────────────────────────────────────────────────
 const props = defineProps<{
@@ -108,13 +109,7 @@ function confirm() {
 
 <template>
   <!-- ── 主弹窗 ── -->
-  <div class="cp-overlay" @click.self="emit('close')">
-    <div class="cp-modal">
-
-      <div class="cp-modal__header">
-        <span class="cp-modal__title">🔀 条件判断</span>
-        <button class="btn btn--ghost btn--icon" @click="emit('close')">✖</button>
-      </div>
+  <BaseModal title="🔀 条件判断" width="500px" :z-index="1050" @close="emit('close')">
 
       <!-- 标签 -->
       <div class="cp-field">
@@ -209,13 +204,12 @@ function confirm() {
       </template>
 
       <!-- 底部按钮 -->
-      <div class="cp-modal__footer">
+      <template #footer>
         <button class="btn" @click="emit('close')">取消</button>
         <button class="btn btn--primary" :disabled="!canConfirm" @click="confirm">确认</button>
-      </div>
+      </template>
 
-    </div>
-  </div>
+  </BaseModal>
 
   <!-- ── 元素选择抽屉 ── -->
   <ElementPickerDrawer
@@ -245,33 +239,10 @@ function confirm() {
 </template>
 
 <style lang="scss" scoped>
-.cp-overlay {
-  position: fixed; inset: 0; z-index: 1050;
-  background: rgba(0, 0, 0, .55);
-  display: flex; align-items: center; justify-content: center;
-}
-
-.cp-modal {
-  width: 500px; max-width: 94vw;
-  background: #1e1e2e; border: 1px solid #45475a; border-radius: 8px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, .5);
-  display: flex; flex-direction: column; gap: 0; overflow: hidden;
-
-  &__header {
-    display: flex; align-items: center; gap: 8px;
-    padding: 10px 14px; border-bottom: 1px solid #313244;
-  }
-  &__title { font-weight: 700; font-size: 14px; flex: 1; }
-  &__footer {
-    display: flex; justify-content: flex-end; gap: 8px;
-    padding: 10px 14px; border-top: 1px solid #313244; margin-top: 4px;
-  }
-}
-
 .cp-field {
   padding: 10px 14px 0;
   display: flex; flex-direction: column; gap: 5px;
-  &__label { font-size: 11px; font-weight: 600; color: #6c7086; text-transform: uppercase; letter-spacing: .04em; }
+  &__label { font-size: 11px; font-weight: 600; color: $color-text-muted; text-transform: uppercase; letter-spacing: .04em; }
 }
 
 .cp-mode-tabs {
@@ -279,32 +250,32 @@ function confirm() {
 }
 
 .cp-mode-tab {
-  flex: 1; padding: 6px 10px; border: 1px solid #45475a; border-radius: 5px;
-  background: #181825; color: #a6adc8; cursor: pointer; font-size: 12px;
+  flex: 1; padding: 6px 10px; border: 1px solid $color-surface-2; border-radius: 5px;
+  background: $color-base; color: $color-text-secondary; cursor: pointer; font-size: 12px;
   transition: all .15s;
-  &:hover { background: #313244; color: #cdd6f4; }
-  &--active { background: #1e3a5f; border-color: #89b4fa; color: #89b4fa; font-weight: 600; }
+  &:hover { background: $color-surface-1; color: $color-text; }
+  &--active { background: $color-focus-bg; border-color: $color-blue; color: $color-blue; font-weight: 600; }
 }
 
 .cp-hints {
   margin: 8px 14px 0; padding: 10px 12px;
-  background: #181825; border: 1px solid #313244; border-radius: 6px;
+  background: $color-base; border: 1px solid $color-surface-1; border-radius: $radius-md;
 
-  &__title { font-size: 11px; font-weight: 600; color: #6c7086; margin-bottom: 8px; }
+  &__title { font-size: 11px; font-weight: 600; color: $color-text-muted; margin-bottom: 8px; }
   &__grid {
     display: grid; grid-template-columns: auto 1fr; gap: 3px 12px;
     margin-bottom: 8px;
-    code { font-family: 'Cascadia Code', monospace; font-size: 11px; color: #89b4fa; }
-    span { font-size: 11px; color: #a6adc8; }
+    code { font-family: 'Cascadia Code', monospace; font-size: 11px; color: $color-blue; }
+    span { font-size: 11px; color: $color-text-secondary; }
   }
   &__example {
-    font-size: 11px; color: #a6adc8; margin-bottom: 6px;
-    code { font-family: 'Cascadia Code', monospace; color: #cba6f7; }
+    font-size: 11px; color: $color-text-secondary; margin-bottom: 6px;
+    code { font-family: 'Cascadia Code', monospace; color: $color-mauve; }
   }
   &__note {
-    font-size: 11px; color: #6c7086; line-height: 1.5;
-    code { font-family: 'Cascadia Code', monospace; color: #f9e2af; }
-    strong { color: #a6e3a1; }
+    font-size: 11px; color: $color-text-muted; line-height: 1.5;
+    code { font-family: 'Cascadia Code', monospace; color: $color-yellow; }
+    strong { color: $color-green; }
   }
 }
 
@@ -312,7 +283,7 @@ function confirm() {
   display: flex; align-items: center; gap: 6px;
 }
 .cp-elem-sel {
-  font-family: 'Cascadia Code', monospace; font-size: 11px; color: #a6e3a1;
+  font-family: 'Cascadia Code', monospace; font-size: 11px; color: $color-green;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 280px;
   flex: 1;
 }
@@ -321,16 +292,16 @@ function confirm() {
 .cp-vars {
   display: flex; flex-wrap: wrap; align-items: center; gap: 5px;
   padding: 6px 14px 0;
-  &__label { font-size: 11px; color: #6c7086; white-space: nowrap; }
+  &__label { font-size: 11px; color: $color-text-muted; white-space: nowrap; }
 }
 
 .cp-var-chip {
-  padding: 2px 8px; border: 1px solid #45475a; border-radius: 4px;
-  background: #181825; color: #cba6f7;
+  padding: 2px 8px; border: 1px solid $color-surface-2; border-radius: $radius;
+  background: $color-base; color: $color-mauve;
   font-family: 'Cascadia Code', monospace; font-size: 11px;
   cursor: pointer; transition: all .12s;
-  &:hover { background: #313244; border-color: #cba6f7; color: #f5c2e7; }
+  &:hover { background: $color-surface-1; border-color: $color-mauve; color: #f5c2e7; }
 }
 
-.cp-picking { font-size: 11px; color: #89b4fa; font-weight: 600; }
+.cp-picking { font-size: 11px; color: $color-blue; font-weight: 600; }
 </style>

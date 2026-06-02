@@ -2,6 +2,8 @@ import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { resolve } from 'path'
 
+const tokensFile = resolve(__dirname, 'src/shared/styles/tokens').replace(/\\/g, '/')
+
 export default defineConfig({
   root: resolve(__dirname, 'src'),
   base: './',
@@ -11,6 +13,14 @@ export default defineConfig({
     alias: {
       '@': resolve(__dirname, 'src'),
       '@shared': resolve(__dirname, 'src/shared'),
+    },
+  },
+  css: {
+    preprocessorOptions: {
+      scss: {
+        api: 'modern-compiler',
+        additionalData: `@use "${tokensFile}" as *;\n`,
+      },
     },
   },
   build: {

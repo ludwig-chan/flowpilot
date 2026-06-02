@@ -33,22 +33,22 @@ import type { FlowStep, StepDelayLevel, ActionType } from '@shared/types/flow'
 import { STEP_DELAY_PRESETS } from '@shared/types/flow'
 
 const DELAY_LEVELS: { value: StepDelayLevel; label: string; hint?: string }[] = [
-  { value: 'none',   label: '��' },
-  { value: 'low',    label: '��',   hint: `${STEP_DELAY_PRESETS.low[0]}~${STEP_DELAY_PRESETS.low[1]} ms` },
-  { value: 'medium', label: '��',   hint: `${STEP_DELAY_PRESETS.medium[0]}~${STEP_DELAY_PRESETS.medium[1]} ms` },
-  { value: 'high',   label: '��',   hint: `${STEP_DELAY_PRESETS.high[0]}~${STEP_DELAY_PRESETS.high[1]} ms` },
-  { value: 'custom', label: '�Զ���' },
+  { value: 'none',   label: '无' },
+  { value: 'low',    label: '低',   hint: `${STEP_DELAY_PRESETS.low[0]}~${STEP_DELAY_PRESETS.low[1]} ms` },
+  { value: 'medium', label: '中',   hint: `${STEP_DELAY_PRESETS.medium[0]}~${STEP_DELAY_PRESETS.medium[1]} ms` },
+  { value: 'high',   label: '高',   hint: `${STEP_DELAY_PRESETS.high[0]}~${STEP_DELAY_PRESETS.high[1]} ms` },
+  { value: 'custom', label: '自定义' },
 ]
 
 const flowStore = useFlowStore()
 const bridge    = useExtensionBridge()
 
-// �����˵�״̬
+// 下拉菜单状态
 const stepMenuOpen = ref(false)
 
 function closeMenus() { stepMenuOpen.value = false }
 
-// ��������
+// 新增弹窗
 const showCreateModal         = ref(false)
 const createModalInitParentId = ref<string | undefined>(undefined)
 
@@ -86,16 +86,16 @@ const {
   pickMode, pickedCssSelector, scanDom, togglePickMode,
 } = useDomPicker(bridge, activeTabId)
 
-// Flow editing (�����ڴ˴����� composables ����)
+// Flow editing (定义在此处，供 composables 引用)
 const editingFlow  = ref<LocalFlow | null>(null)
 const saveToast    = ref(false)
 
-// ���� Ԫ��ѡ����ģ̬�� ��������������������������������������������������������������������������������������������
+// ── 元素选择器模态框 ──────────────────────────────────────────────
 const showPickerModal = ref(false)
 
-// ���� useLoopEditor ��������������������������������������������������������������������������������������������������
-// (��ռλ openActionModal��ʵ���� useStepEditor ���ٴ���������ʵ��)
-// ʹ��һ���ɸ��µİ�װ����
+// ── useLoopEditor ─────────────────────────────────────────────────
+// (先占位 openActionModal，实例化 useStepEditor 后再传入真正的实现)
+// 使用一个可更新的包装函数
 let _openActionModalFn: ((el: SerializedElement, opts?: {
   overrideSel?: string; isRelative?: boolean; context?: 'single' | { itemSel: string }
   initialType?: import('@shared/types/flow').ActionType; initialValue?: string
@@ -127,7 +127,7 @@ const {
   returnToLoop,
 } = useLoopEditor(editingFlow, bridge, scanDom, pickedCssSelector, _openActionModalProxy)
 
-// ���� useStepEditor ��������������������������������������������������������������������������������������������������
+// ── useStepEditor ─────────────────────────────────────────────────
 const {
   showActionModal,
   actionModalEl,
@@ -154,25 +154,25 @@ const {
 // Wire up the proxy after useStepEditor is created
 _openActionModalFn = openActionModal
 
-/** ElementPickerModal ѡ��Ԫ�غ� �� �� ActionPickerModal */
+/** ElementPickerModal 选中元素后 → 打开 ActionPickerModal */
 function onElementPicked(el: SerializedElement) {
   _onElementPickedBase(el, getLoopChildActionOpts, showPickerModal, pickMode, () => bridge.cancelPickElement())
 }
 
-/** ActionPickerModal �������Ԫ�ء� �� �������״̬�����´�Ԫ��ѡ���� */
+/** ActionPickerModal 点击「换元素」 → 保留动作状态，重新打开元素选择器 */
 function onActionRePick(type: import('@shared/types/flow').ActionType, value: string | undefined) {
   _onActionRePickBase(type, value, showPickerModal, pickedCssSelector)
 }
 
 function openPicker() {
-  if (!editingFlow.value) { alert('���ȴ�һ������'); return }
-  if (!activeTabId.value)  { alert('����ѡ��Ŀ�� Tab'); return }
+  if (!editingFlow.value) { alert('请先打开一个流程'); return }
+  if (!activeTabId.value)  { alert('请先选择目标 Tab'); return }
   pickedCssSelector.value = ''
   showPickerModal.value = true
   scanDom()
 }
 
-// ���� useSmartLoop ����������������������������������������������������������������������������������������������������
+// ── useSmartLoop ──────────────────────────────────────────────────
 const {
   showSmartLoopModal,
   smartLoopCandidates,
@@ -189,44 +189,44 @@ function closePicker() {
   if (pickMode.value) { pickMode.value = false; bridge.cancelPickElement() }
 }
 
-/** EditLoopModal "��Ӳ���" wrapper */
+/** EditLoopModal "添加操作" wrapper */
 function onLoopAddChild(currentState: FlowStep) {
   _onLoopAddChildRaw(currentState, () => { showPickerModal.value = true })
 }
 
 // ���� Ƕ������ѡ�� ����������������������������������������������������������������������������������������������������
 
-/** ActionPickerModal ��һ�� �� ��ʱִ�е������� */
+/** ActionPickerModal 试一下 → 临时执行单个步骤 */
 async function onActionTry(step: FlowStep) {
   await bridge.runFlow([step])
 }
 
-/** ElementPickerDrawer ���ද���� �� ��ָ��Ԫ��ִ��һ���Բ��� */
+/** ElementPickerDrawer 更多动作栏 → 对指定元素执行一次性操作 */
 async function onTestAction(css: string, actionType: string, value?: string) {
   const step: FlowStep = {
     id:       `test_${Date.now()}`,
     type:     actionType as FlowStep['type'],
-    label:    `�ԣ�${actionType} ${css.slice(0, 30)}`,
+    label:    `试：${actionType} ${css.slice(0, 30)}`,
     selector: { cssSelector: css },
     value:    value,
   }
   await bridge.runFlow([step])
 }
 
-/** �ȴ����裺���� prompt �޸�ʱ�� */
+/** 等待步骤：弹出 prompt 修改时长 */
 function editDelayStep(step: FlowStep) {
-  const v = prompt('�ȴ�ʱ�� (ms)', step.value ?? '1000')
+  const v = prompt('等待时长 (ms)', step.value ?? '1000')
   if (v === null) return
   const ms = Number(v) || 1000
   step.value = String(ms)
-  step.label = `�ȴ� ${ms} ms`
+  step.label = `等待 ${ms} ms`
 }
 const showCallFlowPicker = ref(false)
 
 function addCallFlowStep() {
   if (!editingFlow.value) return
   const others = flowStore.allFlows().filter(f => f.id !== editingFlow.value?.id)
-  if (others.length === 0) { alert('û�п�Ƕ�����������'); return }
+  if (others.length === 0) { alert('没有可嵌入的其他流程'); return }
   showCallFlowPicker.value = true
 }
 
@@ -237,13 +237,13 @@ function confirmCallFlow(id: string) {
   editingFlow.value.steps.push({
     id:      `step_${Date.now()}`,
     type:    'call_flow',
-    label:   `Ƕ�����̣�${target.name}`,
+    label:   `嵌入流程：${target.name}`,
     flowRef: target.id,
   })
   showCallFlowPicker.value = false
 }
 
-// ���� useConditionEditor ����������������������������������������������������������������������������������������
+// ── useConditionEditor ────────────────────────────────────────────
 const {
   showConditionModal,
   conditionModalStep,
@@ -266,14 +266,14 @@ function openFlow(flow: LocalFlow) {
 function selectDelayLevel(level: StepDelayLevel) {
   if (!editingFlow.value) return
   if (level === 'none') {
-    if (!confirm('�����ò�����ᵼ�²������ٴ��������ױ���վ���ʶ��ͷ�ţ�ȷ��Ҫ�رռ����')) return
+    if (!confirm('不设置步骤间隔会导致操作极速触发，容易被网站风控识别和封号，确定要关闭间隔吗？')) return
   }
   editingFlow.value.stepDelayLevel = level
 }
 
 const showSettingsModal = ref(false)
 
-// ���� Ԥ�����ʱ�� ����������������������������������������������������������������������������������������������������
+// ── 预估完成时间 ──────────────────────────────────────────────────
 function estimateStepListMs(steps: FlowStep[], interStepMs: number): number | null {
   let total = 0
   for (const step of steps) {
@@ -309,11 +309,11 @@ const estimatedFlowTime = computed<string | null>(() => {
   }
   const ms = estimateStepListMs(flow.steps, interStepMs)
   if (ms === null) return null
-  if (ms < 1000)  return '< 1 ��'
-  if (ms < 60000) return `�� ${(ms / 1000).toFixed(1)} ��`
+  if (ms < 1000)  return '< 1 秒'
+  if (ms < 60000) return `≈ ${(ms / 1000).toFixed(1)} 秒`
   const min = Math.floor(ms / 60000)
   const sec = Math.round((ms % 60000) / 1000)
-  return `�� ${min} �� ${sec} ��`
+  return `≈ ${min} 分 ${sec} 秒`
 })
 
 function onSettingsConfirm(data: { waitTimeout: number; stepDelayLevel: StepDelayLevel; stepDelayRange: [number, number] | undefined }) {
@@ -350,15 +350,15 @@ async function deleteFlowOrFolder(id: string) {
   if (!node) return
   const childCount = node.kind === 'folder' ? (node as FlowFolder).children.length : 0
   const msg = node.kind === 'folder' && childCount > 0
-    ? `ȷ��ɾ�����顸${node.name}���������������ݣ�${childCount} ���`
-    : `ȷ��ɾ����${node.name}����`
+    ? `确定删除分组「${node.name}」及其中所有内容（${childCount} 项）？`
+    : `确定删除「${node.name}」？`
   if (!confirm(msg)) return
   await flowStore.remove(id)
   if (editingFlow.value?.id === id) editingFlow.value = null
 }
 
-// ���� ���� ��������������������������������������������������������������������������������������������������������������������
-// ���� �������� ������������������������������������������������������������������������������������������������������������
+// ── 导出 ──────────────────────────────────────────────────────────
+// ── 导出弹窗 ──────────────────────────────────────────────────────
 const showExportModal = ref(false)
 
 function handleExportSelected(ids: Set<string>) {
@@ -373,17 +373,17 @@ function handleExportSelected(ids: Set<string>) {
   showExportModal.value = false
 }
 
-// ���� ���뵯�� ������������������������������������������������������������������������������������������������������������
+// ── 导入弹窗 ──────────────────────────────────────────────────────
 const showImportModal = ref(false)
 
 async function handleImportConfirm(payload: ExportPayload, selectedIds: Set<string>, targetId?: string) {
   const filtered = { ...payload, nodes: filterNodesByIds(payload.nodes, selectedIds) }
   const count = await flowStore.importInto(filtered, targetId)
-  alert(`�ɹ����� ${count} ����Ŀ`)
+  alert(`成功导入 ${count} 个项目`)
   showImportModal.value = false
 }
 
-// ���� Ԥ��� ����������������������������������������������������������������������������������������������������
+// ── 预设库 ──────────────────────────────────────────────────
 
 const showPresetsModal = ref(false)
 
@@ -391,7 +391,7 @@ async function onInstallPreset(preset: BuiltinPreset) {
   await flowStore.importInto(preset.payload as Parameters<typeof flowStore.importInto>[0], undefined)
 }
 
-// ���� �༭�ڵ� ������������������������������������������������������������������������������������������������������������
+// ── 编辑节点 ──────────────────────────────────────────────────────
 const showEditModal       = ref(false)
 const editingNodeId       = ref('')
 const editingNodeName     = ref('')
@@ -434,15 +434,15 @@ function addDelayStep() {
   editingFlow.value.steps.push({
     id:    `step_${Date.now()}`,
     type:  'delay',
-    label: '�ȴ�',
+    label: '等待',
     value: '1000',
   })
 }
 
-// ���� ������ק���� ����������������������������������������������������������������������������������������������������
+// ── 步骤拖拽排序 ──────────────────────────────────────────────────
 const { dragSrcIdx, dragInsertIdx, onHandleMouseDown, onDragStart, onDragOver, onDrop, onDragEnd } = useStepDrag(editingFlow)
 
-// ���� ����ѡ��ɾ�� ����������������������������������������������������������������������������������������������
+// ── 批量选择删除 ───────────────────────────────────────────────
 const selectedStepIds = ref<string[]>([])
 
 function toggleSelect(id: string) {
@@ -460,7 +460,7 @@ function deleteSelected() {
 // Run
 const { logs, running, logDrawerOpen, runCurrentFlow, stopCurrentFlow } = useFlowRunner(bridge, editingFlow, activeTabId)
 
-// Bridge events��DOM_SCAN_RESULT/ELEMENT_PICKED �� useDomPicker��FLOW_LOG/DONE/ERROR �� useFlowRunner��SMART_LOOP_ANALYZED �� useSmartLoop��
+// Bridge events（DOM_SCAN_RESULT/ELEMENT_PICKED → useDomPicker；FLOW_LOG/DONE/ERROR → useFlowRunner；SMART_LOOP_ANALYZED → useSmartLoop）
 bridge.on((evt) => {
   if (evt.type === 'DOM_MUTATION' && showPickerModal.value && !domScanning.value) domMutated.value = true
 })
@@ -472,34 +472,34 @@ onMounted(async () => {
 })
 onUnmounted(() => { document.removeEventListener('click', closeMenus) })
 
-// ���� ����� & ��־������ק���� ����������������������������������������������������������������������������
+// ── 侧边栏 & 日志抽屉拖拽调整 ──────────────────────────────────────
 const { sidebarWidth, logDrawerHeight, startResize, startLogResize } = useResizable()
 
 const stepTypeLabels: Record<string, string> = {
-  click: '���', input: '����', select: 'ѡ��', focus: '�۽�',
-  get_text: '��ȡ����', wait_appear: '�ȴ�����', wait_disappear: '�ȴ���ʧ',
-  scroll_to: '������', navigate: '����', loop_items: '�б�ѭ��', condition: '�����ж�',
-  delay: '�ȴ�', press_key: '����', call_flow: 'Ƕ������', save_canvas: '��ͼ',
+  click: '点击', input: '输入', select: '选择', focus: '聚焦',
+  get_text: '获取文字', wait_appear: '等待出现', wait_disappear: '等待消失',
+  scroll_to: '滚动到', navigate: '导航', loop_items: '选择列表', condition: '条件判断',
+  delay: '等待', press_key: '按键', call_flow: '嵌入流程', save_canvas: '截图',
 }
 </script>
 
 <template>
   <div class="app">
     <header class="app__header">
-      <div class="app__logo">? FlowPilot</div>
+      <div class="app__logo">⚡ FlowPilot</div>
       <div class="app__tab-selector">
         <select class="tab-select" :value="activeTabId ?? ''"
           @change="e => selectTab(Number((e.target as HTMLSelectElement).value))">
-          <option value="" disabled>ѡ��Ŀ�� Tab��</option>
+          <option value="" disabled>选择目标 Tab…</option>
           <option v-for="tab in tabs" :key="tab.id" :value="tab.id">{{ tab.title?.slice(0, 60) ?? tab.url }}</option>
         </select>
-        <button class="btn btn--ghost" @click="refreshTabs">?</button>
+        <button class="btn btn--ghost" @click="refreshTabs">↻</button>
       </div>
       <div class="app__actions">
         <button
           :class="running ? 'btn btn--danger' : 'btn btn--primary'"
           @click="running ? stopCurrentFlow() : runCurrentFlow()"
-        >{{ running ? '? ֹͣ' : '? ����' }}</button>
+        >{{ running ? '⏹ 停止' : '▶ 运行' }}</button>
       </div>
     </header>
 
@@ -507,16 +507,16 @@ const stepTypeLabels: Record<string, string> = {
       <aside class="app__aside" :style="{ width: sidebarWidth + 'px' }">
         <div class="panel">
           <div class="panel__toolbar">
-            <span class="panel__title">�ѱ�������</span>
+            <span class="panel__title">已保存流程</span>
             <button
               v-if="BUILTIN_PRESETS.length > 0"
               class="btn btn--sm"
-              title="�������Ԥ���"
+              title="浏览内置预设库"
               @click="showPresetsModal = true"
-            >?? Ԥ��</button>
-            <button class="btn btn--sm" title="��������" @click="showImportModal = true">?? ����</button>
-            <button class="btn btn--sm" title="��������" @click="showExportModal = true">?? ����</button>
-            <button class="btn btn--sm btn--primary" @click="openCreateModal()">&#xFF0B; ����</button>
+            >📦 预设</button>
+            <button class="btn btn--sm" title="导入流程" @click="showImportModal = true">📥 导入</button>
+            <button class="btn btn--sm" title="导出流程" @click="showExportModal = true">📤 导出</button>
+            <button class="btn btn--sm btn--primary" @click="openCreateModal()">&#xFF0B; 新增</button>
           </div>
 
           <div class="flow-list">
@@ -529,7 +529,7 @@ const stepTypeLabels: Record<string, string> = {
               @edit="handleEdit"
               @pin="(id: string) => flowStore.togglePin(id)"
             />
-            <div v-if="flowStore.tree.length === 0 && !creating" class="empty-hint">�������̣�������� ����������</div>
+            <div v-if="flowStore.tree.length === 0 && !creating" class="empty-hint">暂无流程，点击“＋ 新增”创建</div>
           </div>
         </div>
       </aside>
@@ -561,7 +561,7 @@ const stepTypeLabels: Record<string, string> = {
                   class="step-card__handle"
                   :class="{ 'step-card__handle--grabbing': dragSrcIdx === i }"
                   @mousedown="onHandleMouseDown"
-                >??</div>
+                >⋮⋮</div>
                 <input
                   type="checkbox"
                   class="step-card__check"
@@ -576,7 +576,7 @@ const stepTypeLabels: Record<string, string> = {
                     class="step-card__cond-toggle"
                     @click.stop="toggleConditionExpand(step.id)"
                   >
-                    {{ expandedConditions.has(step.id) ? '�� ����' : '�� չ����֧' }}
+                    {{ expandedConditions.has(step.id) ? '▲ 收起' : '▼ 展开分支' }}
                     <span class="step-card__cond-count">(IF:{{ step.children?.length ?? 0 }} | ELSE:{{ step.elseChildren?.length ?? 0 }})</span>
                   </button>
                 </div>
@@ -584,13 +584,13 @@ const stepTypeLabels: Record<string, string> = {
                   <button
                     v-if="step.type !== 'call_flow' && (step.type === 'condition' || step.type === 'delay' || step.type === 'loop_items' || !!step.selector)"
                     class="step-card__btn step-card__btn--edit"
-                    title="�༭����"
+                    title="编辑步骤"
                     @click="step.type === 'condition' ? editConditionStep(step, i) : step.type === 'delay' ? editDelayStep(step) : step.type === 'loop_items' ? editLoopStep(step, i) : editStep(step, i)"
-                  >?</button>
-                  <button class="step-card__btn step-card__btn--del" @click="removeStep(i)">?</button>
+                  >✎</button>
+                  <button class="step-card__btn step-card__btn--del" @click="removeStep(i)">✖</button>
                 </div>
               </div>
-              <!-- ������֧չ����ͼ -->
+              <!-- 条件分支展开视图 -->
               <ConditionBranchView
                 v-if="step.type === 'condition' && expandedConditions.has(step.id)"
                 :step="step"
@@ -601,7 +601,7 @@ const stepTypeLabels: Record<string, string> = {
               />
             </template>
             <div class="step-insert-line" :class="{ 'step-insert-line--active': dragInsertIdx === editingFlow.steps.length }" @dragover.prevent="dragInsertIdx = editingFlow.steps.length" @drop="onDrop" />
-            <div v-if="editingFlow.steps.length === 0" class="empty-hint">����·����o��Ӳ���</div>
+            <div v-if="editingFlow.steps.length === 0" class="empty-hint">点击下方按鈕添加步骤</div>
           </div>
 
           <div class="step-add-toolbar">
@@ -609,38 +609,39 @@ const stepTypeLabels: Record<string, string> = {
               v-if="selectedStepIds.length > 0"
               class="btn btn--danger btn--sm"
               @click="deleteSelected"
-            >?? ɾ����ѡ ({{ selectedStepIds.length }})</button>
+            >🗑 删除已选 ({{ selectedStepIds.length }})</button>
             <div class="add-menu add-menu--step">
-              <button class="btn btn--sm btn--primary" @click.stop="stepMenuOpen = !stepMenuOpen">�� ��Ӳ��� ?</button>
+              <button class="btn btn--sm btn--primary" @click.stop="stepMenuOpen = !stepMenuOpen">＋ 添加步骤 ▾</button>
               <div v-if="stepMenuOpen" class="add-menu__dropdown add-menu__dropdown--up" @click.stop>
-                <button class="add-menu__item" @click="openPicker(); stepMenuOpen = false">?? ѡ��Ԫ��</button>
-                <button class="add-menu__item" @click="openSmartPicker(); stepMenuOpen = false">?? ���ε���б���</button>
-                <button class="add-menu__item" @click="addConditionStep(); stepMenuOpen = false">?? �����ж�</button>
-                <button class="add-menu__item" @click="addCallFlowStep(); stepMenuOpen = false">? Ƕ������</button>
-                <button class="add-menu__item" @click="addDelayStep(); stepMenuOpen = false">? �ȴ�</button>
+                <button class="add-menu__item" @click="openPicker(); stepMenuOpen = false">🖱 选择元素</button>
+                <button class="add-menu__item" @click="openPicker(); stepMenuOpen = false">📋 选择列表</button>
+                <button class="add-menu__item" @click="openSmartPicker(); stepMenuOpen = false">🔁 依次点击列表项</button>
+                <button class="add-menu__item" @click="addConditionStep(); stepMenuOpen = false">🔀 条件判断</button>
+                <button class="add-menu__item" @click="addCallFlowStep(); stepMenuOpen = false">▶ 嵌入流程</button>
+                <button class="add-menu__item" @click="addDelayStep(); stepMenuOpen = false">⏱ 等待</button>
               </div>
             </div>
           </div>
         </template>
         <div v-else class="editor__placeholder">
-          <div class="editor__placeholder-icon">??</div>
-          <div>�����ѡ����½�һ�������Կ�ʼ�༭</div>
+          <div class="editor__placeholder-icon">📋</div>
+          <div>在左侧选择或新建一个流程以开始编辑</div>
         </div>
       </main>
     </div>
 
-    <!-- �ײ�ȫ����־���� -->
+    <!-- 底部全局日志抽屉 -->
     <div class="log-drawer" :class="{ 'log-drawer--open': logDrawerOpen }">
       <div class="log-drawer__resize" v-if="logDrawerOpen" @mousedown.stop="startLogResize"></div>
       <div class="log-drawer__header" @click="logDrawerOpen = !logDrawerOpen">
         <span class="log-drawer__toggle">
-          {{ logDrawerOpen ? '��' : '��' }} ������־
-          <span v-if="running" class="log-drawer__running">�� ������</span>
-          <span v-else-if="logs.length > 0" class="log-drawer__count">��{{ logs.length }} ����</span>
+          {{ logDrawerOpen ? '▼' : '▲' }} 运行日志
+          <span v-if="running" class="log-drawer__running">● 运行中</span>
+          <span v-else-if="logs.length > 0" class="log-drawer__count">（{{ logs.length }} 条）</span>
         </span>
         <template v-if="logDrawerOpen">
-          <button class="log-drawer__action-btn" title="����ȫ����־" @click.stop="() => navigator.clipboard.writeText(logs.join('\n'))">?? ����</button>
-          <button class="log-drawer__action-btn log-drawer__action-btn--danger" title="�����־" @click.stop="logs = []">?? ���</button>
+          <button class="log-drawer__action-btn" title="复制全部日志" @click.stop="() => navigator.clipboard.writeText(logs.join('\n'))">📋 复制</button>
+          <button class="log-drawer__action-btn log-drawer__action-btn--danger" title="清空日志" @click.stop="logs = []">🗑 清空</button>
         </template>
       </div>
       <div v-if="logDrawerOpen" class="log-drawer__body" :style="{ height: logDrawerHeight + 'px' }">
@@ -648,7 +649,7 @@ const stepTypeLabels: Record<string, string> = {
       </div>
     </div>
 
-    <!-- Ԫ��ѡ����ģ̬�� -->
+    <!-- 元素选择器模态框 -->
     <ElementPickerModal
       v-if="showPickerModal"
       :dom-tree="domTree"
@@ -668,7 +669,7 @@ const stepTypeLabels: Record<string, string> = {
       @update:dom-filter="domFilter = $event"
     />
 
-    <!-- �����б�ѭ��ѡ���� -->
+    <!-- 智能循环选择器模态框 -->
     <SmartLoopPickerModal
       v-if="showSmartLoopModal && smartLoopPickedEl"
       :candidates="smartLoopCandidates"
@@ -679,7 +680,7 @@ const stepTypeLabels: Record<string, string> = {
       @leave-candidate="bridge.clearLoopHighlights()"
     />
 
-    <!-- ѭ������༭ģ̬�� -->
+    <!-- 循环步骤编辑模态框 -->
     <EditLoopModal
       v-if="showEditLoopModal && editingLoopStep"
       :step="editingLoopStep"
@@ -691,7 +692,7 @@ const stepTypeLabels: Record<string, string> = {
       @add-child="onLoopAddChild"
     />
 
-    <!-- ��������ģ̬�� -->
+    <!-- 条件配置模态框 -->
     <ConditionPickerModal
       v-if="showConditionModal"
       :initial-label="conditionModalStep?.label"
@@ -715,7 +716,7 @@ const stepTypeLabels: Record<string, string> = {
       @update:dom-filter="domFilter = $event"
     />
 
-    <!-- ����ѡ��ģ̬�� -->
+    <!-- 动作选择模态框 -->
     <ActionPickerModal
       v-if="showActionModal && actionModalEl"
       :element="actionModalEl!"
@@ -732,7 +733,7 @@ const stepTypeLabels: Record<string, string> = {
       @cancel="cancelActionModal"
     />
 
-    <!-- ��������/Ŀ¼���� -->
+    <!-- 新增流程/目录弹窗 -->
     <CreateNodeModal
       v-if="showCreateModal"
       :tree="flowStore.tree"
@@ -741,7 +742,7 @@ const stepTypeLabels: Record<string, string> = {
       @cancel="showCreateModal = false"
     />
 
-    <!-- �༭�ڵ㵯�� -->
+    <!-- 编辑节点弹窗 -->
     <EditNodeModal
       v-if="showEditModal"
       :node-id="editingNodeId"
@@ -753,14 +754,14 @@ const stepTypeLabels: Record<string, string> = {
       @cancel="showEditModal = false"
     />
 
-    <!-- Ԥ��ⵯ�� -->
+    <!-- 预设库弹窗 -->
     <PresetsModal
       v-if="showPresetsModal"
       @install="onInstallPreset"
       @close="showPresetsModal = false"
     />
 
-    <!-- �������� -->
+    <!-- 导出弹窗 -->
     <ExportModal
       :visible="showExportModal"
       :tree="flowStore.tree"
@@ -768,7 +769,7 @@ const stepTypeLabels: Record<string, string> = {
       @close="showExportModal = false"
     />
 
-    <!-- ���뵯�� -->
+    <!-- 导入弹窗 -->
     <ImportModal
       :visible="showImportModal"
       :tree="flowStore.tree"
@@ -776,7 +777,7 @@ const stepTypeLabels: Record<string, string> = {
       @cancel="showImportModal = false"
     />
 
-    <!-- �������õ��� -->
+    <!-- 流程设置弹窗 -->
     <FlowSettingsModal
       v-if="showSettingsModal && editingFlow"
       :flow="editingFlow"
@@ -784,7 +785,7 @@ const stepTypeLabels: Record<string, string> = {
       @confirm="onSettingsConfirm"
     />
 
-    <!-- Ƕ������ѡ�� -->
+    <!-- 嵌入流程选择 -->
     <CallFlowPickerModal
       v-if="showCallFlowPicker"
       :flows="flowStore.allFlows().filter(f => f.id !== editingFlow?.id)"
@@ -795,12 +796,13 @@ const stepTypeLabels: Record<string, string> = {
   </div>
 
   <Transition name="toast">
-    <div v-if="saveToast" class="save-toast">? �ѱ���</div>
+    <div v-if="saveToast" class="save-toast">✅ 已保存</div>
   </Transition>
 
 </template>
 
 <style lang="scss">
+@use '../shared/styles/base' as *;
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 body { background: #1e1e2e; color: #cdd6f4; font-family: -apple-system, 'Segoe UI', sans-serif; font-size: 13px; height: 100vh; overflow: hidden; }
 .app { display: flex; flex-direction: column; height: 100vh; }
@@ -873,26 +875,6 @@ body { background: #1e1e2e; color: #cdd6f4; font-family: -apple-system, 'Segoe U
   &:hover { color: #cdd6f4; border-color: #6c7086; }
 }
 .step-card__cond-count { color: #585b70; font-size: 10px; margin-left: 2px; }
-
-.btn { padding: 5px 12px; border-radius: 4px; border: 1px solid #45475a; background: #313244; color: #cdd6f4; cursor: pointer; font-size: 12px; white-space: nowrap; }
-.btn:hover:not(:disabled) { background: #45475a; }
-.btn:disabled { opacity: 0.4; cursor: default; }
-.btn--primary { background: #1e3a5f; border-color: #89b4fa; color: #89b4fa; }
-.btn--primary:hover:not(:disabled) { background: #264a7a; }
-.btn--danger { background: #3a1e1e; border-color: #f38ba8; color: #f38ba8; }
-.btn--danger:hover:not(:disabled) { background: #4a2828; }
-.btn--ghost { background: transparent; border-color: transparent; }
-.btn--ghost:hover:not(:disabled) { background: #313244; }
-.btn--sm { padding: 3px 8px; font-size: 11px; }
-
-.input { background: #313244; border: 1px solid #45475a; border-radius: 4px; color: #cdd6f4; padding: 5px 8px; font-size: 12px; flex: 1; min-width: 0; }
-.input:focus { outline: none; border-color: #89b4fa; }
-.input--sm { padding: 3px 6px; font-size: 11px; }
-
-.tab-select { flex: 1; min-width: 0; background: #313244; border: 1px solid #45475a; border-radius: 4px; color: #cdd6f4; padding: 5px 8px; font-size: 12px; }
-.tab-select:focus { outline: none; border-color: #89b4fa; }
-
-.empty-hint { color: #6c7086; font-size: 12px; text-align: center; padding: 20px; }
 
 .step-add-toolbar {
   position: sticky; bottom: 0; z-index: 10;

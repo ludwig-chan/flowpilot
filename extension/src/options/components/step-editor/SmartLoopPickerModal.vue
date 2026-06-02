@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import type { SerializedElement } from '@shared/types/dom'
 import type { RepeatingCandidate } from '@shared/types/message'
+import BaseModal from '@shared/components/BaseModal.vue'
 
 const props = defineProps<{
   candidates:    RepeatingCandidate[]
@@ -31,14 +32,7 @@ function tagIcon(tagName: string): string {
 </script>
 
 <template>
-  <div class="slp-overlay" @click.self="emit('cancel')">
-    <div class="slp-modal">
-
-      <!-- 标题栏 -->
-      <div class="slp-modal__header">
-        <span class="slp-modal__title">🔁 智能列表循环</span>
-        <button class="btn btn--ghost btn--icon" @click="emit('cancel')">✖</button>
-      </div>
+  <BaseModal title="🔁 智能列表循环" width="520px" max-height="85vh" :z-index="1070" @close="emit('cancel')">
 
       <!-- 已选目标元素 -->
       <div class="slp-section">
@@ -95,64 +89,40 @@ function tagIcon(tagName: string): string {
       </div>
 
       <!-- 底部按钮 -->
-      <div class="slp-modal__footer">
+      <template #footer>
         <button class="btn" @click="emit('cancel')">取消</button>
         <button
           class="btn btn--primary"
           :disabled="candidates.length === 0"
           @click="onConfirm"
         >确认，循环此结构</button>
-      </div>
+      </template>
 
-    </div>
-  </div>
+  </BaseModal>
 </template>
 
 <style lang="scss" scoped>
-.slp-overlay {
-  position: fixed; inset: 0; z-index: 1070;
-  background: rgba(0, 0, 0, .6);
-  display: flex; align-items: center; justify-content: center;
-}
-
-.slp-modal {
-  width: 520px; max-width: 95vw; max-height: 85vh;
-  background: #1e1e2e; border: 1px solid #45475a; border-radius: 8px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, .5);
-  display: flex; flex-direction: column; overflow: hidden;
-
-  &__header {
-    display: flex; align-items: center; gap: 8px;
-    padding: 10px 14px; border-bottom: 1px solid #313244; flex-shrink: 0;
-  }
-  &__title { font-weight: 700; font-size: 14px; flex: 1; }
-  &__footer {
-    display: flex; justify-content: flex-end; gap: 8px;
-    padding: 10px 14px; border-top: 1px solid #313244; flex-shrink: 0;
-  }
-}
-
 .slp-section {
   padding: 10px 14px;
-  border-bottom: 1px solid #313244;
+  border-bottom: 1px solid $color-surface-1;
   &--scroll { overflow-y: auto; flex: 1; }
 }
 
 .slp-label {
-  font-size: 11px; color: #6c7086; font-weight: 600; margin-bottom: 8px;
+  font-size: 11px; color: $color-text-muted; font-weight: 600; margin-bottom: 8px;
 }
 
 .slp-picked {
   display: flex; flex-direction: column; gap: 3px;
-  &__label { font-size: 12px; color: #cdd6f4; }
+  &__label { font-size: 12px; color: $color-text; }
   &__css {
-    font-family: 'Cascadia Code', monospace; font-size: 11px; color: #89b4fa;
+    font-family: 'Cascadia Code', monospace; font-size: 11px; color: $color-blue;
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block;
   }
 }
 
 .slp-empty {
-  font-size: 12px; color: #585b70; text-align: center; padding: 16px 0;
+  font-size: 12px; color: $color-text-muted-2; text-align: center; padding: 16px 0;
 }
 
 .slp-candidates {
@@ -161,34 +131,34 @@ function tagIcon(tagName: string): string {
 
 .slp-candidate {
   display: flex; align-items: flex-start; gap: 10px;
-  padding: 10px 12px; border-radius: 6px;
-  background: #181825; border: 1.5px solid #313244;
+  padding: 10px 12px; border-radius: $radius-md;
+  background: $color-base; border: 1.5px solid $color-surface-1;
   cursor: pointer; text-align: left; width: 100%;
   transition: border-color .12s, background .12s;
 
-  &:hover        { border-color: #fab387; background: rgba(250,179,135,.06); }
-  &--active      { border-color: #89b4fa; background: rgba(137,180,250,.08); }
-  &--active:hover { border-color: #89b4fa; }
+  &:hover        { border-color: $color-orange; background: rgba(250,179,135,.06); }
+  &--active      { border-color: $color-blue; background: rgba(137,180,250,.08); }
+  &--active:hover { border-color: $color-blue; }
 
-  &__icon { font-size: 18px; flex-shrink: 0; margin-top: 2px; color: #6c7086; }
+  &__icon { font-size: 18px; flex-shrink: 0; margin-top: 2px; color: $color-text-muted; }
 
   &__info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
 
   &__main { display: flex; align-items: center; gap: 6px; }
-  &__name { font-size: 13px; font-weight: 600; color: #cdd6f4; }
+  &__name { font-size: 13px; font-weight: 600; color: $color-text; }
   &__badge {
-    font-size: 11px; background: #313244; color: #fab387;
+    font-size: 11px; background: $color-surface-1; color: $color-orange;
     padding: 1px 7px; border-radius: 10px; flex-shrink: 0;
   }
   &__sel {
-    font-family: 'Cascadia Code', monospace; font-size: 10px; color: #a6e3a1;
+    font-family: 'Cascadia Code', monospace; font-size: 10px; color: $color-green;
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block;
   }
   &__rel {
-    font-size: 11px; color: #6c7086;
-    code { font-family: 'Cascadia Code', monospace; font-size: 10px; color: #89b4fa; }
+    font-size: 11px; color: $color-text-muted;
+    code { font-family: 'Cascadia Code', monospace; font-size: 10px; color: $color-blue; }
     em   { font-style: italic; }
   }
-  &__check { color: #89b4fa; font-weight: 700; flex-shrink: 0; align-self: center; font-size: 14px; }
+  &__check { color: $color-blue; font-weight: 700; flex-shrink: 0; align-self: center; font-size: 14px; }
 }
 </style>

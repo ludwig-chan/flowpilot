@@ -1,0 +1,80 @@
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// Global base styles: .btn, .input
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+@use 'tokens' as *;
+
+// ── Buttons ──────────────────────────────────
+.btn {
+  padding: 5px 12px;
+  border-radius: $radius;
+  border: 1px solid $color-surface-2;
+  background: $color-surface-1;
+  color: $color-text;
+  cursor: pointer;
+  font-size: 12px;
+  white-space: nowrap;
+
+  &:hover:not(:disabled) { background: $color-surface-2; }
+  &:disabled { opacity: 0.4; cursor: default; }
+}
+
+.btn--primary {
+  background: $color-focus-bg;
+  border-color: $color-blue;
+  color: $color-blue;
+  &:hover:not(:disabled) { background: $color-focus-bg-hover; }
+}
+
+.btn--danger {
+  background: $color-danger-bg;
+  border-color: $color-red;
+  color: $color-red;
+  &:hover:not(:disabled) { background: $color-danger-bg-hover; }
+}
+
+.btn--ghost {
+  background: transparent;
+  border-color: transparent;
+  &:hover:not(:disabled) { background: $color-surface-1; }
+}
+
+.btn--sm   { padding: 3px 8px; font-size: 11px; }
+.btn--icon { padding: 3px 6px; line-height: 1; }
+
+// ── Inputs ───────────────────────────────────
+.input {
+  background: $color-surface-1;
+  border: 1px solid $color-surface-2;
+  border-radius: $radius;
+  color: $color-text;
+  padding: 5px 8px;
+  font-size: 12px;
+  flex: 1;
+  min-width: 0;
+
+  &:focus { outline: none; border-color: $color-blue; }
+}
+
+.input--sm { padding: 3px 6px; font-size: 11px; }
+
+// ── Select (used as tab-like input) ──────────
+.tab-select {
+  flex: 1;
+  min-width: 0;
+  background: $color-surface-1;
+  border: 1px solid $color-surface-2;
+  border-radius: $radius;
+  color: $color-text;
+  padding: 5px 8px;
+  font-size: 12px;
+
+  &:focus { outline: none; border-color: $color-blue; }
+}
+
+// ── Empty state hint ─────────────────────────
+.empty-hint {
+  color: $color-text-muted;
+  font-size: 12px;
+  text-align: center;
+  padding: 20px;
+}
