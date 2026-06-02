@@ -2,12 +2,13 @@ import { ref, computed } from 'vue'
 import type { Ref } from 'vue'
 import type { LocalFlow } from '../stores/useFlowStore'
 import type { FlowStep } from '@shared/types/flow'
+import { useEditorStore } from '../stores/useEditorStore'
 
 export function useConditionEditor(
   editingFlow: Ref<LocalFlow | null>,
-  addingToBranch: Ref<{ condStepId: string; branch: 'if' | 'else' } | null>,
   openPicker: (mode: 'single' | 'list') => void,
 ) {
+  const es = useEditorStore()
   const showConditionModal = ref(false)
   const conditionModalStep = ref<FlowStep | null>(null)
   const conditionModalIdx  = ref<number | null>(null)
@@ -92,7 +93,7 @@ export function useConditionEditor(
 
   /** 在分支内添加新元素步骤 */
   function openBranchPicker(condStepId: string, branch: 'if' | 'else') {
-    addingToBranch.value = { condStepId, branch }
+    es.addingToBranch = { condStepId, branch }
     openPicker('single')
   }
 

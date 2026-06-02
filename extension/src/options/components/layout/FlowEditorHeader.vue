@@ -104,7 +104,7 @@ function toggleTrigger() {
 <style lang="scss" scoped>
 .editor__header { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
 .editor__header-row { display: flex; align-items: center; gap: 8px; }
-.editor__est-time { font-size: 11px; color: #6c7086; margin-right: 4px; }
+.editor__est-time { font-size: 11px; color: #cdd6f4; margin-right: 4px; }
 .editor__name-display { flex: 1; font-size: 14px; font-weight: 600; color: #cdd6f4; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .editor__delay-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .editor__delay-label { font-size: 12px; color: #a6adc8; white-space: nowrap; }

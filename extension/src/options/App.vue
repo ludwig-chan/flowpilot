@@ -9,6 +9,7 @@ import { useStepDrag } from './composables/useStepDrag'
 import { useLoopEditor } from './composables/useLoopEditor'
 import { useStepEditor } from './composables/useStepEditor'
 import { useConditionEditor } from './composables/useConditionEditor'
+import { useEditorStore } from './stores/useEditorStore'
 import { useSmartLoop } from './composables/useSmartLoop'
 import FlowTreeNode from './components/flow-tree/FlowTreeNode.vue'
 import LogPanel from './components/layout/LogPanel.vue'
@@ -96,30 +97,15 @@ const {
 const editingFlow  = ref<LocalFlow | null>(null)
 const saveToast    = ref(false)
 
+// ── Editor Store ──────────────────────────────────────────────────
+const es = useEditorStore()
+
 // ── 元素选择器模态框 ──────────────────────────────────────────────
 const showPickerModal = ref(false)
 
 // ── useLoopEditor ─────────────────────────────────────────────────
-// (先占位 openActionModal，实例化 useStepEditor 后再传入真正的实现)
-// 使用一个可更新的包装函数
-let _openActionModalFn: ((el: SerializedElement, opts?: {
-  overrideSel?: string; isRelative?: boolean; context?: 'single' | { itemSel: string }
-  initialType?: import('@shared/types/flow').ActionType; initialValue?: string
-  initialWaitTimeout?: number; initialFoundDelay?: [number, number]; initialLabel?: string
-}) => void) | null = null
-
-function _openActionModalProxy(el: SerializedElement, opts?: {
-  overrideSel?: string; isRelative?: boolean; context?: 'single' | { itemSel: string }
-}) {
-  _openActionModalFn?.(el, opts)
-}
-
 const {
-  showEditLoopModal,
   editingLoopStepIdx,
-  editingLoopStep,
-  editingLoopChild,
-  addingToLoopChild,
   reselectingLoopChild,
   editLoopStep,
   onLoopSave,
@@ -130,35 +116,17 @@ const {
   onLoopEditChild,
   onSmartLoopConfirm: _onSmartLoopConfirmLoop,
   getLoopChildActionOpts,
-  returnToLoop,
-} = useLoopEditor(editingFlow, bridge, scanDom, pickedCssSelector, _openActionModalProxy)
+} = useLoopEditor(editingFlow, bridge, scanDom, pickedCssSelector)
 
 // ── useStepEditor ─────────────────────────────────────────────────
 const {
-  showActionModal,
-  actionModalEl,
-  actionModalOverrideSel,
-  actionModalIsRelative,
-  actionModalContext,
-  editingStepIdx,
-  editingInitialType,
-  editingInitialValue,
-  editingInitialWaitTimeout,
-  editingInitialFoundDelay,
-  editingInitialLabel,
-  addingToBranch,
-  editingBranchStep,
-  openActionModal,
   onElementPicked: _onElementPickedBase,
   editStep,
   onActionRePick: _onActionRePickBase,
   cancelActionModal,
   onActionConfirm,
   editBranchStep,
-} = useStepEditor(editingFlow, editingLoopStep, editingLoopChild, addingToLoopChild, returnToLoop)
-
-// Wire up the proxy after useStepEditor is created
-_openActionModalFn = openActionModal
+} = useStepEditor(editingFlow)
 
 /** ElementPickerModal 选中元素后 → 打开 ActionPickerModal */
 function onElementPicked(el: SerializedElement) {
@@ -280,7 +248,7 @@ const {
   toggleConditionExpand,
   removeBranchStep,
   openBranchPicker,
-} = useConditionEditor(editingFlow, addingToBranch, openPicker)
+} = useConditionEditor(editingFlow, openPicker)
 let   _toastTimer: ReturnType<typeof setTimeout> | null = null
 
 function openFlow(flow: LocalFlow) {
@@ -706,8 +674,8 @@ const stepTypeLabels: Record<string, string> = {
 
     <!-- 循环步骤编辑模态框 -->
     <EditLoopModal
-      v-if="showEditLoopModal && editingLoopStep"
-      :step="editingLoopStep"
+      v-if="es.showEditLoopModal && es.editingLoopStep"
+      :step="es.editingLoopStep"
       @save="onLoopSave"
       @close="onLoopClose"
       @reselect="onLoopReselect"
@@ -742,15 +710,15 @@ const stepTypeLabels: Record<string, string> = {
 
     <!-- 动作选择模态框 -->
     <ActionPickerModal
-      v-if="showActionModal && actionModalEl"
-      :element="actionModalEl!"
-      :override-sel="actionModalOverrideSel"
-      :is-relative="actionModalIsRelative"
-      :initial-type="editingInitialType"
-      :initial-value="editingInitialValue"
-      :initial-wait-timeout="editingInitialWaitTimeout"
-      :initial-found-delay="editingInitialFoundDelay"
-      :initial-label="editingInitialLabel"
+      v-if="es.showActionModal && es.actionModalEl"
+      :element="es.actionModalEl!"
+      :override-sel="es.actionModalOverrideSel"
+      :is-relative="es.actionModalIsRelative"
+      :initial-type="es.editingInitialType"
+      :initial-value="es.editingInitialValue"
+      :initial-wait-timeout="es.editingInitialWaitTimeout"
+      :initial-found-delay="es.editingInitialFoundDelay"
+      :initial-label="es.editingInitialLabel"
       @confirm="onActionConfirm"
       @try="onActionTry"
       @re-pick="onActionRePick"

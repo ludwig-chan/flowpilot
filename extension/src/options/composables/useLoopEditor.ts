@@ -5,6 +5,7 @@ import type { FlowStep } from '@shared/types/flow'
 import type { SerializedElement } from '@shared/types/dom'
 import { useExtensionBridge } from './useExtensionBridge'
 import { computeRelativeSelector } from '../utils/selectorUtils'
+import { useEditorStore } from '../stores/useEditorStore'
 
 type Bridge = ReturnType<typeof useExtensionBridge>
 
@@ -13,51 +14,41 @@ export function useLoopEditor(
   bridge: Bridge,
   scanDom: () => void,
   pickedCssSelector: Ref<string>,
-  openActionModal: (
-    el: SerializedElement,
-    opts: {
-      overrideSel?: string
-      isRelative?: boolean
-      context?: 'single' | { itemSel: string }
-    }
-  ) => void,
 ) {
-  const showEditLoopModal       = ref(false)
-  const editingLoopStepIdx      = ref<number | null>(null)
-  const editingLoopStep         = ref<FlowStep | null>(null)
-  const editingLoopChild        = ref<number | null>(null)
-  const addingToLoopChild       = ref(false)
-  const reselectingLoopChild    = ref(false)
-  const showListBuilderModal    = ref(false)
+  const es = useEditorStore()
+
+  const editingLoopStepIdx        = ref<number | null>(null)
+  const reselectingLoopChild      = ref(false)
+  const showListBuilderModal      = ref(false)
   const listBuilderInitialItemSel = ref('')
 
   /** 编辑已有 loop_items 步骤 → 打开 EditLoopModal */
   function editLoopStep(step: FlowStep, idx: number) {
     editingLoopStepIdx.value = idx
-    editingLoopStep.value    = JSON.parse(JSON.stringify(step)) as FlowStep
-    showEditLoopModal.value  = true
+    es.editingLoopStep       = JSON.parse(JSON.stringify(step)) as FlowStep
+    es.showEditLoopModal     = true
   }
 
   /** EditLoopModal 保存 → 写回流程 */
   function onLoopSave(editedStep: FlowStep) {
-    showEditLoopModal.value = false
+    es.showEditLoopModal = false
     if (!editingFlow.value || editingLoopStepIdx.value === null) return
     const originalId = editingFlow.value.steps[editingLoopStepIdx.value].id
     editingFlow.value.steps[editingLoopStepIdx.value] = { ...editedStep, id: originalId }
     editingLoopStepIdx.value = null
-    editingLoopStep.value    = null
+    es.editingLoopStep       = null
   }
 
   /** EditLoopModal 关闭 → 丢弃修改 */
   function onLoopClose() {
-    showEditLoopModal.value  = false
+    es.showEditLoopModal     = false
     editingLoopStepIdx.value = null
-    editingLoopStep.value    = null
+    es.editingLoopStep       = null
   }
 
   /** EditLoopModal 重新选择列表 → 打开 ListBuilderModal */
   function onLoopReselect() {
-    showEditLoopModal.value    = false
+    es.showEditLoopModal       = false
     pickedCssSelector.value    = ''
     showListBuilderModal.value = true
     scanDom()
@@ -65,20 +56,20 @@ export function useLoopEditor(
 
   /** EditLoopModal 重选子项 → 以直接模式打开 ListBuilderModal，列表项已预填 */
   function onLoopReselectChild(currentState: FlowStep) {
-    editingLoopStep.value              = currentState
-    reselectingLoopChild.value         = true
-    listBuilderInitialItemSel.value    = currentState.selector?.cssSelector ?? ''
-    showEditLoopModal.value            = false
-    pickedCssSelector.value            = ''
-    showListBuilderModal.value         = true
+    es.editingLoopStep              = currentState
+    reselectingLoopChild.value      = true
+    listBuilderInitialItemSel.value = currentState.selector?.cssSelector ?? ''
+    es.showEditLoopModal            = false
+    pickedCssSelector.value         = ''
+    showListBuilderModal.value      = true
     scanDom()
   }
 
   /** EditLoopModal "添加操作" → 保存当前状态，打开元素选择器 */
   function onLoopAddChild(currentState: FlowStep, openPickerModal: () => void) {
-    editingLoopStep.value   = currentState
-    addingToLoopChild.value = true
-    showEditLoopModal.value = false
+    es.editingLoopStep   = currentState
+    es.addingToLoopChild = true
+    es.showEditLoopModal = false
     pickedCssSelector.value = ''
     openPickerModal()
     scanDom()
@@ -86,9 +77,9 @@ export function useLoopEditor(
 
   /** EditLoopModal 编辑子步骤 → 打开 ActionPickerModal */
   function onLoopEditChild(childIdx: number, currentState: FlowStep) {
-    editingLoopStep.value   = currentState
-    editingLoopChild.value  = childIdx
-    showEditLoopModal.value = false
+    es.editingLoopStep   = currentState
+    es.editingLoopChild  = childIdx
+    es.showEditLoopModal = false
     const child = currentState.children?.[childIdx]
     if (!child?.selector) return
     const el: SerializedElement = {
@@ -100,7 +91,7 @@ export function useLoopEditor(
       matchCount: 1,
       selector:   child.selector,
     }
-    openActionModal(el, {
+    es.openActionModal(el, {
       isRelative: child.relativeSelector ?? false,
       context:    'single',
     })
@@ -117,19 +108,19 @@ export function useLoopEditor(
     listBuilderInitialItemSel.value = ''
 
     // 正在重选子项：只更新 loopChildSelector，不动 itemSel
-    if (editingLoopStep.value && reselectingLoopChild.value) {
+    if (es.editingLoopStep && reselectingLoopChild.value) {
       reselectingLoopChild.value              = false
-      editingLoopStep.value.loopChildSelector = relSel || undefined
-      showEditLoopModal.value                 = true
+      es.editingLoopStep.loopChildSelector    = relSel || undefined
+      es.showEditLoopModal                    = true
       return
     }
 
     // 从 EditLoopModal 重新选择列表：更新本地副本并重新打开 EditLoopModal
-    if (editingLoopStep.value) {
-      editingLoopStep.value.selector = { cssSelector: itemSel }
-      editingLoopStep.value.label    = `循环列表：${itemSel.slice(0, 40)}`
-      if (relSel) editingLoopStep.value.loopChildSelector = relSel
-      showEditLoopModal.value        = true
+    if (es.editingLoopStep) {
+      es.editingLoopStep.selector = { cssSelector: itemSel }
+      es.editingLoopStep.label    = `循环列表：${itemSel.slice(0, 40)}`
+      if (relSel) es.editingLoopStep.loopChildSelector = relSel
+      es.showEditLoopModal        = true
       return
     }
 
@@ -145,12 +136,12 @@ export function useLoopEditor(
       editingFlow.value.steps.push(newStep)
       const idx = editingFlow.value.steps.length - 1
       editingLoopStepIdx.value = idx
-      editingLoopStep.value    = JSON.parse(JSON.stringify(newStep)) as FlowStep
-      showEditLoopModal.value  = true
+      es.editingLoopStep       = JSON.parse(JSON.stringify(newStep)) as FlowStep
+      es.showEditLoopModal     = true
       return
     }
 
-    openActionModal(targetEl, {
+    es.openActionModal(targetEl, {
       overrideSel: relSel || undefined,
       isRelative:  !!relSel,
       context:     { itemSel },
@@ -161,10 +152,10 @@ export function useLoopEditor(
   function onListBuilderDoneDirect(itemSel: string) {
     showListBuilderModal.value = false
     // 从 EditLoopModal 重新选择列表
-    if (editingLoopStep.value) {
-      editingLoopStep.value.selector = { cssSelector: itemSel }
-      editingLoopStep.value.label    = `循环列表：${itemSel.slice(0, 40)}`
-      showEditLoopModal.value        = true
+    if (es.editingLoopStep) {
+      es.editingLoopStep.selector = { cssSelector: itemSel }
+      es.editingLoopStep.label    = `循环列表：${itemSel.slice(0, 40)}`
+      es.showEditLoopModal        = true
       return
     }
     if (!editingFlow.value) return
@@ -178,8 +169,8 @@ export function useLoopEditor(
     editingFlow.value.steps.push(newStep)
     const idx = editingFlow.value.steps.length - 1
     editingLoopStepIdx.value = idx
-    editingLoopStep.value    = JSON.parse(JSON.stringify(newStep)) as FlowStep
-    showEditLoopModal.value  = true
+    es.editingLoopStep       = JSON.parse(JSON.stringify(newStep)) as FlowStep
+    es.showEditLoopModal     = true
   }
 
   /** 智能列表循环选择器确认 → 建立 loop_items 步骤并打开 EditLoopModal */
@@ -197,8 +188,8 @@ export function useLoopEditor(
     editingFlow.value.steps.push(newStep)
     const idx = editingFlow.value.steps.length - 1
     editingLoopStepIdx.value = idx
-    editingLoopStep.value    = JSON.parse(JSON.stringify(newStep)) as FlowStep
-    showEditLoopModal.value  = true
+    es.editingLoopStep       = JSON.parse(JSON.stringify(newStep)) as FlowStep
+    es.showEditLoopModal     = true
   }
 
   /** onElementPicked 中为循环子步骤计算相对选择器 */
@@ -206,7 +197,7 @@ export function useLoopEditor(
     overrideSel?: string
     isRelative: boolean
   } {
-    const itemSel = editingLoopStep.value?.selector?.cssSelector ?? ''
+    const itemSel = es.editingLoopStep?.selector?.cssSelector ?? ''
     const relSel  = itemSel ? computeRelativeSelector(el.selector.cssSelector, itemSel) : ''
     return {
       isRelative:  !!relSel,
@@ -214,17 +205,8 @@ export function useLoopEditor(
     }
   }
 
-  /** 返回 EditLoopModal（ActionPickerModal 取消或确认时调用） */
-  function returnToLoop() {
-    showEditLoopModal.value = true
-  }
-
   return {
-    showEditLoopModal,
     editingLoopStepIdx,
-    editingLoopStep,
-    editingLoopChild,
-    addingToLoopChild,
     reselectingLoopChild,
     showListBuilderModal,
     listBuilderInitialItemSel,
@@ -239,6 +221,5 @@ export function useLoopEditor(
     onListBuilderDoneDirect,
     onSmartLoopConfirm,
     getLoopChildActionOpts,
-    returnToLoop,
   }
 }
