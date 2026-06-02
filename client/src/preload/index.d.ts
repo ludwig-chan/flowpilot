@@ -2,6 +2,8 @@ import { ElectronAPI } from '@electron-toolkit/preload'
 
 interface AppConfig {
   extensionDir: string
+  extensionHash: string
+  lastUpdatedAt: string
   currentVersion: string
 }
 

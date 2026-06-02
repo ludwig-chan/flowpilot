@@ -4,7 +4,9 @@ import * as path from 'path'
 
 export interface AppConfig {
   extensionDir: string
-  currentVersion: string
+  extensionHash: string
+  lastUpdatedAt: string
+  currentVersion?: string  // 运行时字段，不持久化
 }
 
 const CONFIG_DIR = path.join(app.getPath('userData'), 'flowpilot')
@@ -12,7 +14,8 @@ const CONFIG_FILE = path.join(CONFIG_DIR, 'config.json')
 
 const DEFAULT_CONFIG: AppConfig = {
   extensionDir: path.join(app.getPath('userData'), 'extension'),
-  currentVersion: 'v0.0.0'
+  extensionHash: '',
+  lastUpdatedAt: '',
 }
 
 export function loadConfig(): AppConfig {
@@ -39,16 +42,4 @@ export function saveConfig(config: AppConfig): void {
   fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2), 'utf-8')
 }
 
-/** 从已安装插件目录的 manifest.json 动态读取版本号 */
-export function readManifestVersion(extensionDir: string): string {
-  try {
-    const manifestPath = path.join(extensionDir, 'manifest.json')
-    if (!fs.existsSync(manifestPath)) return 'v0.0.0'
-    const raw = fs.readFileSync(manifestPath, 'utf-8')
-    const manifest = JSON.parse(raw)
-    const ver: string = manifest.version || '0.0.0'
-    return ver.startsWith('v') ? ver : `v${ver}`
-  } catch {
-    return 'v0.0.0'
-  }
-}
+

@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react'
 
 interface AppConfig {
   extensionDir: string
+  extensionHash: string
+  lastUpdatedAt: string
   currentVersion: string
 }
 
@@ -12,6 +14,8 @@ interface SettingsProps {
 export default function Settings({ showToast }: SettingsProps): React.JSX.Element {
   const [config, setConfig] = useState<AppConfig>({
     extensionDir: '',
+    extensionHash: '',
+    lastUpdatedAt: '',
     currentVersion: 'v0.0.0'
   })
   const [saving, setSaving] = useState(false)

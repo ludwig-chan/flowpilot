@@ -1,10 +1,10 @@
 import { app, BrowserWindow } from 'electron'
 import { join } from 'path'
-import { cpSync, existsSync, readFileSync, mkdirSync } from 'fs'
+import { cpSync, existsSync, readFileSync, mkdirSync, readdirSync } from 'fs'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { createTray } from './tray'
 import { registerIpcHandlers } from './ipc'
-import { loadConfig, saveConfig, readManifestVersion } from './config'
+import { loadConfig, saveConfig } from './config'
 
 let mainWindow: BrowserWindow | null = null
 
@@ -47,7 +47,13 @@ function createWindow(): BrowserWindow {
   return win
 }
 
-/** 启动时将内置插件同步到 extensionDir（内置版本更新时自动覆盖） */
+interface BundleManifest {
+  hash: string
+  builtAt: string
+  files: string[]
+}
+
+/** 启动时将内置插件同步到 extensionDir（bundle.manifest.json 变化或文件缺失时自动覆盖） */
 function initBundledExtension(): void {
   const config = loadConfig()
   const { extensionDir } = config
@@ -59,26 +65,31 @@ function initBundledExtension(): void {
   if (!existsSync(bundledPath)) return
 
   try {
-    // 读取内置版本
-    const bundledManifestPath = join(bundledPath, 'manifest.json')
-    if (!existsSync(bundledManifestPath)) return
-    const bundledManifest = JSON.parse(readFileSync(bundledManifestPath, 'utf-8'))
-    const bundledVersion: string = bundledManifest.version || '0.0.0'
+    // 读取内置 manifest（不存在则视为空）
+    const bundledManifestFile = join(bundledPath, 'bundle.manifest.json')
+    const bundledManifest: BundleManifest = existsSync(bundledManifestFile)
+      ? JSON.parse(readFileSync(bundledManifestFile, 'utf-8'))
+      : { hash: '', builtAt: '', files: [] }
 
-    // 读取已安装版本
-    const installedVersion = readManifestVersion(extensionDir).replace(/^v/, '')
+    // 读取已安装 manifest
+    const installedManifestFile = join(extensionDir, 'bundle.manifest.json')
+    const installedManifest: BundleManifest | null = existsSync(installedManifestFile)
+      ? JSON.parse(readFileSync(installedManifestFile, 'utf-8'))
+      : null
 
-    // 比较版本，内置更新则覆盖
-    const parse = (v: string): number[] => v.split('.').map((n) => parseInt(n, 10) || 0)
-    const [bMaj, bMin, bPat] = parse(bundledVersion)
-    const [iMaj, iMin, iPat] = parse(installedVersion)
-    const bundledIsNewer =
-      bMaj !== iMaj ? bMaj > iMaj : bMin !== iMin ? bMin > iMin : bPat > iPat
+    // 判断是否需要更新
+    const dirMissing  = !existsSync(extensionDir)
+    const dirEmpty    = !dirMissing && readdirSync(extensionDir).length === 0
+    const hashChanged = bundledManifest.hash !== installedManifest?.hash
+    const filesMissing = bundledManifest.files.some(
+      (f) => !existsSync(join(extensionDir, f))
+    )
 
-    if (!existsSync(extensionDir) || bundledIsNewer) {
+    if (dirMissing || dirEmpty || hashChanged || filesMissing) {
       mkdirSync(extensionDir, { recursive: true })
       cpSync(bundledPath, extensionDir, { recursive: true })
-      config.currentVersion = `v${bundledVersion}`
+      config.extensionHash = bundledManifest.hash
+      config.lastUpdatedAt = new Date().toISOString()
       saveConfig(config)
     }
   } catch {

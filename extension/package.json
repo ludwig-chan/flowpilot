@@ -6,7 +6,7 @@
     "dev": "vite build --watch & vite build --watch --config vite.content.config.ts",
     "build": "vite build && vite build --config vite.content.config.ts",
     "zip": "powershell -Command \"Compress-Archive -Force -Path dist -DestinationPath flowpilot.zip\"",
-    "deploy": "powershell -Command \"Copy-Item -Force -Recurse -Path dist\\* -Destination '../client/resources/extension'\"",
+    "deploy": "powershell -Command \"Remove-Item -Recurse -Force '../client/resources/extension/*' -ErrorAction SilentlyContinue; Copy-Item -Force -Recurse -Path dist\\* -Destination '../client/resources/extension'\"",
     "release": "node scripts/release.mjs"
   },
   "dependencies": {
