@@ -14,7 +14,6 @@ import FlowTreeNode from './components/FlowTreeNode.vue'
 import LogPanel from './components/LogPanel.vue'
 import ElementPickerModal from './components/ElementPickerModal.vue'
 import ActionPickerModal from './components/ActionPickerModal.vue'
-import ListBuilderModal from './components/ListBuilderModal.vue'
 import EditLoopModal from './components/EditLoopModal.vue'
 import ConditionPickerModal from './components/ConditionPickerModal.vue'
 import CreateNodeModal from './components/CreateNodeModal.vue'
@@ -116,8 +115,6 @@ const {
   editingLoopChild,
   addingToLoopChild,
   reselectingLoopChild,
-  showListBuilderModal,
-  listBuilderInitialItemSel,
   editLoopStep,
   onLoopSave,
   onLoopClose,
@@ -125,8 +122,6 @@ const {
   onLoopReselectChild,
   onLoopAddChild: _onLoopAddChildRaw,
   onLoopEditChild,
-  onListBuilderDone: _onListBuilderDoneRaw,
-  onListBuilderDoneDirect,
   onSmartLoopConfirm: _onSmartLoopConfirmLoop,
   getLoopChildActionOpts,
   returnToLoop,
@@ -169,17 +164,12 @@ function onActionRePick(type: import('@shared/types/flow').ActionType, value: st
   _onActionRePickBase(type, value, showPickerModal, pickedCssSelector)
 }
 
-function openPicker(mode: 'single' | 'list') {
+function openPicker() {
   if (!editingFlow.value) { alert('请先打开一个流程'); return }
   if (!activeTabId.value)  { alert('请先选择目标 Tab'); return }
   pickedCssSelector.value = ''
-  if (mode === 'list') {
-    showListBuilderModal.value = true
-    scanDom()
-  } else {
-    showPickerModal.value = true
-    scanDom()
-  }
+  showPickerModal.value = true
+  scanDom()
 }
 
 // ── useSmartLoop ──────────────────────────────────────────────────
@@ -202,12 +192,6 @@ function closePicker() {
 /** EditLoopModal "添加操作" wrapper */
 function onLoopAddChild(currentState: FlowStep) {
   _onLoopAddChildRaw(currentState, () => { showPickerModal.value = true })
-}
-
-/** ListBuilderModal 推断完成 wrapper */
-function onListBuilderDone(itemSel: string, targetEl: SerializedElement, relSel: string) {
-  if (pickMode.value) { pickMode.value = false; bridge.cancelPickElement() }
-  _onListBuilderDoneRaw(itemSel, targetEl, relSel, () => { showPickerModal.value = true })
 }
 
 // ── 嵌入流程选择 ──────────────────────────────────────────────────
@@ -478,7 +462,7 @@ const { logs, running, logDrawerOpen, runCurrentFlow, stopCurrentFlow } = useFlo
 
 // Bridge events（DOM_SCAN_RESULT/ELEMENT_PICKED → useDomPicker；FLOW_LOG/DONE/ERROR → useFlowRunner；SMART_LOOP_ANALYZED → useSmartLoop）
 bridge.on((evt) => {
-  if (evt.type === 'DOM_MUTATION' && (showPickerModal.value || showListBuilderModal.value) && !domScanning.value) domMutated.value = true
+  if (evt.type === 'DOM_MUTATION' && showPickerModal.value && !domScanning.value) domMutated.value = true
 })
 
 onMounted(async () => {
@@ -494,7 +478,7 @@ const { sidebarWidth, logDrawerHeight, startResize, startLogResize } = useResiza
 const stepTypeLabels: Record<string, string> = {
   click: '点击', input: '输入', select: '选择', focus: '聚焦',
   get_text: '获取文字', wait_appear: '等待出现', wait_disappear: '等待消失',
-  scroll_to: '滚动到', navigate: '导航', loop_items: '选择列表', condition: '条件判断',
+  scroll_to: '滚动到', navigate: '导航', loop_items: '列表循环', condition: '条件判断',
   delay: '等待', press_key: '按键', call_flow: '嵌入流程', save_canvas: '截图',
 }
 </script>
@@ -629,8 +613,7 @@ const stepTypeLabels: Record<string, string> = {
             <div class="add-menu add-menu--step">
               <button class="btn btn--sm btn--primary" @click.stop="stepMenuOpen = !stepMenuOpen">＋ 添加步骤 ▾</button>
               <div v-if="stepMenuOpen" class="add-menu__dropdown add-menu__dropdown--up" @click.stop>
-                <button class="add-menu__item" @click="openPicker('single'); stepMenuOpen = false">🖱 选择元素</button>
-                <button class="add-menu__item" @click="openPicker('list'); stepMenuOpen = false">📋 选择列表</button>
+                <button class="add-menu__item" @click="openPicker(); stepMenuOpen = false">🖱 选择元素</button>
                 <button class="add-menu__item" @click="openSmartPicker(); stepMenuOpen = false">🔁 依次点击列表项</button>
                 <button class="add-menu__item" @click="addConditionStep(); stepMenuOpen = false">🔀 条件判断</button>
                 <button class="add-menu__item" @click="addCallFlowStep(); stepMenuOpen = false">▶ 嵌入流程</button>
@@ -680,27 +663,6 @@ const stepTypeLabels: Record<string, string> = {
       @toggle-pick="togglePickMode"
       @picked="onElementPicked"
       @test-click="(css: string) => bridge.testClick(css)"
-      @test-action="onTestAction"
-      @hover="(css: string) => bridge.requestHighlight(css)"
-      @update:dom-filter="domFilter = $event"
-    />
-
-    <!-- 列表构建模态框 -->
-    <ListBuilderModal
-      v-if="showListBuilderModal"
-      :dom-tree="domTree"
-      :dom-filter="domFilter"
-      :dom-scanning="domScanning"
-      :dom-mutated="domMutated"
-      :dom-tab-title="domTabTitle"
-      :pick-mode="pickMode"
-      :picked-css-selector="pickedCssSelector"
-      :initial-direct-item-sel="listBuilderInitialItemSel"
-      @close="showListBuilderModal = false; if (pickMode) { pickMode = false; bridge.cancelPickElement() }"
-      @scan="scanDom"
-      @toggle-pick="togglePickMode"
-      @done="onListBuilderDone"
-      @done-direct="onListBuilderDoneDirect"
       @test-action="onTestAction"
       @hover="(css: string) => bridge.requestHighlight(css)"
       @update:dom-filter="domFilter = $event"
