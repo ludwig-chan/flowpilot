@@ -1,27 +1,33 @@
 import React, { useState, useEffect } from 'react'
 
-interface BrowserInfo {
-  id: string
-  name: string
-  exePath: string
-}
-
 interface TutorialProps {
   showToast: (msg: string, type: 'success' | 'error' | 'info') => void
 }
 
-const EXT_PAGE_URLS: Record<string, string> = {
-  chrome: 'chrome://extensions',
-  edge: 'edge://extensions'
+interface BrowserOption {
+  name: string
+  url: string
 }
+
+const BROWSER_OPTIONS: BrowserOption[] = [
+  { name: 'Google Chrome', url: 'chrome://extensions' },
+  { name: 'Microsoft Edge', url: 'edge://extensions' },
+  { name: 'Firefox', url: 'about:addons' },
+  { name: '360 安全浏览器', url: 'se://extensions' },
+  { name: '360 极速浏览器', url: 'chrome://extensions' },
+  { name: 'QQ 浏览器', url: 'qqbrowser://extensions/manage' },
+  { name: '搜狗浏览器', url: 'chrome://extensions' },
+  { name: '2345 加速浏览器', url: 'chrome://extensions' },
+  { name: '猎豹浏览器', url: 'chrome://extensions' },
+  { name: '其他 Chromium 内核浏览器', url: 'chrome://extensions' }
+]
 
 export default function Tutorial({ showToast }: TutorialProps): React.JSX.Element {
   const [extensionDir, setExtensionDir] = useState('')
-  const [browsers, setBrowsers] = useState<BrowserInfo[]>([])
+  const [selectedBrowser, setSelectedBrowser] = useState<BrowserOption>(BROWSER_OPTIONS[0])
 
   useEffect(() => {
     window.api.getConfig().then((cfg) => setExtensionDir(cfg.extensionDir))
-    window.api.detectBrowsers().then(setBrowsers)
   }, [])
 
   const copyPath = async (): Promise<void> => {
@@ -30,41 +36,14 @@ export default function Tutorial({ showToast }: TutorialProps): React.JSX.Elemen
     showToast('路径已复制到剪贴板', 'success')
   }
 
-  const copyExtUrl = async (url: string): Promise<void> => {
-    await navigator.clipboard.writeText(url)
+  const copyExtUrl = async (): Promise<void> => {
+    await navigator.clipboard.writeText(selectedBrowser.url)
     showToast('地址已复制到剪贴板', 'success')
-  }
-
-  const openExtPage = async (browser: BrowserInfo): Promise<void> => {
-    const result = await window.api.openBrowserExtPage(browser.id)
-    if (!result.success) showToast(result.error || '打开失败', 'error')
   }
 
   return (
     <div>
       <h1 className="page-title">安装教程</h1>
-
-      {/* 插件位置 */}
-      <div className="card">
-        <div className="card-title">📁 插件文件位置</div>
-        <p className="card-desc">以下路径是插件在您电脑上的位置，后续步骤需要用到：</p>
-        <div className="path-row">
-          <span className="path-text">{extensionDir || '未配置，请前往设置页面配置'}</span>
-          {extensionDir && (
-            <>
-              <button
-                onClick={() => window.api.openInExplorer(extensionDir)}
-                className="btn btn-sm btn-secondary"
-              >
-                打开文件夹
-              </button>
-              <button onClick={copyPath} className="btn btn-sm btn-secondary">
-                复制路径
-              </button>
-            </>
-          )}
-        </div>
-      </div>
 
       {/* 安装步骤 */}
       <div className="card">
@@ -74,38 +53,29 @@ export default function Tutorial({ showToast }: TutorialProps): React.JSX.Elemen
             <div className="step-number">1</div>
             <div className="step-content">
               <div className="step-title">打开浏览器扩展管理页</div>
-              <p>点击下方按钮，浏览器将自动跳转到扩展管理页面：</p>
-              <div className="browser-buttons">
-                {browsers.length === 0 ? (
-                  <div className="text-muted tut-small">
-                    <p>未检测到 Chrome 或 Edge，请手动在浏览器地址栏粘贴以下地址：</p>
-                    {Object.entries(EXT_PAGE_URLS).map(([, url]) => (
-                      <div key={url} className="path-row" style={{ marginTop: 6 }}>
-                        <span className="path-text">{url}</span>
-                        <button
-                          onClick={() => copyExtUrl(url)}
-                          className="btn btn-sm btn-secondary"
-                        >
-                          复制地址
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  browsers.map((b) => (
-                    <div key={b.id} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                      <button onClick={() => openExtPage(b)} className="btn btn-primary">
-                        打开 {b.name} 扩展页
-                      </button>
-                      <button
-                        onClick={() => copyExtUrl(EXT_PAGE_URLS[b.id] ?? '')}
-                        className="btn btn-sm btn-secondary"
-                      >
-                        复制地址
-                      </button>
-                    </div>
-                  ))
-                )}
+              <p>选择您使用的浏览器，将地址复制后粘贴到浏览器地址栏并回车：</p>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 8 }}>
+                <select
+                  value={selectedBrowser.name}
+                  onChange={(e) => {
+                    const found = BROWSER_OPTIONS.find((b) => b.name === e.target.value)
+                    if (found) setSelectedBrowser(found)
+                  }}
+                  className="form-input"
+                  style={{ flex: 1, maxWidth: 240 }}
+                >
+                  {BROWSER_OPTIONS.map((b) => (
+                    <option key={b.name} value={b.name}>
+                      {b.name}
+                    </option>
+                  ))}
+                </select>
+                <span className="path-text" style={{ flex: 1 }}>
+                  {selectedBrowser.url}
+                </span>
+                <button onClick={copyExtUrl} className="btn btn-sm btn-secondary">
+                  复制地址
+                </button>
               </div>
             </div>
           </div>

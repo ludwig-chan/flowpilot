@@ -115,6 +115,15 @@ run('npm run deploy', extDir)
 // ── 步骤 4：构建 Electron 客户端 ──────────────────────────────────────────────
 
 console.log('\n🖥️  [3/3] 构建 Electron 客户端（Windows）...')
+
+// 若旧版客户端正在运行，先关闭它，否则 electron-builder 无法覆盖 portable exe
+try {
+  execSync('taskkill /F /IM FlowPilotClient.exe /T', { stdio: 'ignore' })
+  console.log('  已关闭正在运行的 FlowPilotClient.exe')
+} catch {
+  // 进程不存在时 taskkill 返回非零退出码，忽略即可
+}
+
 run('npm run build:win', clientDir)
 
 // ── 完成 ──────────────────────────────────────────────────────────────────────

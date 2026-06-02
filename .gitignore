@@ -1,4 +1,11 @@
-client/
-extension/
-web/
 node_modules/
+
+# 构建产物
+client/dist/
+client/out/
+client/node_modules/
+extension/dist/
+extension/node_modules/
+
+# 打包文件
+web/flowpilot.zip

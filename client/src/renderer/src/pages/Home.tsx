@@ -6,12 +6,10 @@ interface HomeProps {
 
 export default function Home(_props: HomeProps): React.JSX.Element {
   const [currentVersion, setCurrentVersion] = useState('')
-  const [extensionDir, setExtensionDir] = useState('')
 
   useEffect(() => {
     window.api.getConfig().then((cfg) => {
       setCurrentVersion(cfg.currentVersion)
-      setExtensionDir(cfg.extensionDir)
     })
   }, [])
 
@@ -29,17 +27,6 @@ export default function Home(_props: HomeProps): React.JSX.Element {
               <span className="value">{currentVersion || '—'}</span>
             </div>
           </div>
-        </div>
-
-        <div className="btn-group" style={{ marginTop: 16 }}>
-          {extensionDir && (
-            <button
-              className="btn btn-secondary"
-              onClick={() => window.api.openInExplorer(extensionDir)}
-            >
-              📂 打开插件目录
-            </button>
-          )}
         </div>
       </div>
     </>
