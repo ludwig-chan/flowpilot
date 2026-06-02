@@ -3,6 +3,8 @@ import { ref } from 'vue'
 import type { FlowNode } from '../stores/useFlowStore'
 import FolderPickerNode from '../flow-tree/FolderPickerNode.vue'
 import BaseModal from '@shared/components/BaseModal.vue'
+import BaseButton from '@shared/components/BaseButton.vue'
+import BaseInput from '@shared/components/BaseInput.vue'
 
 const props = defineProps<{
   nodeId:          string
@@ -33,9 +35,8 @@ function confirm() {
       <!-- 名称输入 -->
       <div class="edit-modal__field">
         <label class="edit-modal__label">名称</label>
-        <input
+        <BaseInput
           v-model="name"
-          class="input"
           autofocus
           @keyup.enter="confirm"
         />
@@ -70,8 +71,8 @@ function confirm() {
 
       <!-- 操作按钮 -->
       <template #footer>
-        <button class="btn" @click="emit('cancel')">取消</button>
-        <button class="btn btn--primary" :disabled="!name.trim()" @click="confirm">保存</button>
+        <BaseButton @click="emit('cancel')">取消</BaseButton>
+        <BaseButton variant="primary" :disabled="!name.trim()" @click="confirm">保存</BaseButton>
       </template>
 
   </BaseModal>

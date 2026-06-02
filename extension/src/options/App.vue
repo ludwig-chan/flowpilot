@@ -31,6 +31,7 @@ import { BUILTIN_PRESETS, type BuiltinPreset } from '@/presets/index'
 import type { SerializedElement } from '@shared/types/dom'
 import type { FlowStep, StepDelayLevel, ActionType } from '@shared/types/flow'
 import { STEP_DELAY_PRESETS } from '@shared/types/flow'
+import BaseButton from '@shared/components/BaseButton.vue'
 
 const DELAY_LEVELS: { value: StepDelayLevel; label: string; hint?: string }[] = [
   { value: 'none',   label: '无' },
@@ -496,10 +497,10 @@ const stepTypeLabels: Record<string, string> = {
         <button class="btn btn--ghost" @click="refreshTabs">↻</button>
       </div>
       <div class="app__actions">
-        <button
-          :class="running ? 'btn btn--danger' : 'btn btn--primary'"
+        <BaseButton
+          :variant="running ? 'danger' : 'primary'"
           @click="running ? stopCurrentFlow() : runCurrentFlow()"
-        >{{ running ? '⏹ 停止' : '▶ 运行' }}</button>
+        >{{ running ? '⏹ 停止' : '▶ 运行' }}</BaseButton>
       </div>
     </header>
 
@@ -514,9 +515,9 @@ const stepTypeLabels: Record<string, string> = {
               title="浏览内置预设库"
               @click="showPresetsModal = true"
             >📦 预设</button>
-            <button class="btn btn--sm" title="导入流程" @click="showImportModal = true">📥 导入</button>
-            <button class="btn btn--sm" title="导出流程" @click="showExportModal = true">📤 导出</button>
-            <button class="btn btn--sm btn--primary" @click="openCreateModal()">&#xFF0B; 新增</button>
+            <BaseButton size="sm" title="导入流程" @click="showImportModal = true">📥 导入</BaseButton>
+            <BaseButton size="sm" title="导出流程" @click="showExportModal = true">📤 导出</BaseButton>
+            <BaseButton size="sm" variant="primary" @click="openCreateModal()">&#xFF0B; 新增</BaseButton>
           </div>
 
           <div class="flow-list">
@@ -605,13 +606,14 @@ const stepTypeLabels: Record<string, string> = {
           </div>
 
           <div class="step-add-toolbar">
-            <button
+            <BaseButton
               v-if="selectedStepIds.length > 0"
-              class="btn btn--danger btn--sm"
+              variant="danger"
+              size="sm"
               @click="deleteSelected"
-            >🗑 删除已选 ({{ selectedStepIds.length }})</button>
+            >🗑 删除已选 ({{ selectedStepIds.length }})</BaseButton>
             <div class="add-menu add-menu--step">
-              <button class="btn btn--sm btn--primary" @click.stop="stepMenuOpen = !stepMenuOpen">＋ 添加步骤 ▾</button>
+              <BaseButton size="sm" variant="primary" @click.stop="stepMenuOpen = !stepMenuOpen">＋ 添加步骤 ▾</BaseButton>
               <div v-if="stepMenuOpen" class="add-menu__dropdown add-menu__dropdown--up" @click.stop>
                 <button class="add-menu__item" @click="openPicker(); stepMenuOpen = false">🖱 选择元素</button>
                 <button class="add-menu__item" @click="openPicker(); stepMenuOpen = false">📋 选择列表</button>

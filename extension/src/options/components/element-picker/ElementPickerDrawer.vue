@@ -12,6 +12,8 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import DomTreeViewer from './DomTreeViewer.vue'
+import BaseButton from '@shared/components/BaseButton.vue'
+import BaseInput from '@shared/components/BaseInput.vue'
 import type { SerializedDomNode } from '@shared/types/dom'
 
 const props = defineProps<{
@@ -135,8 +137,7 @@ function onTestClick(node: SerializedDomNode) {
       <!-- ── 标题栏 ── -->
       <div class="epd-panel__header">
         <span class="epd-panel__title">{{ title }}</span>
-        <button class="btn btn--ghost btn--icon" @click="emit('close')">✖</button>
-      </div>
+        <BaseButton variant="ghost" size="icon" @click="emit('close')">✖</BaseButton>      </div>
 
       <!-- ── 可选：标题栏下方内容（如 3 步卡片面板） ── -->
       <slot />
@@ -148,26 +149,23 @@ function onTestClick(node: SerializedDomNode) {
           <slot name="toolbar-status" />
         </div>
         <div class="epd-toolbar__actions">
-          <input
-            class="input epd-toolbar__filter"
+          <BaseInput
+            class="epd-toolbar__filter"
             :value="domFilter"
             placeholder="过滤节点…"
             @input="onFilterInput"
           />
           <div class="epd-toolbar__scan-wrap">
-            <button class="btn" :disabled="domScanning" @click="emit('scan')">
+            <BaseButton :disabled="domScanning" @click="emit('scan')">
               {{ domScanning ? '扫描中…' : '🔄 刷新' }}
-            </button>
+            </BaseButton>
             <span
               v-if="domMutated && !domScanning"
               class="epd-toolbar__mutated-dot"
               title="页面 DOM 有变化，建议点击刷新"
             >●</span>
           </div>
-          <button
-            :class="['btn', { 'btn--active': pickMode }]"
-            @click="emit('toggle-pick')"
-          >🎯 从页面拾取</button>
+          <BaseButton :active="pickMode" @click="emit('toggle-pick')">🎯 从页面拾取</BaseButton>
         </div>
       </div>
 
@@ -188,7 +186,7 @@ function onTestClick(node: SerializedDomNode) {
             title="元素内容宽度超出可见区域"
           >↔ {{ pendingNode.scrollW }}</span>
         </span>
-        <button class="btn btn--primary" style="flex-shrink:0;padding:2px 10px;font-size:11px" @click="confirmPending">确定 ✓</button>
+        <BaseButton variant="primary" style="flex-shrink:0;padding:2px 10px;font-size:11px" @click="confirmPending">确定 ✓</BaseButton>
       </div>
 
       <!-- ── DOM 树 ── -->

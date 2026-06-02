@@ -3,6 +3,8 @@ import { ref, watch } from 'vue'
 import type { FlowNode } from '../stores/useFlowStore'
 import FolderPickerNode from '../flow-tree/FolderPickerNode.vue'
 import BaseModal from '@shared/components/BaseModal.vue'
+import BaseButton from '@shared/components/BaseButton.vue'
+import BaseInput from '@shared/components/BaseInput.vue'
 
 const props = defineProps<{
   tree:               FlowNode[]
@@ -59,9 +61,8 @@ const hasFolders = (nodes: FlowNode[]): boolean =>
       <!-- 名称输入 -->
       <div class="create-modal__field">
         <label class="create-modal__label">名称</label>
-        <input
+        <BaseInput
           v-model="name"
-          class="input"
           :placeholder="kind === 'flow' ? '输入流程名称…' : '输入目录名称…'"
           autofocus
           @keyup.enter="confirm"
@@ -98,10 +99,10 @@ const hasFolders = (nodes: FlowNode[]): boolean =>
 
       <!-- 操作按钮 -->
       <template #footer>
-        <button class="btn" @click="emit('cancel')">取消</button>
-        <button class="btn btn--primary" :disabled="!name.trim()" @click="confirm">
+        <BaseButton @click="emit('cancel')">取消</BaseButton>
+        <BaseButton variant="primary" :disabled="!name.trim()" @click="confirm">
           确认创建
-        </button>
+        </BaseButton>
       </template>
 
   </BaseModal>

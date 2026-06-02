@@ -3,6 +3,8 @@ import { ref, computed } from 'vue'
 import type { SerializedElement } from '@shared/types/dom'
 import type { FlowStep, ActionType } from '@shared/types/flow'
 import BaseModal from '@shared/components/BaseModal.vue'
+import BaseButton from '@shared/components/BaseButton.vue'
+import BaseInput from '@shared/components/BaseInput.vue'
 
 interface ActionOption {
   type:              ActionType
@@ -139,18 +141,18 @@ function tryAction() {
         <span class="action-modal__sel-label">选中元素：</span>
         <code class="action-modal__sel-code" :title="displaySel">{{ displaySel }}</code>
         <span v-if="isRelative" class="action-modal__rel-badge">相对路径</span>
-        <button
-          class="btn btn--ghost action-modal__repick-btn"
+        <BaseButton
+          variant="ghost"
+          class="action-modal__repick-btn"
           title="重新选择元素"
           @click="emit('re-pick', selectedType, inputValue.trim() || undefined)"
-        >🎯 换元素</button>
-      </div>
+        >🎯 换元素</BaseButton>      </div>
 
       <div class="action-modal__body">
         <div class="action-modal__name-row">
           <span class="action-modal__name-label">步骤名称</span>
-          <input
-            class="input action-modal__name-input"
+          <BaseInput
+            class="action-modal__name-input"
             v-model="stepLabel"
             :placeholder="autoLabel"
           />
@@ -169,8 +171,7 @@ function tryAction() {
         </div>
         <div v-if="currentOpt.needValue" class="action-modal__value-row">
           <span class="action-modal__value-label">值</span>
-          <input
-            class="input"
+          <BaseInput
             v-model="inputValue"
             :placeholder="currentOpt.valuePlaceholder"
           />
@@ -206,7 +207,7 @@ function tryAction() {
       </div>
 
       <template #footer>
-        <button class="btn" @click="emit('cancel')">取消</button>
+        <BaseButton @click="emit('cancel')">取消</BaseButton>
         <button
           :class="['btn', 'btn--try', { 'btn--try--done': tryState === 'done' }]"
           :disabled="tryState === 'running'"
@@ -214,7 +215,7 @@ function tryAction() {
         >
           {{ tryState === 'running' ? '⏳ 执行中…' : tryState === 'done' ? '✓ 已执行' : '▷ 试一下' }}
         </button>
-        <button class="btn btn--primary" @click="confirm">确定</button>
+        <BaseButton variant="primary" @click="confirm">确定</BaseButton>
       </template>
 
   </BaseModal>

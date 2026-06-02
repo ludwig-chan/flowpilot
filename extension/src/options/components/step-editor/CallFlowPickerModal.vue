@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import BaseModal from '@shared/components/BaseModal.vue'
+import BaseButton from '@shared/components/BaseButton.vue'
 
 interface FlowOption {
   id:   string
@@ -27,8 +28,8 @@ const selectedId = ref(props.flows[0]?.id ?? '')
       </select>
     </div>
     <template #footer>
-      <button class="btn" @click="emit('cancel')">取消</button>
-      <button class="btn btn--primary" :disabled="!selectedId" @click="emit('confirm', selectedId)">确认嵌入</button>
+      <BaseButton @click="emit('cancel')">取消</BaseButton>
+      <BaseButton variant="primary" :disabled="!selectedId" @click="emit('confirm', selectedId)">确认嵌入</BaseButton>
     </template>
   </BaseModal>
 </template>

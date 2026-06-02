@@ -3,6 +3,8 @@ import { ref } from 'vue'
 import type { SerializedElement } from '@shared/types/dom'
 import type { RepeatingCandidate } from '@shared/types/message'
 import BaseModal from '@shared/components/BaseModal.vue'
+import BaseButton from '@shared/components/BaseButton.vue'
+import BaseInput from '@shared/components/BaseInput.vue'
 
 const props = defineProps<{
   candidates:    RepeatingCandidate[]
@@ -90,12 +92,12 @@ function tagIcon(tagName: string): string {
 
       <!-- 底部按钮 -->
       <template #footer>
-        <button class="btn" @click="emit('cancel')">取消</button>
-        <button
-          class="btn btn--primary"
+        <BaseButton @click="emit('cancel')">取消</BaseButton>
+        <BaseButton
+          variant="primary"
           :disabled="candidates.length === 0"
           @click="onConfirm"
-        >确认，循环此结构</button>
+        >确认，循环此结构</BaseButton>
       </template>
 
   </BaseModal>

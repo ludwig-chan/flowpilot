@@ -3,6 +3,8 @@ import { ref, computed, watch } from 'vue'
 import ElementPickerDrawer from '../element-picker/ElementPickerDrawer.vue'
 import type { SerializedDomNode } from '@shared/types/dom'
 import BaseModal from '@shared/components/BaseModal.vue'
+import BaseButton from '@shared/components/BaseButton.vue'
+import BaseInput from '@shared/components/BaseInput.vue'
 
 // ── Props / Emits ────────────────────────────────────────────────────────────
 const props = defineProps<{
@@ -114,9 +116,8 @@ function confirm() {
       <!-- 标签 -->
       <div class="cp-field">
         <label class="cp-field__label">步骤标签</label>
-        <input
+        <BaseInput
           v-model="label"
-          class="input"
           placeholder="条件判断"
           style="width: 100%"
         />
@@ -141,10 +142,9 @@ function confirm() {
       <template v-if="mode === 'expr'">
         <div class="cp-field">
           <label class="cp-field__label">表达式</label>
-          <input
+          <BaseInput
             ref="exprInputEl"
             v-model="exprValue"
-            class="input"
             placeholder="例：{{price}} > 100"
             style="width: 100%"
           />
@@ -188,12 +188,12 @@ function confirm() {
           <div class="cp-elem-row">
             <template v-if="elemSelector">
               <code class="cp-elem-sel" :title="elemSelector">{{ elemSelector }}</code>
-              <button class="btn btn--ghost btn--sm cp-elem-clear" @click="elemSelector = ''">✕</button>
-              <button class="btn btn--sm" @click="openElemPicker">重选</button>
+              <BaseButton variant="ghost" size="sm" class="cp-elem-clear" @click="elemSelector = ''">✕</BaseButton>
+              <BaseButton size="sm" @click="openElemPicker">重选</BaseButton>
             </template>
-            <button v-else class="btn btn--sm btn--primary" @click="openElemPicker">
+            <BaseButton v-else size="sm" variant="primary" @click="openElemPicker">
               选择元素…
-            </button>
+            </BaseButton>
           </div>
         </div>
         <div class="cp-hints">
@@ -205,8 +205,8 @@ function confirm() {
 
       <!-- 底部按钮 -->
       <template #footer>
-        <button class="btn" @click="emit('close')">取消</button>
-        <button class="btn btn--primary" :disabled="!canConfirm" @click="confirm">确认</button>
+        <BaseButton @click="emit('close')">取消</BaseButton>
+        <BaseButton variant="primary" :disabled="!canConfirm" @click="confirm">确认</BaseButton>
       </template>
 
   </BaseModal>

@@ -2,6 +2,8 @@
 import { ref } from 'vue'
 import type { FlowStep } from '@shared/types/flow'
 import BaseModal from '@shared/components/BaseModal.vue'
+import BaseButton from '@shared/components/BaseButton.vue'
+import BaseInput from '@shared/components/BaseInput.vue'
 
 const props = defineProps<{
   step: FlowStep
@@ -62,7 +64,7 @@ function onDeleteChild(idx: number) {
       <!-- 步骤名称 -->
       <div class="elm-section">
         <label class="elm-label">步骤名称</label>
-        <input v-model="label" class="input elm-input" placeholder="循环列表…" />
+        <BaseInput v-model="label" class="elm-input" placeholder="循环列表…" />
       </div>
 
       <!-- 循环选择器 -->
@@ -72,7 +74,7 @@ function onDeleteChild(idx: number) {
           <code class="elm-selector-val" :title="step.selector?.cssSelector">
             {{ step.selector?.cssSelector || '（未设置）' }}
           </code>
-          <button class="btn elm-resel-btn" @click="emit('reselect')">重新选择…</button>
+          <BaseButton class="elm-resel-btn" @click="emit('reselect')">重新选择…</BaseButton>
         </div>
       </div>
 
@@ -82,7 +84,7 @@ function onDeleteChild(idx: number) {
         <div class="elm-selector-row">
           <code v-if="childSel" class="elm-selector-val" :title="childSel">{{ childSel }}</code>
           <span v-else class="elm-selector-empty">（未设置，将操作列表项本身）</span>
-          <button class="btn elm-resel-btn" @click="emit('reselect-child', currentState())">重选子项…</button>
+          <BaseButton class="elm-resel-btn" @click="emit('reselect-child', currentState())">重选子项…</BaseButton>
         </div>
       </div>
 
@@ -94,19 +96,21 @@ function onDeleteChild(idx: number) {
           <span class="elm-child-type">{{ ACTION_LABELS[child.type] ?? child.type }}</span>
           <span class="elm-child-label" :title="child.label">{{ child.label }}</span>
           <div class="elm-child-actions">
-            <button
+            <BaseButton
               v-if="child.selector"
-              class="btn btn--ghost btn--icon elm-child-btn"
+              variant="ghost"
+              size="icon"
+              class="elm-child-btn"
               title="编辑"
               @click="onEditChild(ci)"
-            >✎</button>
-            <button class="btn btn--ghost btn--icon elm-child-btn elm-child-btn--del" title="删除" @click="onDeleteChild(ci)">✖</button>
+            >✎</BaseButton>
+            <BaseButton variant="ghost" size="icon" class="elm-child-btn elm-child-btn--del" title="删除" @click="onDeleteChild(ci)">✖</BaseButton>
           </div>
         </div>
       </div>
 
       <div class="elm-child-add">
-        <button class="btn elm-add-btn" @click="emit('add-child', currentState())">＋ 添加操作</button>
+        <BaseButton class="elm-add-btn" @click="emit('add-child', currentState())">＋ 添加操作</BaseButton>
       </div>
 
       <!-- 先点击选项 -->
@@ -122,17 +126,17 @@ function onDeleteChild(idx: number) {
         <label class="elm-label">每项处理间隔</label>
         <div class="elm-delay-row">
           <span class="elm-delay-hint">最短</span>
-          <input v-model.number="delayMin" type="number" min="0" step="100" class="input elm-delay-input" />
+          <BaseInput v-model="delayMin" class="elm-delay-input" type="number" min="0" step="100" />
           <span class="elm-delay-hint">ms &nbsp; 最长</span>
-          <input v-model.number="delayMax" type="number" min="0" step="100" class="input elm-delay-input" />
+          <BaseInput v-model="delayMax" class="elm-delay-input" type="number" min="0" step="100" />
           <span class="elm-delay-hint">ms</span>
         </div>
       </div>
 
       <!-- 底部 -->
       <template #footer>
-        <button class="btn" @click="emit('close')">取消</button>
-        <button class="btn btn--primary" @click="onSave">保存</button>
+        <BaseButton @click="emit('close')">取消</BaseButton>
+        <BaseButton variant="primary" @click="onSave">保存</BaseButton>
       </template>
 
   </BaseModal>

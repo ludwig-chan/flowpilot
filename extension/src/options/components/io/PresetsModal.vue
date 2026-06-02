@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue'
 import { BUILTIN_PRESETS, type BuiltinPreset } from '@/presets/index'
 import BaseModal from '@shared/components/BaseModal.vue'
+import BaseInput from '@shared/components/BaseInput.vue'
 
 const emit = defineEmits<{
   (e: 'install', preset: BuiltinPreset): void
@@ -31,8 +32,7 @@ function install(preset: BuiltinPreset) {
   <BaseModal title="📦 内置预设库" width="520px" max-height="80vh" :z-index="1200" @close="emit('close')">
 
     <div class="preset-modal__search-row">
-      <input
-        class="input"
+      <BaseInput
         v-model="search"
         placeholder="搜索预设名称、描述、标签…"
         autofocus
