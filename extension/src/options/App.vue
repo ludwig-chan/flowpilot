@@ -1,5 +1,5 @@
 ﻿<script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, computed, onMounted, nextTick } from 'vue'
 import { useFlowStore, type LocalFlow, type FlowFolder, type FlowNode, type ExportPayload } from './stores/useFlowStore'
 import { useExtensionBridge } from './composables/useExtensionBridge'
 import { useDomPicker } from './composables/useDomPicker'
@@ -32,6 +32,7 @@ import type { SerializedElement } from '@shared/types/dom'
 import type { FlowStep, StepDelayLevel, ActionType } from '@shared/types/flow'
 import { STEP_DELAY_PRESETS } from '@shared/types/flow'
 import BaseButton from '@shared/components/BaseButton.vue'
+import DropdownMenu from '@shared/components/DropdownMenu.vue'
 
 const DELAY_LEVELS: { value: StepDelayLevel; label: string; hint?: string }[] = [
   { value: 'none',   label: '无' },
@@ -43,11 +44,6 @@ const DELAY_LEVELS: { value: StepDelayLevel; label: string; hint?: string }[] = 
 
 const flowStore = useFlowStore()
 const bridge    = useExtensionBridge()
-
-// 下拉菜单状态
-const stepMenuOpen = ref(false)
-
-function closeMenus() { stepMenuOpen.value = false }
 
 // 新增弹窗
 const showCreateModal         = ref(false)
@@ -469,9 +465,7 @@ bridge.on((evt) => {
 onMounted(async () => {
   await flowStore.load()
   await refreshTabs()
-  document.addEventListener('click', closeMenus)
 })
-onUnmounted(() => { document.removeEventListener('click', closeMenus) })
 
 // ── 侧边栏 & 日志抽屉拖拽调整 ──────────────────────────────────────
 const { sidebarWidth, logDrawerHeight, startResize, startLogResize } = useResizable()
@@ -612,17 +606,19 @@ const stepTypeLabels: Record<string, string> = {
               size="sm"
               @click="deleteSelected"
             >🗑 删除已选 ({{ selectedStepIds.length }})</BaseButton>
-            <div class="add-menu add-menu--step">
-              <BaseButton size="sm" variant="primary" @click.stop="stepMenuOpen = !stepMenuOpen">＋ 添加步骤 ▾</BaseButton>
-              <div v-if="stepMenuOpen" class="add-menu__dropdown add-menu__dropdown--up" @click.stop>
-                <button class="add-menu__item" @click="openPicker(); stepMenuOpen = false">🖱 选择元素</button>
-                <button class="add-menu__item" @click="openPicker(); stepMenuOpen = false">📋 选择列表</button>
-                <button class="add-menu__item" @click="openSmartPicker(); stepMenuOpen = false">🔁 依次点击列表项</button>
-                <button class="add-menu__item" @click="addConditionStep(); stepMenuOpen = false">🔀 条件判断</button>
-                <button class="add-menu__item" @click="addCallFlowStep(); stepMenuOpen = false">▶ 嵌入流程</button>
-                <button class="add-menu__item" @click="addDelayStep(); stepMenuOpen = false">⏱ 等待</button>
-              </div>
-            </div>
+            <DropdownMenu>
+              <template #trigger="{ toggle, isOpen }">
+                <BaseButton size="sm" variant="primary" @click="toggle">＋ 添加步骤 {{ isOpen ? '▴' : '▾' }}</BaseButton>
+              </template>
+              <template #default="{ close }">
+                <button class="dm-item" @click="openPicker(); close()">🖱 选择元素</button>
+                <button class="dm-item" @click="openPicker(); close()">📋 选择列表</button>
+                <button class="dm-item" @click="openSmartPicker(); close()">🔁 依次点击列表项</button>
+                <button class="dm-item" @click="addConditionStep(); close()">🔀 条件判断</button>
+                <button class="dm-item" @click="addCallFlowStep(); close()">▶ 嵌入流程</button>
+                <button class="dm-item" @click="addDelayStep(); close()">⏱ 等待</button>
+              </template>
+            </DropdownMenu>
           </div>
         </template>
         <div v-else class="editor__placeholder">
