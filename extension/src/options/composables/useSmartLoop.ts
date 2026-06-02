@@ -22,7 +22,6 @@ export function useSmartLoop(
 
   async function openSmartPicker() {
     if (!editingFlow.value) { alert('请先打开一个流程'); return }
-    if (!activeTabId.value)  { alert('请先选择目标 Tab'); return }
     smartLoopPickingMode.value = true
     await bridge.requestSmartLoopAnalyze()
   }

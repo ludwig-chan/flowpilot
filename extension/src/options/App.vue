@@ -22,6 +22,7 @@ import PresetsModal from './components/io/PresetsModal.vue'
 import ExportModal from './components/io/ExportModal.vue'
 import ImportModal from './components/io/ImportModal.vue'
 import FlowSettingsModal from './components/layout/FlowSettingsModal.vue'
+import TabPickerModal from './components/layout/TabPickerModal.vue'
 import SmartLoopPickerModal from './components/step-editor/SmartLoopPickerModal.vue'
 import ConditionBranchView from './components/step-editor/ConditionBranchView.vue'
 import FlowEditorHeader from './components/layout/FlowEditorHeader.vue'
@@ -71,6 +72,14 @@ const activeTabId = ref<number | null>(null)
 
 async function refreshTabs() {
   tabs.value = (await bridge.getTabs()).filter(t => t.url && !t.url.startsWith('chrome'))
+  const stillValid = activeTabId.value !== null && tabs.value.some(t => t.id === activeTabId.value)
+  if (!stillValid) {
+    const active = await bridge.getActiveTab()
+    const targetId = (active?.id != null && tabs.value.some(t => t.id === active.id))
+      ? active.id
+      : (tabs.value[0]?.id ?? null)
+    if (targetId !== null) await selectTab(targetId)
+  }
 }
 
 async function selectTab(tabId: number) {
@@ -161,12 +170,30 @@ function onActionRePick(type: import('@shared/types/flow').ActionType, value: st
   _onActionRePickBase(type, value, showPickerModal, pickedCssSelector)
 }
 
+// ── Tab 选择拦截 ──────────────────────────────────────────────────
+const showTabPickerModal      = ref(false)
+const pendingAfterTabSelect   = ref<(() => void) | null>(null)
+
+function requireTab(then: () => void) {
+  if (activeTabId.value) { then(); return }
+  pendingAfterTabSelect.value = then
+  showTabPickerModal.value = true
+}
+
+async function onTabPickerConfirm(tabId: number) {
+  await selectTab(tabId)
+  showTabPickerModal.value = false
+  pendingAfterTabSelect.value?.()
+  pendingAfterTabSelect.value = null
+}
+
 function openPicker() {
   if (!editingFlow.value) { alert('请先打开一个流程'); return }
-  if (!activeTabId.value)  { alert('请先选择目标 Tab'); return }
-  pickedCssSelector.value = ''
-  showPickerModal.value = true
-  scanDom()
+  requireTab(() => {
+    pickedCssSelector.value = ''
+    showPickerModal.value = true
+    scanDom()
+  })
 }
 
 // ── useSmartLoop ──────────────────────────────────────────────────
@@ -493,7 +520,7 @@ const stepTypeLabels: Record<string, string> = {
       <div class="app__actions">
         <BaseButton
           :variant="running ? 'danger' : 'primary'"
-          @click="running ? stopCurrentFlow() : runCurrentFlow()"
+          @click="running ? stopCurrentFlow() : requireTab(runCurrentFlow)"
         >{{ running ? '⏹ 停止' : '▶ 运行' }}</BaseButton>
       </div>
     </header>
@@ -613,7 +640,7 @@ const stepTypeLabels: Record<string, string> = {
               <template #default="{ close }">
                 <button class="dm-item" @click="openPicker(); close()">🖱 选择元素</button>
                 <button class="dm-item" @click="openPicker(); close()">📋 选择列表</button>
-                <button class="dm-item" @click="openSmartPicker(); close()">🔁 依次点击列表项</button>
+                <button class="dm-item" @click="requireTab(openSmartPicker); close()">🔁 依次点击列表项</button>
                 <button class="dm-item" @click="addConditionStep(); close()">🔀 条件判断</button>
                 <button class="dm-item" @click="addCallFlowStep(); close()">▶ 嵌入流程</button>
                 <button class="dm-item" @click="addDelayStep(); close()">⏱ 等待</button>
@@ -789,6 +816,14 @@ const stepTypeLabels: Record<string, string> = {
       :flows="flowStore.allFlows().filter(f => f.id !== editingFlow?.id)"
       @confirm="confirmCallFlow"
       @cancel="showCallFlowPicker = false"
+    />
+
+    <!-- Tab 选择弹窗（在没有选中 tab 时就地拦截） -->
+    <TabPickerModal
+      v-if="showTabPickerModal"
+      :tabs="tabs"
+      @confirm="onTabPickerConfirm"
+      @cancel="showTabPickerModal = false; pendingAfterTabSelect = null"
     />
 
   </div>

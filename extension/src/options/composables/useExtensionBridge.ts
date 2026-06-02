@@ -104,5 +104,14 @@ export function useExtensionBridge() {
     return new Promise(res => chrome.tabs.query({}, res))
   }
 
-  return { on, off, setActiveTab, requestDomScan, requestPickElement, cancelPickElement, requestHighlight, testClick, runFlow, stopFlow, getTabs, requestSmartLoopAnalyze, highlightLoopCandidates, clearLoopHighlights }
+  async function getActiveTab(): Promise<chrome.tabs.Tab | null> {
+    return new Promise(res =>
+      chrome.tabs.query({ active: true }, tabs => {
+        const valid = tabs.find(t => t.url && !t.url.startsWith('chrome'))
+        res(valid ?? null)
+      })
+    )
+  }
+
+  return { on, off, setActiveTab, requestDomScan, requestPickElement, cancelPickElement, requestHighlight, testClick, runFlow, stopFlow, getTabs, getActiveTab, requestSmartLoopAnalyze, highlightLoopCandidates, clearLoopHighlights }
 }

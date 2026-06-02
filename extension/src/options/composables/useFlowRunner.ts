@@ -25,7 +25,6 @@ export function useFlowRunner(
 
   async function runCurrentFlow() {
     if (!editingFlow.value) { alert('请先打开一个流程'); return }
-    if (!activeTabId.value) { alert('请先选择目标 Tab'); return }
     running.value = true
     logs.value.push(tsLog(`▶ 开始运行流程 "${editingFlow.value.name}"`))
     logDrawerOpen.value = true
