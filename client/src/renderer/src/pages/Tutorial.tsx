@@ -1,4 +1,9 @@
 import React, { useState, useEffect } from 'react'
+import step1Img from '../assets/tutorial/step1.png'
+import step2Img from '../assets/tutorial/step2.png'
+import step3_1Img from '../assets/tutorial/step3-1.png'
+import step3_2Img from '../assets/tutorial/step3-2.png'
+import step4Img from '../assets/tutorial/step4.png'
 
 interface TutorialProps {
   showToast: (msg: string, type: 'success' | 'error' | 'info') => void
@@ -77,6 +82,7 @@ export default function Tutorial({ showToast }: TutorialProps): React.JSX.Elemen
                   复制地址
                 </button>
               </div>
+              <img src={step1Img} alt="打开浏览器扩展管理页" style={{ marginTop: 12, maxWidth: '100%', borderRadius: 6, display: 'block' }} />
             </div>
           </div>
 
@@ -88,6 +94,7 @@ export default function Tutorial({ showToast }: TutorialProps): React.JSX.Elemen
                 在扩展管理页面<strong>右上角</strong>
                 找到"开发者模式"开关，将其打开（蓝色代表已开启）。
               </p>
+              <img src={step2Img} alt="开启开发者模式" style={{ marginTop: 12, maxWidth: '100%', borderRadius: 6, display: 'block' }} />
             </div>
           </div>
 
@@ -99,6 +106,7 @@ export default function Tutorial({ showToast }: TutorialProps): React.JSX.Elemen
                 开发者模式开启后，左上角会出现"
                 <strong>加载已解压的扩展程序</strong>"按钮，点击它。
               </p>
+              <img src={step3_1Img} alt="加载已解压的扩展程序按钮" style={{ marginTop: 12, maxWidth: '100%', borderRadius: 6, display: 'block' }} />
               <p>在弹出的文件夹选择框中，选择以下路径：</p>
               <div className="path-row" style={{ marginTop: 8 }}>
                 <span className="path-hint" style={{ flex: 1 }}>
@@ -110,6 +118,7 @@ export default function Tutorial({ showToast }: TutorialProps): React.JSX.Elemen
                   </button>
                 )}
               </div>
+              <img src={step3_2Img} alt="选择扩展文件夹" style={{ marginTop: 12, maxWidth: '100%', borderRadius: 6, display: 'block' }} />
             </div>
           </div>
 
@@ -118,6 +127,7 @@ export default function Tutorial({ showToast }: TutorialProps): React.JSX.Elemen
             <div className="step-content">
               <div className="step-title">确认安装成功</div>
               <p>插件卡片出现在扩展列表中，浏览器右上角出现 FlowPilot 图标，即表示安装成功。</p>
+              <img src={step4Img} alt="确认安装成功" style={{ marginTop: 12, maxWidth: '100%', borderRadius: 6, display: 'block' }} />
             </div>
           </div>
         </div>
