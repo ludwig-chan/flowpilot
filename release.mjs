@@ -131,3 +131,10 @@ run('npm run build:win', clientDir)
 const finalVersion = readJson(join(clientDir, 'package.json')).version
 console.log(`\n✅ 构建完成！版本：v${finalVersion}`)
 console.log(`   输出目录：client/dist/`)
+
+// ── 自动启动 ──────────────────────────────────────────────────────────────────
+
+const { spawn } = await import('child_process')
+const exePath = join(clientDir, 'dist', `flowpilot-client-${finalVersion}-portable.exe`)
+console.log(`\n🚀 启动：${exePath}`)
+spawn(exePath, [], { detached: true, stdio: 'ignore' }).unref()
