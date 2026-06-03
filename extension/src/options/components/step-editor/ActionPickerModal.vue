@@ -92,6 +92,7 @@ const tryState          = ref<'idle' | 'running' | 'done'>('idle')
 const stepWaitTimeout   = ref<number | undefined>(props.initialWaitTimeout)
 const stepFoundDelayMin = ref<number | undefined>(props.initialFoundDelay?.[0])
 const stepFoundDelayMax = ref<number | undefined>(props.initialFoundDelay?.[1])
+const showAdvanced      = ref(!!(props.initialWaitTimeout || props.initialFoundDelay))
 
 const currentOpt = computed(() => ACTION_OPTIONS.find(o => o.type === selectedType.value)!)
 
@@ -180,33 +181,45 @@ function tryAction() {
             :placeholder="currentOpt.valuePlaceholder"
           />
         </div>
-        <div class="action-modal__timing-row">
-          <span class="action-modal__timing-label">超时</span>
-          <input
-            type="number" min="0" step="1000"
-            class="action-modal__timing-input"
-            placeholder="使用流程默认"
-            :value="stepWaitTimeout ?? ''"
-            @change="stepWaitTimeout = Number(($event.target as HTMLInputElement).value) || undefined"
-          />
-          <span class="action-modal__timing-unit">ms</span>
-          <span class="action-modal__timing-sep">｜出现后延迟</span>
-          <input
-            type="number" min="0" step="100"
-            class="action-modal__timing-input"
-            placeholder="最小"
-            :value="stepFoundDelayMin ?? ''"
-            @change="stepFoundDelayMin = Number(($event.target as HTMLInputElement).value) || undefined"
-          />
-          <span class="action-modal__timing-tilde">~</span>
-          <input
-            type="number" min="0" step="100"
-            class="action-modal__timing-input"
-            placeholder="最大"
-            :value="stepFoundDelayMax ?? ''"
-            @change="stepFoundDelayMax = Number(($event.target as HTMLInputElement).value) || undefined"
-          />
-          <span class="action-modal__timing-unit">ms</span>
+        <div class="action-modal__adv">
+          <button type="button" class="action-modal__adv-toggle" @click="showAdvanced = !showAdvanced">
+            <span class="action-modal__adv-arrow">{{ showAdvanced ? '▼' : '▶' }}</span>
+            高级设置
+          </button>
+          <div v-show="showAdvanced" class="action-modal__adv-body">
+            <div class="action-modal__adv-row">
+              <span class="action-modal__adv-label">超时</span>
+              <input
+                type="number" min="0" step="1000"
+                class="action-modal__adv-input"
+                placeholder="使用流程默认"
+                :value="stepWaitTimeout ?? ''"
+                @change="stepWaitTimeout = Number(($event.target as HTMLInputElement).value) || undefined"
+              />
+              <span class="action-modal__adv-unit">ms</span>
+              <span class="action-modal__adv-hint">超过此时间未找到元素则报错</span>
+            </div>
+            <div class="action-modal__adv-row">
+              <span class="action-modal__adv-label">出现后延迟</span>
+              <input
+                type="number" min="0" step="100"
+                class="action-modal__adv-input"
+                placeholder="最小"
+                :value="stepFoundDelayMin ?? ''"
+                @change="stepFoundDelayMin = Number(($event.target as HTMLInputElement).value) || undefined"
+              />
+              <span class="action-modal__adv-tilde">~</span>
+              <input
+                type="number" min="0" step="100"
+                class="action-modal__adv-input"
+                placeholder="最大"
+                :value="stepFoundDelayMax ?? ''"
+                @change="stepFoundDelayMax = Number(($event.target as HTMLInputElement).value) || undefined"
+              />
+              <span class="action-modal__adv-unit">ms</span>
+              <span class="action-modal__adv-hint">找到元素后随机等待，模拟人工操作</span>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -260,19 +273,31 @@ function tryAction() {
   &__value-row { display: flex; align-items: center; gap: 8px; }
   &__value-label { font-size: 11px; color: $color-text-muted; flex-shrink: 0; width: 52px; }
 
-  &__timing-row {
-    display: flex; align-items: center; flex-wrap: wrap; gap: 5px;
+  &__adv {
     padding-top: 8px; border-top: 1px solid $color-surface-1;
   }
-  &__timing-label { font-size: 11px; color: $color-text-muted; flex-shrink: 0; }
-  &__timing-sep   { font-size: 11px; color: $color-text-muted; flex-shrink: 0; margin-left: 2px; }
-  &__timing-tilde { font-size: 11px; color: $color-text-muted; }
-  &__timing-unit  { font-size: 11px; color: $color-text-muted; }
-  &__timing-input {
-    width: 88px; background: $color-surface-1; border: 1px solid $color-surface-2; border-radius: $radius-sm;
+  &__adv-toggle {
+    display: flex; align-items: center; gap: 5px;
+    background: none; border: none; padding: 0; cursor: pointer;
+    font-size: 11px; color: $color-text-muted;
+    &:hover { color: $color-text; }
+  }
+  &__adv-arrow { font-size: 9px; }
+  &__adv-body {
+    display: flex; flex-direction: column; gap: 7px; padding-top: 8px;
+  }
+  &__adv-row {
+    display: flex; align-items: center; flex-wrap: wrap; gap: 5px;
+  }
+  &__adv-label { font-size: 11px; color: $color-text-muted; flex-shrink: 0; width: 66px; }
+  &__adv-input {
+    width: 80px; background: $color-surface-1; border: 1px solid $color-surface-2; border-radius: $radius-sm;
     color: $color-text-secondary; padding: 3px 5px; font-size: 11px; text-align: right;
     &:focus { outline: none; border-color: $color-blue; }
   }
+  &__adv-unit   { font-size: 11px; color: $color-text-muted; flex-shrink: 0; }
+  &__adv-tilde  { font-size: 11px; color: $color-text-muted; }
+  &__adv-hint   { font-size: 10px; color: $color-text-muted; font-style: italic; flex-shrink: 0; }
 }
 
 .btn--try {
