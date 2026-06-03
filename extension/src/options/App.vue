@@ -39,11 +39,12 @@ const { sidebarWidth, logDrawerHeight, startResize, startLogResize } = useResiza
     <header class="app__header">
       <div class="app__logo">⚡ FlowPilot</div>
       <div class="app__tab-selector">
-        <select class="tab-select" :value="activeTabId ?? ''"
-          @change="e => selectTab(Number((e.target as HTMLSelectElement).value))">
-          <option value="" disabled>选择目标 Tab…</option>
-          <option v-for="tab in tabs" :key="tab.id" :value="tab.id">{{ tab.title?.slice(0, 60) ?? tab.url }}</option>
-        </select>
+        <BaseSelect
+          :model-value="activeTabId ?? ''"
+          :options="tabs.map(t => ({ value: t.id!, label: t.title?.slice(0, 60) ?? t.url! }))"
+          placeholder="选择目标 Tab…"
+          @update:model-value="selectTab($event as number)"
+        />
         <BaseButton variant="ghost" @click="refreshTabs">↻</BaseButton>
       </div>
 

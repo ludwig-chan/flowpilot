@@ -21,9 +21,8 @@ const selectedId = ref(props.flows[0]?.id ?? '')
 <template>
   <BaseModal title="▶ 嵌入流程" width="360px" :z-index="1200" @close="emit('cancel')">
     <div class="cfp-body">
-      <select v-model="selectedId" class="tab-select" style="width: 100%">
-        <option v-for="f in flows" :key="f.id" :value="f.id">{{ f.name }}</option>
-      </select>
+      <BaseSelect v-model="selectedId" :options="flows.map(f => ({ value: f.id, label: f.name }))" style="width: 100%">
+      </BaseSelect>
     </div>
     <template #footer>
       <BaseButton @click="emit('cancel')">取消</BaseButton>
