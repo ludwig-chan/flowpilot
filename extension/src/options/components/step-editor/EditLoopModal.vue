@@ -17,11 +17,12 @@ const emit = defineEmits<{
   (e: 'add-call-flow',  currentState: FlowStep): void
 }>()
 
-const label     = ref(props.step.label)
-const delayMin  = ref(props.step.itemDelay?.[0] ?? 800)
-const delayMax  = ref(props.step.itemDelay?.[1] ?? 2000)
-const childSel  = ref(props.step.loopChildSelector ?? '')
-const children  = ref<FlowStep[]>(JSON.parse(JSON.stringify(props.step.children ?? [])))
+const label       = ref(props.step.label)
+const delayMin    = ref(props.step.itemDelay?.[0] ?? 800)
+const delayMax    = ref(props.step.itemDelay?.[1] ?? 2000)
+const childSel    = ref(props.step.loopChildSelector ?? '')
+const children    = ref<FlowStep[]>(JSON.parse(JSON.stringify(props.step.children ?? [])))
+const showAdvanced = ref(false)
 
 const ACTION_LABELS: Record<string, string> = {
   click: '点击', double_click: '双击', right_click: '右键', hover: '悬停',
@@ -214,14 +215,17 @@ function onQuickConfirm() {
         </div>
       </div>
 
-      <!-- 每项间隔 -->
-      <div class="elm-section">
+      <!-- 高级设置折叠 -->
+      <div class="elm-advanced-header" @click="showAdvanced = !showAdvanced">
+        <span class="elm-advanced-title">高级设置</span>
+        <span class="elm-advanced-icon" :class="{ 'elm-advanced-icon--open': showAdvanced }">›</span>
+      </div>
+      <div v-if="showAdvanced" class="elm-section elm-advanced-body">
         <label class="elm-label">每项处理间隔</label>
-        <div class="elm-delay-row">
-          <span class="elm-delay-hint">最短</span>
-          <BaseInput v-model="delayMin" class="elm-delay-input" type="number" min="0" step="100" />
-          <span class="elm-delay-hint">ms &nbsp; 最长</span>
-          <BaseInput v-model="delayMax" class="elm-delay-input" type="number" min="0" step="100" />
+        <div class="elm-delay-range">
+          <BaseInput v-model="delayMin" class="elm-range-input" type="number" min="0" step="100" />
+          <span class="elm-range-sep">~</span>
+          <BaseInput v-model="delayMax" class="elm-range-input" type="number" min="0" step="100" />
           <span class="elm-delay-hint">ms</span>
         </div>
       </div>
@@ -339,11 +343,35 @@ function onQuickConfirm() {
 
 .elm-checkbox { accent-color: $color-blue; cursor: pointer; }
 
-.elm-delay-row {
+.elm-advanced-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 14px; cursor: pointer; user-select: none;
+  border-bottom: 1px solid #1a1a28;
+  &:hover { background: $color-surface-1; }
+}
+
+.elm-advanced-title {
+  font-size: 11px; color: $color-text-muted; font-weight: 600;
+}
+
+.elm-advanced-icon {
+  font-size: 14px; color: $color-text-muted-2;
+  transition: transform 0.2s ease;
+  transform: rotate(0deg);
+  &--open { transform: rotate(90deg); }
+}
+
+.elm-advanced-body { border-top: none; }
+
+.elm-delay-range {
   display: flex; align-items: center; gap: 6px;
 }
 
-.elm-delay-hint { font-size: 11px; color: $color-text-muted; flex-shrink: 0; }
+.elm-range-input { width: 72px; }
 
-.elm-delay-input { width: 80px; }
+.elm-range-sep {
+  font-size: 13px; color: $color-text-muted; flex-shrink: 0; line-height: 1;
+}
+
+.elm-delay-hint { font-size: 11px; color: $color-text-muted; flex-shrink: 0; }
 </style>
