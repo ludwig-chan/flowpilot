@@ -6,7 +6,7 @@ import { useExtensionBridge } from './composables/useExtensionBridge'
 import { useFlowRunner } from './composables/useFlowRunner'
 import { useResizable } from './composables/useResizable'
 import { useEditorStore } from './stores/useEditorStore'
-import { useTabManager } from './composables/useTabManager'
+import { useTabStore } from './stores/useTabStore'
 import LogDrawer from './components/layout/LogDrawer.vue'
 import TabPickerModal from './components/layout/TabPickerModal.vue'
 import FlowSidebar from './components/layout/FlowSidebar.vue'
@@ -16,15 +16,15 @@ import BaseButton from '@shared/components/BaseButton.vue'
 const flowStore = useFlowStore()
 const bridge    = useExtensionBridge()
 
-const {
-  tabs, activeTabId, refreshTabs, selectTab,
-  showTabPickerModal, requireTab, onTabPickerConfirm, cancelTabPicker,
-} = useTabManager(bridge)
+const tabStore = useTabStore()
+tabStore.init(bridge)
+const { tabs, activeTabId, showTabPickerModal } = storeToRefs(tabStore)
+const { refreshTabs, selectTab, requireTab, onTabPickerConfirm, cancelTabPicker } = tabStore
 
 const es = useEditorStore()
 const { editingFlow } = storeToRefs(es)
 
-const { logs, running, logDrawerOpen, runCurrentFlow, stopCurrentFlow } = useFlowRunner(bridge, editingFlow, activeTabId)
+const { logs, running, logDrawerOpen, runCurrentFlow, stopCurrentFlow } = useFlowRunner(bridge, editingFlow)
 
 onMounted(async () => {
   await flowStore.load()
@@ -63,7 +63,7 @@ const { sidebarWidth, logDrawerHeight, startResize, startLogResize } = useResiza
       <div class="resize-handle" @mousedown="startResize"></div>
 
       <main class="app__main">
-        <StepList :bridge="bridge" :active-tab-id="activeTabId" :require-tab="requireTab" />
+        <StepList :bridge="bridge" />
       </main>
     </div>
 

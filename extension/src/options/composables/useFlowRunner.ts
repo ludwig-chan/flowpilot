@@ -8,7 +8,6 @@ type Bridge = ReturnType<typeof useExtensionBridge>
 export function useFlowRunner(
   bridge:      Bridge,
   editingFlow: Ref<LocalFlow | null>,
-  activeTabId: Ref<number | null>,
 ) {
   const logs          = ref<string[]>([])
   const running       = ref(false)

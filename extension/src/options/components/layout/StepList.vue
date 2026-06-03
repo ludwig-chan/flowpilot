@@ -2,6 +2,7 @@
 import { storeToRefs } from 'pinia'
 import { useEditorStore } from '../../stores/useEditorStore'
 import { useFlowStore } from '../../stores/useFlowStore'
+import { useTabStore } from '../../stores/useTabStore'
 import { useExtensionBridge } from '../../composables/useExtensionBridge'
 import { useDomPicker } from '../../composables/useDomPicker'
 import { usePickerOrchestrator } from '../../composables/usePickerOrchestrator'
@@ -25,13 +26,15 @@ type Bridge = ReturnType<typeof useExtensionBridge>
 
 const props = defineProps<{
   bridge: Bridge
-  activeTabId: number | null
-  requireTab: (fn: () => void) => void
 }>()
 
 const flowStore = useFlowStore()
 const es        = useEditorStore()
 const { editingFlow } = storeToRefs(es)
+
+const tabStore = useTabStore()
+const { activeTabId } = storeToRefs(tabStore)
+const { requireTab } = tabStore
 
 const {
   saveToast, selectDelayLevel,
@@ -42,7 +45,7 @@ const {
 const {
   domTree, domFilter, domScanning, domMutated, domTabTitle,
   pickMode, pickedCssSelector, scanDom, togglePickMode,
-} = useDomPicker(props.bridge, props.activeTabId)
+} = useDomPicker(props.bridge, activeTabId)
 
 const {
   showPickerModal,
@@ -53,7 +56,7 @@ const {
   openSmartPicker, cancelSmartLoopPicking, onSmartLoopConfirm,
   onElementPicked, onActionRePick, openPicker, closePicker,
   onLoopAddChild, onActionTry, onTestAction,
-} = usePickerOrchestrator(props.bridge, editingFlow, props.activeTabId, props.requireTab, pickedCssSelector, pickMode, scanDom)
+} = usePickerOrchestrator(props.bridge, editingFlow, activeTabId, requireTab, pickedCssSelector, pickMode, scanDom)
 
 const {
   removeStep, addDelayStep, editDelayStep,
