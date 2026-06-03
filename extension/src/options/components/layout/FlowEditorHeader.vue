@@ -6,6 +6,7 @@ const props = defineProps<{
   flow:          LocalFlow
   estimatedTime: string | null
   running:       boolean
+  stopping:      boolean
 }>()
 
 const emit = defineEmits<{
@@ -40,11 +41,12 @@ function toggleTrigger() {
       <BaseButton icon="⚙" title="设置" @click="emit('open-settings')">设置</BaseButton>
       <BaseButton icon="💾" title="保存" variant="primary" @click="emit('save')">保存</BaseButton>
       <BaseButton
-        :icon="running ? '⏹' : '▶'"
-        :title="running ? '停止' : '运行'"
+        :icon="stopping ? '⏳' : running ? '⏹' : '▶'"
+        :title="stopping ? '停止中' : running ? '停止' : '运行'"
         :variant="running ? 'danger' : 'primary'"
-        @click="running ? emit('stop') : emit('run')"
-      >{{ running ? '停止' : '运行' }}</BaseButton>
+        :loading="stopping"
+        @click="running && !stopping ? emit('stop') : !running ? emit('run') : undefined"
+      >{{ stopping ? '停止中' : running ? '停止' : '运行' }}</BaseButton>
       <BaseButton icon="✖" title="关闭" @click="emit('close')">关闭</BaseButton>
     </div>
     <!-- 触发器配置 -->

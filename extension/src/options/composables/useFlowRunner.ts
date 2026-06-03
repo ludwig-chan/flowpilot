@@ -11,6 +11,7 @@ export function useFlowRunner(
 ) {
   const logs          = ref<string[]>([])
   const running       = ref(false)
+  const stopping      = ref(false)
   const logDrawerOpen = ref(false)
 
   function tsLog(text: string): string {
@@ -54,15 +55,18 @@ export function useFlowRunner(
     )
   }
 
-  async function stopCurrentFlow() { await bridge.stopFlow() }
+  async function stopCurrentFlow() {
+    stopping.value = true
+    await bridge.stopFlow()
+  }
 
   const handler = (evt: BridgeEvent) => {
     if (evt.type === 'FLOW_LOG_FROM_TAB')   logs.value.push(tsLog(evt.text))
-    if (evt.type === 'FLOW_DONE_FROM_TAB')  { running.value = false; logs.value.push(tsLog('✅ 流程运行完成')) }
-    if (evt.type === 'FLOW_ERROR_FROM_TAB') { running.value = false; logs.value.push(tsLog(`❌ 错误：${evt.error}`)) }
+    if (evt.type === 'FLOW_DONE_FROM_TAB')  { running.value = false; stopping.value = false; logs.value.push(tsLog('✅ 流程运行完成')) }
+    if (evt.type === 'FLOW_ERROR_FROM_TAB') { running.value = false; stopping.value = false; logs.value.push(tsLog(`❌ 错误：${evt.error}`)) }
   }
   bridge.on(handler)
   onUnmounted(() => bridge.off(handler))
 
-  return { logs, running, logDrawerOpen, runCurrentFlow, stopCurrentFlow }
+  return { logs, running, stopping, logDrawerOpen, runCurrentFlow, stopCurrentFlow }
 }

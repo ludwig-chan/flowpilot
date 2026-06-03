@@ -38,7 +38,7 @@ async function onTabPickerConfirm(tabId: number) {
 // 当前目标 tab 的标题（用于 header 显示）
 const activeTab = computed(() => tabs.value.find(t => t.id === activeTabId.value) ?? null)
 
-const { logs, running, logDrawerOpen, runCurrentFlow, stopCurrentFlow } = useFlowRunner(editingFlow, flowStore.allFlows, bridge)
+const { logs, running, stopping, logDrawerOpen, runCurrentFlow, stopCurrentFlow } = useFlowRunner(editingFlow, flowStore.allFlows, bridge)
 
 onMounted(async () => {
   await flowStore.load()
@@ -74,6 +74,7 @@ const { sidebarWidth, logDrawerHeight, startResize, startLogResize } = useResiza
       <main class="app__main">
         <StepList
           :running="running"
+          :stopping="stopping"
           @run="requireTab(runCurrentFlow)"
           @stop="stopCurrentFlow()"
         />

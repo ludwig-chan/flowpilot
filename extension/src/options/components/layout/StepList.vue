@@ -20,7 +20,8 @@ import StepEditorModals from './StepEditorModals.vue'
 import { STEP_EDITOR_MODALS_KEY } from './stepEditorContext'
 
 const props = defineProps<{
-  running: boolean
+  running:  boolean
+  stopping: boolean
 }>()
 
 const emit = defineEmits<{
@@ -130,6 +131,7 @@ provide(STEP_EDITOR_MODALS_KEY, {
       :flow="editingFlow"
       :estimated-time="estimatedFlowTime"
       :running="running"
+      :stopping="stopping"
       @save="saveFlow"
       @close="editingFlow = null"
       @open-settings="showSettingsModal = true"

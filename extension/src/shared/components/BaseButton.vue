@@ -4,6 +4,7 @@ withDefaults(defineProps<{
   size?:    'sm' | 'icon'
   icon?:    string
   active?:  boolean
+  loading?: boolean
   type?:    'button' | 'submit' | 'reset'
 }>(), {
   type: 'button',
@@ -13,15 +14,21 @@ withDefaults(defineProps<{
 <template>
   <button
     :type="type"
+    :disabled="loading"
     :class="[
       'btn',
       variant && `btn--${variant}`,
       size    && `btn--${size}`,
       { 'btn--active': active },
+      { 'btn--loading': loading },
       icon    && 'btn--adaptive',
     ]"
   >
-    <template v-if="icon">
+    <template v-if="loading">
+      <span class="btn__icon" aria-hidden="true">⏳</span>
+      <span class="btn__text"><slot />…</span>
+    </template>
+    <template v-else-if="icon">
       <span class="btn__icon" aria-hidden="true">{{ icon }}</span>
       <span class="btn__text"><slot /></span>
     </template>
