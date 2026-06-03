@@ -46,12 +46,7 @@ const { sidebarWidth, logDrawerHeight, startResize, startLogResize } = useResiza
         </select>
         <BaseButton variant="ghost" @click="refreshTabs">↻</BaseButton>
       </div>
-      <div class="app__actions">
-        <BaseButton
-          :variant="running ? 'danger' : 'primary'"
-          @click="running ? stopCurrentFlow() : requireTab(runCurrentFlow)"
-        >{{ running ? '⏹ 停止' : '▶ 运行' }}</BaseButton>
-      </div>
+
     </header>
 
     <div class="app__body">
@@ -62,7 +57,12 @@ const { sidebarWidth, logDrawerHeight, startResize, startLogResize } = useResiza
       <div class="resize-handle" @mousedown="startResize"></div>
 
       <main class="app__main">
-        <StepList :bridge="bridge" />
+        <StepList
+          :bridge="bridge"
+          :running="running"
+          @run="requireTab(runCurrentFlow)"
+          @stop="stopCurrentFlow()"
+        />
       </main>
     </div>
 

@@ -25,7 +25,13 @@ import DropdownMenu from '@shared/components/DropdownMenu.vue'
 type Bridge = ReturnType<typeof useExtensionBridge>
 
 const props = defineProps<{
-  bridge: Bridge
+  bridge:  Bridge
+  running: boolean
+}>()
+
+const emit = defineEmits<{
+  (e: 'run'): void
+  (e: 'stop'): void
 }>()
 
 const flowStore = useFlowStore()
@@ -97,9 +103,12 @@ props.bridge.on((evt) => {
     <FlowEditorHeader
       :flow="editingFlow"
       :estimated-time="estimatedFlowTime"
+      :running="running"
       @save="saveFlow"
       @close="editingFlow = null"
       @open-settings="showSettingsModal = true"
+      @run="$emit('run')"
+      @stop="$emit('stop')"
     />
     <div class="step-list">
       <template v-for="(step, i) in editingFlow.steps" :key="step.id">

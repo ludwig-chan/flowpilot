@@ -5,12 +5,15 @@ import type { TriggerType, UrlMatchMode } from '@shared/types/flow'
 const props = defineProps<{
   flow:          LocalFlow
   estimatedTime: string | null
+  running:       boolean
 }>()
 
 const emit = defineEmits<{
   (e: 'save'): void
   (e: 'close'): void
   (e: 'open-settings'): void
+  (e: 'run'): void
+  (e: 'stop'): void
 }>()
 
 function toggleTrigger() {
@@ -36,6 +39,10 @@ function toggleTrigger() {
       <span v-if="estimatedTime" class="editor__est-time">⏱ {{ estimatedTime }}</span>
       <BaseButton size="sm" @click="emit('open-settings')">⚙ 设置</BaseButton>
       <BaseButton variant="primary" @click="emit('save')">💾 保存</BaseButton>
+      <BaseButton
+        :variant="running ? 'danger' : 'primary'"
+        @click="running ? emit('stop') : emit('run')"
+      >{{ running ? '⏹ 停止' : '▶ 运行' }}</BaseButton>
       <BaseButton @click="emit('close')">✖ 关闭</BaseButton>
     </div>
     <!-- 触发器配置 -->
