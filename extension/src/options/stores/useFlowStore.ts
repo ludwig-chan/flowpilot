@@ -4,7 +4,7 @@
  * 支持嵌套分组（文件夹）结构
  */
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import type { FlowStep, StepDelayLevel, FlowTrigger } from '@shared/types/flow'
 
 export interface LocalFlow {
@@ -250,6 +250,23 @@ export const useFlowStore = defineStore('flows', () => {
     await persist()
   }
 
-  return { tree, loading, load, saveFlow, saveFolder, update, remove, togglePin, moveNode, getParentFolderId, allFlows, allFolders, exportNode, exportSelected, importInto, renameNode }
+  /** 含有失效 call_flow 引用的流程 ID 集合（响应式） */
+  const brokenFlowIds = computed<Set<string>>(() => {
+    const validIds = new Set(allFlows().map(f => f.id))
+    function hasAnyBrokenRef(steps: FlowStep[]): boolean {
+      return steps.some(s =>
+        (s.type === 'call_flow' && !!s.flowRef && !validIds.has(s.flowRef)) ||
+        hasAnyBrokenRef(s.children ?? []) ||
+        hasAnyBrokenRef(s.elseChildren ?? [])
+      )
+    }
+    const broken = new Set<string>()
+    for (const f of allFlows()) {
+      if (hasAnyBrokenRef(f.steps)) broken.add(f.id)
+    }
+    return broken
+  })
+
+  return { tree, loading, load, saveFlow, saveFolder, update, remove, togglePin, moveNode, getParentFolderId, allFlows, allFolders, exportNode, exportSelected, importInto, renameNode, brokenFlowIds }
 })
 

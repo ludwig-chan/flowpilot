@@ -50,6 +50,7 @@ const {
       <FlowTreeNode
         :nodes="flowStore.tree"
         :active-flow-id="editingFlow?.id"
+        :broken-flow-ids="flowStore.brokenFlowIds"
         @open="es.openFlow"
         @delete="deleteFlowOrFolder"
         @create-in="(id: string) => openCreateModal(id)"

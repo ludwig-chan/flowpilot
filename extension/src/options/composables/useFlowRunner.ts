@@ -8,6 +8,7 @@ type Bridge = ReturnType<typeof useExtensionBridge>
 export function useFlowRunner(
   bridge:      Bridge,
   editingFlow: Ref<LocalFlow | null>,
+  allFlows:    () => LocalFlow[],
 ) {
   const logs          = ref<string[]>([])
   const running       = ref(false)
@@ -24,6 +25,25 @@ export function useFlowRunner(
 
   async function runCurrentFlow() {
     if (!editingFlow.value) { alert('请先打开一个流程'); return }
+    // 运行前检查断裂引用
+    const validIds = new Set(allFlows().map(f => f.id))
+    function collectBrokenRefs(steps: LocalFlow['steps']): string[] {
+      const result: string[] = []
+      for (const s of steps) {
+        if (s.type === 'call_flow' && s.flowRef && !validIds.has(s.flowRef))
+          result.push(s.label || s.flowRef)
+        result.push(...collectBrokenRefs(s.children ?? []))
+        result.push(...collectBrokenRefs(s.elseChildren ?? []))
+      }
+      return result
+    }
+    const broken = collectBrokenRefs(editingFlow.value.steps)
+    if (broken.length > 0) {
+      const ok = confirm(
+        `以下嵌入流程已丢失，运行时将被跳过：\n${broken.map(n => `• ${n}`).join('\n')}\n\n是否继续执行？`
+      )
+      if (!ok) return
+    }
     running.value = true
     logs.value.push(tsLog(`▶ 开始运行流程 "${editingFlow.value.name}"`))
     logDrawerOpen.value = true

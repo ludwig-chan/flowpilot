@@ -37,7 +37,7 @@ async function onTabPickerConfirm(tabId: number) {
 // 当前目标 tab 的标题（用于 header 显示）
 const activeTab = computed(() => tabs.value.find(t => t.id === activeTabId.value) ?? null)
 
-const { logs, running, logDrawerOpen, runCurrentFlow, stopCurrentFlow } = useFlowRunner(bridge, editingFlow)
+const { logs, running, logDrawerOpen, runCurrentFlow, stopCurrentFlow } = useFlowRunner(bridge, editingFlow, flowStore.allFlows)
 
 onMounted(async () => {
   await flowStore.load()

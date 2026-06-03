@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
+import { computed } from 'vue'
 import { useEditorStore } from '../../stores/useEditorStore'
 import { useFlowStore } from '../../stores/useFlowStore'
 import { useTabStore } from '../../stores/useTabStore'
@@ -88,6 +89,9 @@ const {
 
 const { dragSrcIdx, dragInsertIdx, onHandleMouseDown, onDragStart, onDragOver, onDrop, onDragEnd } = useStepDrag(editingFlow)
 
+const validFlowIds = computed(() => new Set(flowStore.allFlows().map(f => f.id)))
+function isBrokenRef(flowRef?: string) { return !!flowRef && !validFlowIds.value.has(flowRef) }
+
 function onLoopCallFlowConfirm(id: string) {
   const name = flowStore.allFlows().find(f => f.id === id)?.name ?? id
   onLoopConfirmCallFlow(id, name)
@@ -141,6 +145,11 @@ props.bridge.on((evt) => {
           <div class="step-card__body">
             <div class="step-card__label">{{ step.label }}</div>
             <div class="step-card__type">{{ stepTypeLabels[step.type] ?? step.type }}</div>
+            <div
+              v-if="step.type === 'call_flow' && isBrokenRef(step.flowRef)"
+              class="step-card__broken"
+              title="引用的流程不存在或已被删除"
+            >⚠ 流程已丢失</div>
             <button
               v-if="step.type === 'condition'"
               class="step-card__cond-toggle"
@@ -389,6 +398,7 @@ props.bridge.on((evt) => {
 .step-card__body { flex: 1; min-width: 0; }
 .step-card__label { font-size: 13px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .step-card__type  { font-size: 11px; color: #89b4fa; margin-top: 2px; }
+.step-card__broken { font-size: 11px; color: #f38ba8; margin-top: 2px; font-weight: 500; }
 .step-card__wait { display: flex; align-items: center; gap: 4px; margin-top: 5px; flex-wrap: wrap; }
 .step-card__wait-label { font-size: 11px; color: #6c7086; white-space: nowrap; }
 .step-card__wait-sep   { font-size: 11px; color: #6c7086; white-space: nowrap; margin-left: 4px; }

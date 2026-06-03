@@ -7,9 +7,10 @@ import type { FlowNode, LocalFlow, FlowFolder } from '../stores/useFlowStore'
 defineOptions({ name: 'FlowTreeNode' })
 
 const props = defineProps<{
-  nodes:         FlowNode[]
-  activeFlowId?: string | null
-  depth?:        number
+  nodes:          FlowNode[]
+  activeFlowId?:  string | null
+  depth?:         number
+  brokenFlowIds?: Set<string>
 }>()
 
 const emit = defineEmits<{
@@ -53,6 +54,7 @@ function toggle(id: string) {
           :nodes="(node as FlowFolder).children"
           :active-flow-id="activeFlowId"
           :depth="(depth ?? 0) + 1"
+          :broken-flow-ids="brokenFlowIds"
           @open="emit('open', $event)"
           @delete="emit('delete', $event)"
           @create-in="emit('createIn', $event)"
@@ -70,6 +72,11 @@ function toggle(id: string) {
       >
         <span class="tree-icon tree-icon--flow">▶</span>
         <span class="tree-name">{{ node.name }}</span>
+        <span
+          v-if="brokenFlowIds?.has(node.id)"
+          class="tree-warn"
+          title="此流程包含失效的嵌入步骤"
+        >⚠</span>
         <span class="tree-count">{{ (node as LocalFlow).steps.length }} 步</span>
         <button
           :class="['tree-btn', 'tree-btn--pin', (node as LocalFlow).pinnedInMenu && 'tree-btn--pin--active']"
@@ -110,4 +117,5 @@ function toggle(id: string) {
 .tree-row:hover .tree-btn--pin { opacity: 0.5 !important; }
 .tree-btn--pin:hover { opacity: 1 !important; }
 .tree-btn--pin--active { opacity: 1 !important; color: #f9e2af !important; }
+.tree-warn { font-size: 11px; color: #f9e2af; flex-shrink: 0; cursor: default; }
 </style>
