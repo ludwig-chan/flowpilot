@@ -17,6 +17,7 @@ export interface LocalFlow {
   waitTimeout?:     number                // 等待元素出现的默认超时 ms（默认 10000）
   pinnedInMenu?:    boolean               // 是否钉选到悬浮按钮菜单
   trigger?:         FlowTrigger           // 自动触发配置
+  targetTabId?:     number                // 上次运行绑定的目标 Tab ID
 }
 
 export interface FlowFolder {

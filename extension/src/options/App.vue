@@ -1,5 +1,5 @@
 ﻿<script setup lang="ts">
-import { onMounted } from 'vue'
+import { onMounted, computed, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useFlowStore } from './stores/useFlowStore'
 import { useExtensionBridge } from './composables/useExtensionBridge'
@@ -18,16 +18,31 @@ const bridge    = useExtensionBridge()
 const tabStore = useTabStore()
 tabStore.init(bridge)
 const { tabs, activeTabId, showTabPickerModal } = storeToRefs(tabStore)
-const { refreshTabs, selectTab, requireTab, onTabPickerConfirm, cancelTabPicker } = tabStore
+const { refreshTabs, requireTab, syncWithFlow, openTabPicker, onTabPickerConfirm: _onTabPickerConfirm, cancelTabPicker } = tabStore
 
 const es = useEditorStore()
 const { editingFlow } = storeToRefs(es)
+
+// 切换 flow 时自动同步目标 tab
+watch(editingFlow, flow => syncWithFlow(flow?.targetTabId))
+
+// 选完 tab 后同时持久化到当前 flow
+async function onTabPickerConfirm(tabId: number) {
+  await _onTabPickerConfirm(tabId)
+  if (editingFlow.value) {
+    await flowStore.update(editingFlow.value.id, { targetTabId: tabId })
+  }
+}
+
+// 当前目标 tab 的标题（用于 header 显示）
+const activeTab = computed(() => tabs.value.find(t => t.id === activeTabId.value) ?? null)
 
 const { logs, running, logDrawerOpen, runCurrentFlow, stopCurrentFlow } = useFlowRunner(bridge, editingFlow)
 
 onMounted(async () => {
   await flowStore.load()
   await refreshTabs()
+  await syncWithFlow(editingFlow.value?.targetTabId)
 })
 
 const { sidebarWidth, logDrawerHeight, startResize, startLogResize } = useResizable()
@@ -38,14 +53,12 @@ const { sidebarWidth, logDrawerHeight, startResize, startLogResize } = useResiza
   <div class="app">
     <header class="app__header">
       <div class="app__logo">⚡ FlowPilot</div>
-      <div class="app__tab-selector">
-        <BaseSelect
-          :model-value="activeTabId ?? ''"
-          :options="tabs.map(t => ({ value: t.id!, label: t.title?.slice(0, 60) ?? t.url! }))"
-          placeholder="选择目标 Tab…"
-          @update:model-value="selectTab($event as number)"
-        />
-        <BaseButton variant="ghost" @click="refreshTabs">↻</BaseButton>
+      <div class="app__tab-status" @click="openTabPicker" title="点击更换目标 Tab">
+        <span class="app__tab-status__label">🌐</span>
+        <span
+          class="app__tab-status__name"
+          :class="{ 'app__tab-status__name--empty': !activeTab }"
+        >{{ activeTab ? (activeTab.title?.slice(0, 60) ?? activeTab.url) : '点击选择目标 Tab' }}</span>
       </div>
 
     </header>

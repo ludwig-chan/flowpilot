@@ -28,14 +28,25 @@ export const useTabStore = defineStore('tab', () => {
   async function refreshTabs() {
     if (!_bridge) return
     tabs.value = (await _bridge.getTabs()).filter(t => t.url && !t.url.startsWith('chrome'))
-    const stillValid = activeTabId.value !== null && tabs.value.some(t => t.id === activeTabId.value)
-    if (!stillValid) {
-      const active    = await _bridge.getActiveTab()
-      const targetId  = (active?.id != null && tabs.value.some(t => t.id === active.id))
-        ? active.id
-        : (tabs.value[0]?.id ?? null)
-      if (targetId !== null) await selectTab(targetId)
+    // tab 已关闭则清空，不自动猜选（由 syncWithFlow 负责恢复）
+    if (activeTabId.value !== null && !tabs.value.some(t => t.id === activeTabId.value)) {
+      activeTabId.value = null
     }
+  }
+
+  /** 切换 flow 时同步目标 tab：id 仍存活则恢复，否则清空等待用户运行时再选 */
+  async function syncWithFlow(targetTabId: number | null | undefined) {
+    if (targetTabId != null && tabs.value.some(t => t.id === targetTabId)) {
+      await selectTab(targetTabId)
+    } else {
+      activeTabId.value = null
+    }
+  }
+
+  /** 手动打开 Tab 选择弹窗（不携带 pending 回调，仅用于更换目标 tab） */
+  function openTabPicker() {
+    _pending.value           = null
+    showTabPickerModal.value = true
   }
 
   async function selectTab(tabId: number) {
@@ -65,6 +76,7 @@ export const useTabStore = defineStore('tab', () => {
     tabs, activeTabId, showTabPickerModal,
     init,
     refreshTabs, selectTab,
+    syncWithFlow, openTabPicker,
     requireTab, onTabPickerConfirm, cancelTabPicker,
   }
 })
