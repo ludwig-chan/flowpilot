@@ -77,7 +77,13 @@ export function useLoopEditor(
     es.editingLoopChild  = childIdx
     es.showEditLoopModal = false
     const child = currentState.children?.[childIdx]
-    if (!child?.selector) return
+    if (!child) return
+    // call_flow 子步骤没有 selector，走流程选择器而非元素选择器
+    if (child.type === 'call_flow') {
+      showLoopCallFlowPicker.value = true
+      return
+    }
+    if (!child.selector) return
     const el: SerializedElement = {
       kind:       child.type === 'input' || child.type === 'clear' ? 'input'
                   : child.type === 'select' ? 'select'
@@ -203,24 +209,39 @@ export function useLoopEditor(
   // ── 循环内嵌入流程 ────────────────────────────────────────────────────
   const showLoopCallFlowPicker = ref(false)
 
-  /** EditLoopModal "嵌入流程" → 保存当前状态，关闭 Modal，显示流程选择器 */
+  /** EditLoopModal "嵌入流程" → 保存当前状态，关闭 Modal，显示流程选择器（新增模式） */
   function onLoopAddCallFlow(currentState: FlowStep) {
     es.editingLoopStep       = currentState
+    es.editingLoopChild      = null   // 明确为新增模式
     es.showEditLoopModal     = false
     showLoopCallFlowPicker.value = true
   }
 
-  /** 流程选择确认 → 将 call_flow 子步骤写入 children[]，重新打开 EditLoopModal */
+  /** 流程选择确认 → 编辑模式替换已有子步骤，新增模式追加到 children[] */
   function onLoopConfirmCallFlow(id: string, name: string) {
     showLoopCallFlowPicker.value = false
     if (!es.editingLoopStep) return
     es.editingLoopStep.children = es.editingLoopStep.children ?? []
-    es.editingLoopStep.children.push({
-      id:      `step_${Date.now()}_${Math.random().toString(36).slice(2, 5)}`,
-      type:    'call_flow',
-      label:   `嵌入流程：${name}`,
-      flowRef: id,
-    })
+    const childIdx = es.editingLoopChild
+    if (childIdx !== null && es.editingLoopStep.children[childIdx]) {
+      // 编辑模式：替换，保留原 id
+      const originalId = es.editingLoopStep.children[childIdx].id
+      es.editingLoopStep.children[childIdx] = {
+        id:      originalId,
+        type:    'call_flow',
+        label:   `嵌入流程：${name}`,
+        flowRef: id,
+      }
+    } else {
+      // 新增模式：追加
+      es.editingLoopStep.children.push({
+        id:      `step_${Date.now()}_${Math.random().toString(36).slice(2, 5)}`,
+        type:    'call_flow',
+        label:   `嵌入流程：${name}`,
+        flowRef: id,
+      })
+    }
+    es.editingLoopChild  = null
     es.showEditLoopModal = true
   }
 

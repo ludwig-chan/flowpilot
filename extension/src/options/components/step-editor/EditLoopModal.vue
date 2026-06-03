@@ -171,7 +171,7 @@ function onQuickConfirm() {
           <span class="elm-child-label" :title="child.label">{{ child.label }}</span>
           <div class="elm-child-actions">
             <BaseButton
-              v-if="child.selector"
+              v-if="child.selector || child.type === 'call_flow'"
               variant="ghost"
               size="icon"
               class="elm-child-btn"
