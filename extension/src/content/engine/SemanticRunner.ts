@@ -28,7 +28,7 @@ export async function runFlow(
       onLog('流程已停止')
       return
     }
-    await executeStep(step, variables, onLog, undefined, defaultWaitTimeout)
+    await executeStep(step, variables, onLog, undefined, defaultWaitTimeout, effectiveDelayLevel, stepDelayRange)
 
     // 步骤间延迟：优先使用步骤自身的 delay，否则使用全局档位
     if (step.delay) {
@@ -50,6 +50,8 @@ async function executeStep(
   onLog: (text: string) => void,
   context?: Element,       // loop_items 传入当前列表项，relativeSelector=true 的子步骤在此范围内查找
   waitTimeout = 10000,     // 等待元素出现的超时（流程级默认，可被步骤级覆盖）
+  delayLevel?: StepDelayLevel,   // 全局延迟档位，子步骤无自身 delay 时 fallback
+  delayRange?: [number, number], // 自定义档位对应的范围
 ): Promise<void> {
   onLog(`执行：${step.label}`)
 
@@ -178,8 +180,13 @@ async function executeStep(
         if (step.children?.length) {
           for (const child of step.children) {
             if (_stopped) return
-            await executeStep(child, variables, onLog, item, waitTimeout)
-            if (child.delay) await humanDelay(child.delay[0], child.delay[1])
+            await executeStep(child, variables, onLog, item, waitTimeout, delayLevel, delayRange)
+            if (child.delay) {
+              await humanDelay(child.delay[0], child.delay[1])
+            } else if (delayLevel && delayLevel !== 'none') {
+              const range = delayLevel === 'custom' ? delayRange : STEP_DELAY_PRESETS[delayLevel]
+              if (range) await humanDelay(range[0], range[1])
+            }
           }
         }
         await humanDelay(...(step.itemDelay ?? [800, 2000]))
@@ -254,8 +261,13 @@ async function executeStep(
         onLog(`  执行${condMet ? '成立' : '否则'}分支 (${branchSteps.length} 步)...`)
         for (const child of branchSteps) {
           if (_stopped) return
-          await executeStep(child, variables, onLog, undefined, waitTimeout)
-          if (child.delay) await humanDelay(child.delay[0], child.delay[1])
+          await executeStep(child, variables, onLog, undefined, waitTimeout, delayLevel, delayRange)
+          if (child.delay) {
+            await humanDelay(child.delay[0], child.delay[1])
+          } else if (delayLevel && delayLevel !== 'none') {
+            const range = delayLevel === 'custom' ? delayRange : STEP_DELAY_PRESETS[delayLevel]
+            if (range) await humanDelay(range[0], range[1])
+          }
         }
       } else {
         onLog(`  条件${condMet ? '成立' : '不成立'}，无对应分支，跳过`)
@@ -385,8 +397,13 @@ async function executeStep(
       onLog(`→ 嵌入执行：${subFlow.name}`)
       for (const s of subFlow.steps) {
         if (_stopped) return
-        await executeStep(s, variables, onLog, undefined, waitTimeout)
-        if (s.delay) await humanDelay(s.delay[0], s.delay[1])
+        await executeStep(s, variables, onLog, undefined, waitTimeout, delayLevel, delayRange)
+        if (s.delay) {
+          await humanDelay(s.delay[0], s.delay[1])
+        } else if (delayLevel && delayLevel !== 'none') {
+          const range = delayLevel === 'custom' ? delayRange : STEP_DELAY_PRESETS[delayLevel]
+          if (range) await humanDelay(range[0], range[1])
+        }
       }
       break
     }
