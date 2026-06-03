@@ -1,14 +1,14 @@
 import { ref, onUnmounted } from 'vue'
 import type { Ref } from 'vue'
 import { type BridgeEvent } from './useExtensionBridge'
-import { useBridge } from './useBridge'
+import type { Bridge } from './useBridge'
 import type { LocalFlow } from '../stores/useFlowStore'
 
 export function useFlowRunner(
   editingFlow: Ref<LocalFlow | null>,
   allFlows:    () => LocalFlow[],
+  bridge:      Bridge,
 ) {
-  const bridge = useBridge()
   const logs          = ref<string[]>([])
   const running       = ref(false)
   const logDrawerOpen = ref(false)
