@@ -60,6 +60,22 @@ function insertVar(varName: string) {
   el.setSelectionRange(pos, pos)
 }
 
+// 点击运算符，在光标位置插入（两侧带空格）
+function insertOp(op: string) {
+  const el = exprInputEl.value
+  const token = ` ${op} `
+  if (!el) {
+    exprValue.value += token
+    return
+  }
+  const start = el.selectionStart ?? exprValue.value.length
+  const end   = el.selectionEnd   ?? exprValue.value.length
+  exprValue.value = exprValue.value.slice(0, start) + token + exprValue.value.slice(end)
+  const pos = start + token.length
+  el.focus()
+  el.setSelectionRange(pos, pos)
+}
+
 // ── Node → CSS helper ────────────────────────────────────────────────────────
 function nodeCss(node: SerializedDomNode): string {
   if (node.item?.selector.cssSelector) return node.item.selector.cssSelector
@@ -159,16 +175,16 @@ function confirm() {
           ></button>
         </div>
         <div class="cp-hints">
-          <div class="cp-hints__title">支持的运算符</div>
-          <div class="cp-hints__grid">
-            <code>&gt;</code><span>大于</span>
-            <code>&lt;</code><span>小于</span>
-            <code>&gt;=</code><span>大于等于</span>
-            <code>&lt;=</code><span>小于等于</span>
-            <code>==</code><span>等于</span>
-            <code>!=</code><span>不等于</span>
-            <code>contains</code><span>包含文字</span>
-            <code>not_contains</code><span>不包含文字</span>
+          <div class="cp-hints__title">支持的运算符（点击插入）</div>
+          <div class="cp-op-chips">
+            <button class="cp-op-chip" title="大于" @click="insertOp('>')"><code>&gt;</code><span>大于</span></button>
+            <button class="cp-op-chip" title="小于" @click="insertOp('<')"><code>&lt;</code><span>小于</span></button>
+            <button class="cp-op-chip" title="大于等于" @click="insertOp('>=')"><code>&gt;=</code><span>大于等于</span></button>
+            <button class="cp-op-chip" title="小于等于" @click="insertOp('<=')"><code>&lt;=</code><span>小于等于</span></button>
+            <button class="cp-op-chip" title="等于" @click="insertOp('==')"><code>==</code><span>等于</span></button>
+            <button class="cp-op-chip" title="不等于" @click="insertOp('!=')"><code>!=</code><span>不等于</span></button>
+            <button class="cp-op-chip" title="包含文字" @click="insertOp('contains')"><code>contains</code><span>包含</span></button>
+            <button class="cp-op-chip" title="不包含文字" @click="insertOp('not_contains')"><code>not_contains</code><span>不包含</span></button>
           </div>
           <div class="cp-hints__example">
             示例：<code>{{text}} contains 优惠</code>、<code>{{count}} >= 3</code>
@@ -270,6 +286,21 @@ function confirm() {
     font-size: 11px; color: $color-text-secondary; margin-bottom: 6px;
     code { font-family: 'Cascadia Code', monospace; color: $color-mauve; }
   }
+}
+
+.cp-op-chips {
+  display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 8px;
+}
+.cp-op-chip {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 3px 8px; border: 1px solid $color-surface-2; border-radius: $radius;
+  background: $color-base; cursor: pointer; transition: all .12s;
+  &:hover { background: $color-surface-1; border-color: $color-blue; }
+  code { font-family: 'Cascadia Code', monospace; font-size: 11px; color: $color-blue; line-height: 1.4; }
+  span { font-size: 9px; color: $color-text-muted; margin-top: 1px; }
+}
+
+.cp-hints {
   &__note {
     font-size: 11px; color: $color-text-muted; line-height: 1.5;
     code { font-family: 'Cascadia Code', monospace; color: $color-yellow; }
