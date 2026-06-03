@@ -1,16 +1,15 @@
 ﻿<script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { useFlowStore, type LocalFlow } from './stores/useFlowStore'
+import { storeToRefs } from 'pinia'
+import { useFlowStore } from './stores/useFlowStore'
 import { useExtensionBridge } from './composables/useExtensionBridge'
 import { useDomPicker } from './composables/useDomPicker'
 import { useFlowRunner } from './composables/useFlowRunner'
 import { useResizable } from './composables/useResizable'
 import { useStepDrag } from './composables/useStepDrag'
-import { useLoopEditor } from './composables/useLoopEditor'
-import { useStepEditor } from './composables/useStepEditor'
 import { useConditionEditor } from './composables/useConditionEditor'
 import { useEditorStore } from './stores/useEditorStore'
-import { useSmartLoop } from './composables/useSmartLoop'
+import { usePickerOrchestrator } from './composables/usePickerOrchestrator'
 import { useTabManager } from './composables/useTabManager'
 import { useFlowTreeActions } from './composables/useFlowTreeActions'
 import FlowTreeNode from './components/flow-tree/FlowTreeNode.vue'
@@ -31,11 +30,10 @@ import ConditionBranchView from './components/step-editor/ConditionBranchView.vu
 import FlowEditorHeader from './components/layout/FlowEditorHeader.vue'
 import CallFlowPickerModal from './components/step-editor/CallFlowPickerModal.vue'
 import { useFlowIO } from './composables/useFlowIO'
-import type { SerializedElement } from '@shared/types/dom'
-import type { FlowStep, StepDelayLevel, ActionType } from '@shared/types/flow'
+import { useFlowEditor } from './composables/useFlowEditor'
+import { useStepActions, stepTypeLabels } from './composables/useStepActions'
 import BaseButton from '@shared/components/BaseButton.vue'
 import DropdownMenu from '@shared/components/DropdownMenu.vue'
-import { useFlowEstimate } from './composables/useFlowEstimate'
 
 const flowStore = useFlowStore()
 const bridge    = useExtensionBridge()
@@ -50,9 +48,9 @@ const {
   pickMode, pickedCssSelector, scanDom, togglePickMode,
 } = useDomPicker(bridge, activeTabId)
 
-// Flow editing (定义在此处，供 composables 引用)
-const editingFlow  = ref<LocalFlow | null>(null)
-const saveToast    = ref(false)
+// ── Editor Store ──────────────────────────────────────────────────
+const es = useEditorStore()
+const { editingFlow } = storeToRefs(es)
 
 const {
   showCreateModal, createModalInitParentId,
@@ -62,126 +60,31 @@ const {
   handleEdit, onConfirmEdit,
 } = useFlowTreeActions(flowStore, editingFlow)
 
-// ── Editor Store ──────────────────────────────────────────────────
-const es = useEditorStore()
-
-// ── 元素选择器模态框 ──────────────────────────────────────────────
-const showPickerModal = ref(false)
-
-// ── useLoopEditor ─────────────────────────────────────────────────
 const {
-  editingLoopStepIdx,
-  reselectingLoopChild,
-  editLoopStep,
-  onLoopSave,
-  onLoopClose,
-  onLoopReselect,
-  onLoopReselectChild,
-  onLoopAddChild: _onLoopAddChildRaw,
-  onLoopEditChild,
-  onSmartLoopConfirm: _onSmartLoopConfirmLoop,
-  getLoopChildActionOpts,
-} = useLoopEditor(editingFlow, bridge, scanDom, pickedCssSelector)
+  saveToast, selectDelayLevel,
+  showSettingsModal, onSettingsConfirm,
+  saveFlow, estimatedFlowTime,
+} = useFlowEditor(flowStore, editingFlow)
 
-// ── useStepEditor ─────────────────────────────────────────────────
 const {
-  onElementPicked: _onElementPickedBase,
-  editStep,
-  onActionRePick: _onActionRePickBase,
-  cancelActionModal,
-  onActionConfirm,
-  editBranchStep,
-} = useStepEditor(editingFlow)
+  showPickerModal,
+  editingLoopStepIdx, reselectingLoopChild,
+  editLoopStep, onLoopSave, onLoopClose, onLoopReselect, onLoopReselectChild, onLoopEditChild,
+  editStep, cancelActionModal, onActionConfirm, editBranchStep,
+  showSmartLoopModal, smartLoopCandidates, smartLoopPickedEl, smartLoopPickingMode,
+  openSmartPicker, cancelSmartLoopPicking, onSmartLoopConfirm,
+  onElementPicked, onActionRePick, openPicker, closePicker,
+  onLoopAddChild, onActionTry, onTestAction,
+} = usePickerOrchestrator(bridge, editingFlow, activeTabId, requireTab, pickedCssSelector, pickMode, scanDom)
 
-/** ElementPickerModal 选中元素后 → 打开 ActionPickerModal */
-function onElementPicked(el: SerializedElement) {
-  _onElementPickedBase(el, getLoopChildActionOpts, showPickerModal, pickMode, () => bridge.cancelPickElement())
-}
 
-/** ActionPickerModal 点击「换元素」 → 保留动作状态，重新打开元素选择器 */
-function onActionRePick(type: import('@shared/types/flow').ActionType, value: string | undefined) {
-  _onActionRePickBase(type, value, showPickerModal, pickedCssSelector)
-}
 
-function openPicker() {
-  if (!editingFlow.value) { alert('请先打开一个流程'); return }
-  requireTab(() => {
-    pickedCssSelector.value = ''
-    showPickerModal.value = true
-    scanDom()
-  })
-}
 
-// ── useSmartLoop ──────────────────────────────────────────────────
 const {
-  showSmartLoopModal,
-  smartLoopCandidates,
-  smartLoopPickedEl,
-  smartLoopPickingMode,
-  openSmartPicker,
-  cancelSmartLoopPicking,
-  onSmartLoopConfirm,
-} = useSmartLoop(bridge, activeTabId, editingFlow, _onSmartLoopConfirmLoop)
-
-function closePicker() {
-  showPickerModal.value = false
-  pickedCssSelector.value = ''
-  if (pickMode.value) { pickMode.value = false; bridge.cancelPickElement() }
-}
-
-/** EditLoopModal "添加操作" wrapper */
-function onLoopAddChild(currentState: FlowStep) {
-  _onLoopAddChildRaw(currentState, () => { showPickerModal.value = true })
-}
-
-// ���� Ƕ������ѡ�� ����������������������������������������������������������������������������������������������������
-
-/** ActionPickerModal 试一下 → 临时执行单个步骤 */
-async function onActionTry(step: FlowStep) {
-  await bridge.runFlow([step])
-}
-
-/** ElementPickerDrawer 更多动作栏 → 对指定元素执行一次性操作 */
-async function onTestAction(css: string, actionType: string, value?: string) {
-  const step: FlowStep = {
-    id:       `test_${Date.now()}`,
-    type:     actionType as FlowStep['type'],
-    label:    `试：${actionType} ${css.slice(0, 30)}`,
-    selector: { cssSelector: css },
-    value:    value,
-  }
-  await bridge.runFlow([step])
-}
-
-/** 等待步骤：弹出 prompt 修改时长 */
-function editDelayStep(step: FlowStep) {
-  const v = prompt('等待时长 (ms)', step.value ?? '1000')
-  if (v === null) return
-  const ms = Number(v) || 1000
-  step.value = String(ms)
-  step.label = `等待 ${ms} ms`
-}
-const showCallFlowPicker = ref(false)
-
-function addCallFlowStep() {
-  if (!editingFlow.value) return
-  const others = flowStore.allFlows().filter(f => f.id !== editingFlow.value?.id)
-  if (others.length === 0) { alert('没有可嵌入的其他流程'); return }
-  showCallFlowPicker.value = true
-}
-
-function confirmCallFlow(id: string) {
-  if (!editingFlow.value || !id) return
-  const target = flowStore.allFlows().find(f => f.id === id)
-  if (!target) return
-  editingFlow.value.steps.push({
-    id:      `step_${Date.now()}`,
-    type:    'call_flow',
-    label:   `嵌入流程：${target.name}`,
-    flowRef: target.id,
-  })
-  showCallFlowPicker.value = false
-}
+  removeStep, addDelayStep, editDelayStep,
+  selectedStepIds, toggleSelect, deleteSelected,
+  showCallFlowPicker, addCallFlowStep, confirmCallFlow,
+} = useStepActions(editingFlow, flowStore)
 
 // ── useConditionEditor ────────────────────────────────────────────
 const {
@@ -197,46 +100,6 @@ const {
   removeBranchStep,
   openBranchPicker,
 } = useConditionEditor(editingFlow, openPicker)
-let   _toastTimer: ReturnType<typeof setTimeout> | null = null
-
-function openFlow(flow: LocalFlow) {
-  editingFlow.value = JSON.parse(JSON.stringify(flow))
-}
-
-function selectDelayLevel(level: StepDelayLevel) {
-  if (!editingFlow.value) return
-  if (level === 'none') {
-    if (!confirm('不设置步骤间隔会导致操作极速触发，容易被网站风控识别和封号，确定要关闭间隔吗？')) return
-  }
-  editingFlow.value.stepDelayLevel = level
-}
-
-const showSettingsModal = ref(false)
-
-// ── 预估完成时间 ──────────────────────────────────────────────────
-const { estimatedFlowTime } = useFlowEstimate(editingFlow)
-
-function onSettingsConfirm(data: { waitTimeout: number; stepDelayLevel: StepDelayLevel; stepDelayRange: [number, number] | undefined }) {
-  if (!editingFlow.value) return
-  editingFlow.value.waitTimeout    = data.waitTimeout
-  editingFlow.value.stepDelayLevel = data.stepDelayLevel
-  editingFlow.value.stepDelayRange = data.stepDelayRange
-  showSettingsModal.value = false
-}
-
-async function saveFlow() {
-  await flowStore.update(editingFlow.value.id, {
-    name:           editingFlow.value.name,
-    steps:          editingFlow.value.steps,
-    stepDelayLevel: editingFlow.value.stepDelayLevel,
-    stepDelayRange: editingFlow.value.stepDelayRange,
-    waitTimeout:    editingFlow.value.waitTimeout,
-    trigger:        editingFlow.value.trigger,
-  })
-  if (_toastTimer) clearTimeout(_toastTimer)
-  saveToast.value = true
-  _toastTimer = setTimeout(() => { saveToast.value = false }, 2000)
-}
 
 const {
   showExportModal, handleExportSelected,
@@ -245,46 +108,8 @@ const {
   BUILTIN_PRESETS,
 } = useFlowIO(flowStore)
 
-function usePickedElement(el: SerializedElement) {
-  if (!editingFlow.value) return
-  const step: FlowStep = {
-    id: `step_${Date.now()}`,
-    type: el.kind === 'input' ? 'input' : el.kind === 'select' ? 'select' : 'click',
-    label: el.label.slice(0, 40) || el.selector.cssSelector.slice(0, 40),
-    selector: el.selector,
-  }
-  editingFlow.value.steps.push(step)
-}
-
-function removeStep(index: number) { editingFlow.value?.steps.splice(index, 1) }
-
-function addDelayStep() {
-  if (!editingFlow.value) return
-  editingFlow.value.steps.push({
-    id:    `step_${Date.now()}`,
-    type:  'delay',
-    label: '等待',
-    value: '1000',
-  })
-}
-
 // ── 步骤拖拽排序 ──────────────────────────────────────────────────
 const { dragSrcIdx, dragInsertIdx, onHandleMouseDown, onDragStart, onDragOver, onDrop, onDragEnd } = useStepDrag(editingFlow)
-
-// ── 批量选择删除 ───────────────────────────────────────────────
-const selectedStepIds = ref<string[]>([])
-
-function toggleSelect(id: string) {
-  const idx = selectedStepIds.value.indexOf(id)
-  if (idx >= 0) selectedStepIds.value.splice(idx, 1)
-  else selectedStepIds.value.push(id)
-}
-
-function deleteSelected() {
-  if (!editingFlow.value) return
-  editingFlow.value.steps = editingFlow.value.steps.filter(s => !selectedStepIds.value.includes(s.id))
-  selectedStepIds.value = []
-}
 
 // Run
 const { logs, running, logDrawerOpen, runCurrentFlow, stopCurrentFlow } = useFlowRunner(bridge, editingFlow, activeTabId)
@@ -302,12 +127,6 @@ onMounted(async () => {
 // ── 侧边栏 & 日志抽屉拖拽调整 ──────────────────────────────────────
 const { sidebarWidth, logDrawerHeight, startResize, startLogResize } = useResizable()
 
-const stepTypeLabels: Record<string, string> = {
-  click: '点击', input: '输入', select: '选择', focus: '聚焦',
-  get_text: '获取文字', wait_appear: '等待出现', wait_disappear: '等待消失',
-  scroll_to: '滚动到', navigate: '导航', loop_items: '循环列表项', condition: '条件判断',
-  delay: '等待', press_key: '按键', call_flow: '嵌入流程', save_canvas: '截图',
-}
 </script>
 
 <template>
@@ -350,7 +169,7 @@ const stepTypeLabels: Record<string, string> = {
             <FlowTreeNode
               :nodes="flowStore.tree"
               :active-flow-id="editingFlow?.id"
-              @open="openFlow"
+              @open="es.openFlow"
               @delete="deleteFlowOrFolder"
               @create-in="(id: string) => openCreateModal(id)"
               @edit="handleEdit"

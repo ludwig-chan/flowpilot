@@ -2,8 +2,15 @@ import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import type { FlowStep, ActionType } from '@shared/types/flow'
 import type { SerializedElement } from '@shared/types/dom'
+import type { LocalFlow } from './useFlowStore'
 
 export const useEditorStore = defineStore('editor', () => {
+  // ── 当前编辑中的流程（深拷贝副本） ───────────────────────────────
+  const editingFlow = ref<LocalFlow | null>(null)
+
+  function openFlow(flow: LocalFlow) {
+    editingFlow.value = JSON.parse(JSON.stringify(flow))
+  }
   // ── Loop 编辑共享状态 ────────────────────────────────────────────
   const showEditLoopModal    = ref(false)
   const editingLoopStep      = ref<FlowStep | null>(null)
@@ -91,5 +98,8 @@ export const useEditorStore = defineStore('editor', () => {
     // branch
     addingToBranch,
     editingBranchStep,
+    // editing flow
+    editingFlow,
+    openFlow,
   }
 })
