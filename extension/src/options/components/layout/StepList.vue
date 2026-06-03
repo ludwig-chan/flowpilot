@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed } from 'vue'
+import { computed, onMounted, onUnmounted } from 'vue'
+import type { FlowStep } from '@shared/types/flow'
+import type { BridgeEvent } from '../../composables/useExtensionBridge'
 import { useEditorStore } from '../../stores/useEditorStore'
 import { useFlowStore } from '../../stores/useFlowStore'
 import { useTabStore } from '../../stores/useTabStore'
@@ -18,10 +20,10 @@ import EditLoopModal from '../step-editor/EditLoopModal.vue'
 import ConditionPickerModal from '../step-editor/ConditionPickerModal.vue'
 import FlowSettingsModal from './FlowSettingsModal.vue'
 import SmartLoopPickerModal from '../step-editor/SmartLoopPickerModal.vue'
-import ConditionBranchView from '../step-editor/ConditionBranchView.vue'
 import CallFlowPickerModal from '../step-editor/CallFlowPickerModal.vue'
 import EditDelayModal from '../step-editor/EditDelayModal.vue'
 import DropdownMenu from '@shared/components/DropdownMenu.vue'
+import StepCard from './StepCard.vue'
 
 const props = defineProps<{
   running: boolean
@@ -43,7 +45,7 @@ const { requireTab } = tabStore
 const bridge = useBridge()
 
 const {
-  saveToast, selectDelayLevel,
+  saveToast,
   showSettingsModal, onSettingsConfirm,
   saveFlow, estimatedFlowTime,
 } = useFlowEditor(flowStore, editingFlow)
@@ -55,7 +57,6 @@ const {
 
 const {
   showPickerModal,
-  editingLoopStepIdx, reselectingLoopChild,
   editLoopStep, onLoopSave, onLoopClose, onLoopReselect, onLoopReselectChild, onLoopEditChild,
   editStep, cancelActionModal, onActionConfirm, editBranchStep,
   showSmartLoopModal, smartLoopCandidates, smartLoopPickedEl, smartLoopPickingMode,
@@ -96,9 +97,18 @@ function onLoopCallFlowConfirm(id: string) {
   onLoopConfirmCallFlow(id, name)
 }
 
-props.bridge.on((evt) => {
+function handleEdit(step: FlowStep, i: number) {
+  if (step.type === 'condition')  return editConditionStep(step, i)
+  if (step.type === 'delay')      return editDelayStep(step)
+  if (step.type === 'loop_items') return editLoopStep(step, i)
+  editStep(step, i)
+}
+
+const mutationHandler = (evt: BridgeEvent) => {
   if (evt.type === 'DOM_MUTATION' && showPickerModal.value && !domScanning.value) domMutated.value = true
-})
+}
+onMounted(() => bridge.on(mutationHandler))
+onUnmounted(() => bridge.off(mutationHandler))
 </script>
 
 <template>
@@ -121,61 +131,26 @@ props.bridge.on((evt) => {
           @dragover.prevent="dragInsertIdx = i"
           @drop="onDrop"
         />
-        <div
-          class="step-card"
-          :class="{ 'step-card--dragging': dragSrcIdx === i }"
-          draggable="true"
-          @dragstart="onDragStart($event, i)"
-          @dragover.stop="onDragOver($event, i)"
-          @drop.stop="onDrop"
-          @dragend="onDragEnd"
-        >
-          <div
-            class="step-card__handle"
-            :class="{ 'step-card__handle--grabbing': dragSrcIdx === i }"
-            @mousedown="onHandleMouseDown"
-          >⋮⋮</div>
-          <input
-            type="checkbox"
-            class="step-card__check"
-            :checked="selectedStepIds.includes(step.id)"
-            @change="toggleSelect(step.id)"
-          />
-          <div class="step-card__body">
-            <div class="step-card__label">{{ step.label }}</div>
-            <div class="step-card__type">{{ stepTypeLabels[step.type] ?? step.type }}</div>
-            <div
-              v-if="step.type === 'call_flow' && isBrokenRef(step.flowRef)"
-              class="step-card__broken"
-              title="引用的流程不存在或已被删除"
-            >⚠ 流程已丢失</div>
-            <button
-              v-if="step.type === 'condition'"
-              class="step-card__cond-toggle"
-              @click.stop="toggleConditionExpand(step.id)"
-            >
-              {{ expandedConditions.has(step.id) ? '▲ 收起' : '▼ 展开分支' }}
-              <span class="step-card__cond-count">(IF:{{ step.children?.length ?? 0 }} | ELSE:{{ step.elseChildren?.length ?? 0 }})</span>
-            </button>
-          </div>
-          <div class="step-card__actions">
-            <button
-              v-if="step.type !== 'call_flow' && (step.type === 'condition' || step.type === 'delay' || step.type === 'loop_items' || !!step.selector)"
-              class="step-card__btn step-card__btn--edit"
-              title="编辑步骤"
-              @click="step.type === 'condition' ? editConditionStep(step, i) : step.type === 'delay' ? editDelayStep(step) : step.type === 'loop_items' ? editLoopStep(step, i) : editStep(step, i)"
-            >✎</button>
-            <button class="step-card__btn step-card__btn--del" @click="removeStep(i)">✖</button>
-          </div>
-        </div>
-        <!-- 条件分支展开视图 -->
-        <ConditionBranchView
-          v-if="step.type === 'condition' && expandedConditions.has(step.id)"
+        <StepCard
           :step="step"
+          :index="i"
+          :drag-src-idx="dragSrcIdx"
+          :selected="selectedStepIds.includes(step.id)"
           :step-type-labels="stepTypeLabels"
-          @edit-branch="(condId, branch, child, ci) => editBranchStep(condId, branch, child, ci)"
-          @remove-branch="(condId, branch, ci) => removeBranchStep(condId, branch, ci)"
-          @open-picker="(condId, branch) => openBranchPicker(condId, branch)"
+          :expanded-conditions="expandedConditions"
+          :is-broken-ref="isBrokenRef"
+          @dragstart="onDragStart"
+          @dragover="onDragOver"
+          @drop="onDrop"
+          @dragend="onDragEnd"
+          @handle-mousedown="onHandleMouseDown"
+          @toggle-select="toggleSelect"
+          @edit="handleEdit"
+          @remove="removeStep"
+          @toggle-condition-expand="toggleConditionExpand"
+          @edit-branch="editBranchStep"
+          @remove-branch="removeBranchStep"
+          @open-picker="openBranchPicker"
         />
       </template>
       <div
@@ -355,93 +330,6 @@ props.bridge.on((evt) => {
 .step-list { display: flex; flex-direction: column; }
 .step-insert-line { height: 3px; border-radius: 2px; margin: 1px 0; transition: background 0.1s; }
 .step-insert-line--active { background: #89b4fa; box-shadow: 0 0 6px #89b4fa88; }
-
-.step-card {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  background: #313244;
-  border-radius: 6px;
-  padding: 8px 10px;
-  border: 1px solid #45475a;
-  margin: 2px 0;
-}
-.step-card--dragging { opacity: 0.4; }
-.step-card__handle {
-  flex-shrink: 0;
-  width: 14px;
-  color: #45475a;
-  font-size: 13px;
-  line-height: 1;
-  cursor: grab;
-  user-select: none;
-  padding-top: 1px;
-  letter-spacing: -1px;
-  &:hover { color: #6c7086; }
-}
-.step-card__handle--grabbing { cursor: grabbing; }
-.step-card__check { flex-shrink: 0; width: 14px; height: 14px; margin-top: 3px; cursor: pointer; accent-color: #89b4fa; }
-.step-card__index {
-  flex-shrink: 0;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: #45475a;
-  color: #cdd6f4;
-  font-size: 11px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 600;
-}
-.step-card__body { flex: 1; min-width: 0; }
-.step-card__label { font-size: 13px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.step-card__type  { font-size: 11px; color: #89b4fa; margin-top: 2px; }
-.step-card__broken { font-size: 11px; color: #f38ba8; margin-top: 2px; font-weight: 500; }
-.step-card__wait { display: flex; align-items: center; gap: 4px; margin-top: 5px; flex-wrap: wrap; }
-.step-card__wait-label { font-size: 11px; color: #6c7086; white-space: nowrap; }
-.step-card__wait-sep   { font-size: 11px; color: #6c7086; white-space: nowrap; margin-left: 4px; }
-.step-card__wait-tilde { font-size: 11px; color: #6c7086; }
-.step-card__wait-unit  { font-size: 11px; color: #6c7086; }
-.step-card__wait-input {
-  width: 60px;
-  background: #1e1e2e;
-  border: 1px solid #313244;
-  border-radius: 3px;
-  color: #a6adc8;
-  padding: 2px 4px;
-  font-size: 11px;
-  text-align: right;
-  &:focus { outline: none; border-color: #89b4fa; }
-}
-.step-card__actions { display: flex; gap: 4px; flex-shrink: 0; }
-.step-card__btn {
-  background: none;
-  border: 1px solid #45475a;
-  border-radius: 3px;
-  color: #6c7086;
-  cursor: pointer;
-  font-size: 11px;
-  padding: 2px 5px;
-  &:hover { color: #cdd6f4; border-color: #6c7086; }
-  &:disabled { opacity: 0.3; cursor: default; }
-  &--edit:hover { color: #89b4fa; border-color: #89b4fa; }
-  &--del:hover  { color: #f38ba8; border-color: #f38ba8; }
-}
-.step-card__cond-toggle {
-  background: none;
-  border: 1px solid #45475a;
-  border-radius: 3px;
-  color: #6c7086;
-  cursor: pointer;
-  font-size: 10px;
-  padding: 2px 6px;
-  white-space: nowrap;
-  margin-top: 4px;
-  display: block;
-  &:hover { color: #cdd6f4; border-color: #6c7086; }
-}
-.step-card__cond-count { color: #585b70; font-size: 10px; margin-left: 2px; }
 
 .step-add-toolbar {
   position: sticky;
