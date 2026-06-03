@@ -2,6 +2,7 @@
 withDefaults(defineProps<{
   variant?: 'primary' | 'danger' | 'ghost'
   size?:    'sm' | 'icon'
+  icon?:    string
   active?:  boolean
   type?:    'button' | 'submit' | 'reset'
 }>(), {
@@ -17,9 +18,16 @@ withDefaults(defineProps<{
       variant && `btn--${variant}`,
       size    && `btn--${size}`,
       { 'btn--active': active },
+      icon    && 'btn--adaptive',
     ]"
   >
-    <slot />
+    <template v-if="icon">
+      <span class="btn__icon" aria-hidden="true">{{ icon }}</span>
+      <span class="btn__text"><slot /></span>
+    </template>
+    <template v-else>
+      <slot />
+    </template>
   </button>
 </template>
 
@@ -62,4 +70,10 @@ withDefaults(defineProps<{
 
 .btn--sm   { padding: 3px 8px; font-size: 11px; }
 .btn--icon { padding: 3px 6px; line-height: 1; }
+
+// Adaptive icon/text button
+.btn--adaptive {
+  .btn__icon { display: none; }
+  .btn__text  { display: inline; }
+}
 </style>
