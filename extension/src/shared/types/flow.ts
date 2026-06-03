@@ -43,7 +43,6 @@ export interface FlowStep {
   foundDelay?: [number, number]  // 元素出现后、执行动作前的随机等待 ms
   children?: FlowStep[]     // loop_items / condition 子步骤
   flowRef?: string          // call_flow: 引用的已保存流程 ID
-  autoClickItem?: boolean   // loop_items: 执行子步骤前先点击当前列表项本身
   itemDelay?: [number, number] // loop_items: 每项处理完后的随机延迟 [min, max] ms
   loopChildSelector?: string   // loop_items: 主要目标子元素的相对路径（相对于每个列表项）
   relativeSelector?: boolean // 子步骤专用：selector 相对于所在列表项而非整个页面

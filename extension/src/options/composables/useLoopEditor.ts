@@ -182,7 +182,6 @@ export function useLoopEditor(
       label:             `循环列表：${candidate.itemSelector.slice(0, 40)}`,
       selector:          { cssSelector: candidate.itemSelector },
       loopChildSelector: candidate.relativeSelector || undefined,
-      autoClickItem:     true,
       children:          [],
     }
     editingFlow.value.steps.push(newStep)

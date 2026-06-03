@@ -674,7 +674,6 @@ export function initConsolePanel(): ConsolePanelCtrl {
         type: 'loop_items',
         label: `循环 ${loopSelector} ×${loopCount}`,
         selector: { cssSelector: loopSelector },
-        autoClickItem: true,
         children: [],
         delay: [800, 2000],
       }
@@ -2371,7 +2370,6 @@ export function initConsolePanel(): ConsolePanelCtrl {
         type: 'loop_items',
         label: `循环 ${finalSel} ×${finalCount}`,
         selector: { cssSelector: finalSel },
-        autoClickItem: true,
         children: templateSteps,
         delay: [800, 2000],
       }
@@ -2666,7 +2664,16 @@ export function initConsolePanel(): ConsolePanelCtrl {
       try { count = document.querySelectorAll(finalListSel).length } catch { /* ignore */ }
 
       let childStep: FlowStep | null = null
-      if (!isSelf) {
+      if (isSelf) {
+        childStep = {
+          id: mkStepId(),
+          type: 'click',
+          label: `点击 ${finalListSel}`,
+          selector: { cssSelector: finalListSel },
+          relativeSelector: true,
+          delay: [600, 1200],
+        }
+      } else {
         childStep = {
           id: mkStepId(),
           type: actionSel.value as FlowStep['type'],
@@ -2684,8 +2691,7 @@ export function initConsolePanel(): ConsolePanelCtrl {
         type: 'loop_items',
         label: `循环 ${finalListSel} ×${count}`,
         selector: { cssSelector: finalListSel },
-        autoClickItem: isSelf,
-        children: childStep ? [childStep] : [],
+        children: [childStep],
         delay: [800, 2000],
       }
       const dest = targetSteps ?? activeFlow()!.steps

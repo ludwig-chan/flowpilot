@@ -18,7 +18,6 @@ const emit = defineEmits<{
 }>()
 
 const label     = ref(props.step.label)
-const autoClick = ref(props.step.autoClickItem ?? false)
 const delayMin  = ref(props.step.itemDelay?.[0] ?? 800)
 const delayMax  = ref(props.step.itemDelay?.[1] ?? 2000)
 const childSel  = ref(props.step.loopChildSelector ?? '')
@@ -37,7 +36,6 @@ function currentState(): FlowStep {
   return {
     ...props.step,
     label:             label.value.trim() || props.step.label,
-    autoClickItem:     autoClick.value,
     itemDelay:         [Math.max(0, Number(delayMin.value) || 0), Math.max(0, Number(delayMax.value) || 0)],
     loopChildSelector: childSel.value || undefined,
     children:          children.value,
@@ -214,14 +212,6 @@ function onQuickConfirm() {
             <BaseButton variant="primary" class="elm-quick-confirm" @click="onQuickConfirm">确认添加</BaseButton>
           </div>
         </div>
-      </div>
-
-      <!-- 先点击选项 -->
-      <div class="elm-section elm-section--row">
-        <label class="elm-check-label">
-          <input v-model="autoClick" type="checkbox" class="elm-checkbox" />
-          先点击列表项本身再执行动作
-        </label>
       </div>
 
       <!-- 每项间隔 -->

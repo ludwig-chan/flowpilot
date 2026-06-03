@@ -175,11 +175,6 @@ async function executeStep(
       for (const item of Array.from(items)) {
         if (_stopped) return
         onLog(`  → 处理：${item.textContent?.trim().slice(0, 50)}`)
-        // autoClickItem=true 时先点击列表项本身（打开详情/对话框），再执行模板步骤
-        if (step.autoClickItem) {
-          ;(item as HTMLElement).click()
-          await humanDelay(600, 1200)
-        }
         if (step.children?.length) {
           for (const child of step.children) {
             if (_stopped) return
