@@ -19,7 +19,6 @@ import FlowSettingsModal from './FlowSettingsModal.vue'
 import SmartLoopPickerModal from '../step-editor/SmartLoopPickerModal.vue'
 import ConditionBranchView from '../step-editor/ConditionBranchView.vue'
 import CallFlowPickerModal from '../step-editor/CallFlowPickerModal.vue'
-import BaseButton from '@shared/components/BaseButton.vue'
 import DropdownMenu from '@shared/components/DropdownMenu.vue'
 
 type Bridge = ReturnType<typeof useExtensionBridge>

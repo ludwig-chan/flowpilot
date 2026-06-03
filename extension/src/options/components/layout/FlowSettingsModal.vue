@@ -3,8 +3,6 @@ import { ref } from 'vue'
 import type { LocalFlow } from '../stores/useFlowStore'
 import type { StepDelayLevel } from '@shared/types/flow'
 import { DELAY_LEVELS } from '@shared/types/flow'
-import BaseModal from '@shared/components/BaseModal.vue'
-import BaseButton from '@shared/components/BaseButton.vue'
 
 const props = defineProps<{ flow: LocalFlow }>()
 

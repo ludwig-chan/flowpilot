@@ -12,7 +12,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import DomTreeViewer from './DomTreeViewer.vue'
-import BaseButton from '@shared/components/BaseButton.vue'
 import BaseInput from '@shared/components/BaseInput.vue'
 import type { SerializedDomNode } from '@shared/types/dom'
 

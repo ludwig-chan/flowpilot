@@ -3,8 +3,6 @@ import { ref, computed, watch } from 'vue'
 import type { FlowNode, FlowFolder, ExportPayload } from '../stores/useFlowStore'
 import CheckableFlowTree from '../flow-tree/CheckableFlowTree.vue'
 import FolderPickerNode from '../flow-tree/FolderPickerNode.vue'
-import BaseModal from '@shared/components/BaseModal.vue'
-import BaseButton from '@shared/components/BaseButton.vue'
 
 const props = defineProps<{
   visible: boolean

@@ -1,7 +1,5 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import BaseModal from '@shared/components/BaseModal.vue'
-import BaseButton from '@shared/components/BaseButton.vue'
 
 interface FlowOption {
   id:   string

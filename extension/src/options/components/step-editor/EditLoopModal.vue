@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import type { FlowStep } from '@shared/types/flow'
-import BaseModal from '@shared/components/BaseModal.vue'
-import BaseButton from '@shared/components/BaseButton.vue'
 import BaseInput from '@shared/components/BaseInput.vue'
 
 const props = defineProps<{

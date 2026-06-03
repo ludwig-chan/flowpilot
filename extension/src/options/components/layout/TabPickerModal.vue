@@ -1,7 +1,4 @@
 <script setup lang="ts">
-import BaseModal from '@shared/components/BaseModal.vue'
-import BaseButton from '@shared/components/BaseButton.vue'
-
 defineProps<{
   tabs: chrome.tabs.Tab[]
 }>()

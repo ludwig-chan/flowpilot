@@ -2,8 +2,6 @@
 import { ref, computed } from 'vue'
 import type { SerializedElement } from '@shared/types/dom'
 import type { FlowStep, ActionType } from '@shared/types/flow'
-import BaseModal from '@shared/components/BaseModal.vue'
-import BaseButton from '@shared/components/BaseButton.vue'
 import BaseInput from '@shared/components/BaseInput.vue'
 
 interface ActionOption {
@@ -99,9 +97,15 @@ const currentOpt = computed(() => ACTION_OPTIONS.find(o => o.type === selectedTy
 
 const displaySel = computed(() => props.overrideSel ?? props.element.selector.cssSelector)
 const autoLabel  = computed(() => {
-  const base   = (props.element.label || displaySel.value).slice(0, 36)
   const action = currentOpt.value.label.replace(/^\S+\s*/, '')
-  return `${action}：${base}`
+  const quoted = props.element.label.match(/"(.+)"/)
+  const base = (
+    quoted?.[1] ||
+    props.element.selector.ariaLabel ||
+    props.element.selector.text ||
+    ''
+  ).slice(0, 36)
+  return base ? `${action}：${base}` : action
 })
 
 function buildStep(): FlowStep {

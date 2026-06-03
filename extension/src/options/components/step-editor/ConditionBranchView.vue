@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import type { FlowStep } from '@shared/types/flow'
-import BaseButton from '@shared/components/BaseButton.vue'
 
 defineProps<{
   step:           FlowStep

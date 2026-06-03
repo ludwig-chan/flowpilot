@@ -1,9 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { BUILTIN_PRESETS, type BuiltinPreset } from '@/presets/index'
-import BaseModal from '@shared/components/BaseModal.vue'
 import BaseInput from '@shared/components/BaseInput.vue'
-import BaseButton from '@shared/components/BaseButton.vue'
 
 const emit = defineEmits<{
   (e: 'install', preset: BuiltinPreset): void

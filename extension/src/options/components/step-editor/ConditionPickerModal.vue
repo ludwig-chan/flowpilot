@@ -2,8 +2,6 @@
 import { ref, computed, watch } from 'vue'
 import ElementPickerDrawer from '../element-picker/ElementPickerDrawer.vue'
 import type { SerializedDomNode } from '@shared/types/dom'
-import BaseModal from '@shared/components/BaseModal.vue'
-import BaseButton from '@shared/components/BaseButton.vue'
 import BaseInput from '@shared/components/BaseInput.vue'
 
 // ── Props / Emits ────────────────────────────────────────────────────────────

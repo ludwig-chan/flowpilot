@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import type { LocalFlow } from '../stores/useFlowStore'
 import type { TriggerType, UrlMatchMode } from '@shared/types/flow'
-import BaseButton from '@shared/components/BaseButton.vue'
 
 const props = defineProps<{
   flow:          LocalFlow

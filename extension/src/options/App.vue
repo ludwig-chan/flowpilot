@@ -11,7 +11,6 @@ import LogDrawer from './components/layout/LogDrawer.vue'
 import TabPickerModal from './components/layout/TabPickerModal.vue'
 import FlowSidebar from './components/layout/FlowSidebar.vue'
 import StepList from './components/layout/StepList.vue'
-import BaseButton from '@shared/components/BaseButton.vue'
 
 const flowStore = useFlowStore()
 const bridge    = useExtensionBridge()

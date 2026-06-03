@@ -10,7 +10,6 @@ import EditNodeModal from '../step-editor/EditNodeModal.vue'
 import PresetsModal from '../io/PresetsModal.vue'
 import ExportModal from '../io/ExportModal.vue'
 import ImportModal from '../io/ImportModal.vue'
-import BaseButton from '@shared/components/BaseButton.vue'
 
 const flowStore = useFlowStore()
 const es        = useEditorStore()
