@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import type { FlowStep } from '@shared/types/flow'
+import { ref, computed } from 'vue'
+import type { FlowStep, ActionType } from '@shared/types/flow'
 import BaseInput from '@shared/components/BaseInput.vue'
 
 const props = defineProps<{
@@ -12,8 +12,9 @@ const emit = defineEmits<{
   (e: 'close'):                        void
   (e: 'reselect'):                     void
   (e: 'reselect-child', currentState: FlowStep): void
-  (e: 'edit-child', childIdx: number, currentState: FlowStep): void
-  (e: 'add-child',  currentState: FlowStep): void
+  (e: 'edit-child',    childIdx: number, currentState: FlowStep): void
+  (e: 'add-child',      currentState: FlowStep): void
+  (e: 'add-call-flow',  currentState: FlowStep): void
 }>()
 
 const label     = ref(props.step.label)
@@ -53,6 +54,82 @@ function onEditChild(idx: number) {
 
 function onDeleteChild(idx: number) {
   children.value.splice(idx, 1)
+}
+
+// ── 快速添加动作（loopChildSelector 已填时内联展开） ─────────────────
+interface QuickActionOption {
+  type:         ActionType
+  label:        string
+  needValue:    boolean
+  placeholder?: string
+}
+const ACTION_QUICK_GROUPS: { label: string; options: QuickActionOption[] }[] = [
+  {
+    label: '鼠标',
+    options: [
+      { type: 'click',        label: '🖱 点击', needValue: false },
+      { type: 'double_click', label: '🖱 双击', needValue: false },
+      { type: 'right_click',  label: '🖱 右键', needValue: false },
+      { type: 'hover',        label: '👆 悬停', needValue: false },
+    ],
+  },
+  {
+    label: '文本',
+    options: [
+      { type: 'input', label: '⌨️ 输入文本', needValue: true,  placeholder: '要输入的文本，支持 {{变量}}' },
+      { type: 'clear', label: '🗑 清空文本',  needValue: false },
+    ],
+  },
+  {
+    label: '表单',
+    options: [
+      { type: 'select',    label: '🔽 选择选项', needValue: true,  placeholder: '选项值（value 属性）' },
+      { type: 'check',     label: '☑ 勾选',      needValue: true,  placeholder: 'true / false / 留空=切换' },
+      { type: 'focus',     label: '🎯 聚焦',      needValue: false },
+      { type: 'press_key', label: '⌨️ 按键',      needValue: true,  placeholder: 'Enter、Tab、Escape…' },
+    ],
+  },
+  {
+    label: '数据',
+    options: [
+      { type: 'get_text',       label: '📋 获取文字', needValue: true,  placeholder: '存入变量名（如 myVar）' },
+      { type: 'wait_appear',    label: '⏳ 等待出现', needValue: false },
+      { type: 'wait_disappear', label: '🕐 等待消失', needValue: false },
+      { type: 'scroll_to',      label: '📜 滚动到',   needValue: false },
+    ],
+  },
+]
+const ACTION_QUICK_OPTS = ACTION_QUICK_GROUPS.flatMap(g => g.options)
+
+const showQuickAdd    = ref(false)
+const quickType       = ref<ActionType>('click')
+const quickValue      = ref('')
+const currentQuickOpt = computed(
+  () => ACTION_QUICK_OPTS.find(o => o.type === quickType.value) ?? ACTION_QUICK_OPTS[0]
+)
+
+function handleAddChild() {
+  if (childSel.value) {
+    showQuickAdd.value = !showQuickAdd.value
+  } else {
+    emit('add-child', currentState())
+  }
+}
+
+function onQuickConfirm() {
+  const opt    = currentQuickOpt.value
+  const action = opt.label.replace(/^\S+\s*/, '')
+  const child: FlowStep = {
+    id:               `step_${Date.now()}_${Math.random().toString(36).slice(2, 5)}`,
+    type:             quickType.value,
+    label:            `${action}：${childSel.value.slice(0, 30)}`,
+    selector:         { cssSelector: childSel.value },
+    relativeSelector: true,
+    value:            opt.needValue && quickValue.value.trim() ? quickValue.value.trim() : undefined,
+  }
+  children.value.push(child)
+  showQuickAdd.value = false
+  quickValue.value   = ''
 }
 </script>
 
@@ -108,7 +185,35 @@ function onDeleteChild(idx: number) {
       </div>
 
       <div class="elm-child-add">
-        <BaseButton class="elm-add-btn" @click="emit('add-child', currentState())">＋ 添加操作</BaseButton>
+        <div class="elm-add-buttons">
+          <BaseButton class="elm-add-btn" @click="handleAddChild">＋ 添加操作</BaseButton>
+          <BaseButton class="elm-add-btn elm-add-btn--flow" @click="emit('add-call-flow', currentState())">＋ 嵌入流程</BaseButton>
+        </div>
+
+        <!-- 快速选动作面板（有 loopChildSelector 时展开） -->
+        <div v-if="showQuickAdd" class="elm-quick-add">
+          <div class="elm-quick-row">
+            <select
+              class="elm-quick-select"
+              :value="quickType"
+              @change="quickType = ($event.target as HTMLSelectElement).value as ActionType; quickValue = ''"
+            >
+              <optgroup v-for="g in ACTION_QUICK_GROUPS" :key="g.label" :label="g.label">
+                <option v-for="opt in g.options" :key="opt.type" :value="opt.type">{{ opt.label }}</option>
+              </optgroup>
+            </select>
+            <BaseInput
+              v-if="currentQuickOpt.needValue"
+              v-model="quickValue"
+              class="elm-quick-value"
+              :placeholder="currentQuickOpt.placeholder || ''"
+            />
+          </div>
+          <div class="elm-quick-row elm-quick-row--actions">
+            <button class="elm-quick-link" @click="showQuickAdd = false; emit('add-child', currentState())">选择其他元素…</button>
+            <BaseButton variant="primary" class="elm-quick-confirm" @click="onQuickConfirm">确认添加</BaseButton>
+          </div>
+        </div>
       </div>
 
       <!-- 先点击选项 -->
@@ -197,11 +302,45 @@ function onDeleteChild(idx: number) {
 }
 
 .elm-child-add { padding: 4px 14px 8px; }
+.elm-add-buttons {
+  display: flex; gap: 6px;
+}
+
 .elm-add-btn {
-  width: 100%; font-size: 11px; padding: 4px;
+  flex: 1; font-size: 11px; padding: 4px;
   border: 1px dashed $color-surface-2 !important; background: transparent; color: $color-text-muted;
   &:hover { border-color: $color-blue !important; color: $color-blue; }
+  &--flow {
+    &:hover { border-color: $color-green !important; color: $color-green; }
+  }
 }
+
+.elm-quick-add {
+  margin-top: 6px; padding: 8px;
+  background: $color-surface-1; border: 1px solid $color-surface-2; border-radius: $radius;
+  display: flex; flex-direction: column; gap: 6px;
+}
+
+.elm-quick-row {
+  display: flex; align-items: center; gap: 6px;
+  &--actions { justify-content: space-between; }
+}
+
+.elm-quick-select {
+  flex: 1; background: $color-base; border: 1px solid $color-surface-2; border-radius: $radius-sm;
+  color: $color-text; padding: 4px 6px; font-size: 11px; cursor: pointer;
+  &:focus { outline: none; border-color: $color-blue; }
+}
+
+.elm-quick-value { flex: 1; }
+
+.elm-quick-link {
+  font-size: 11px; color: $color-text-muted; background: none; border: none;
+  cursor: pointer; padding: 0; text-decoration: underline;
+  &:hover { color: $color-blue; }
+}
+
+.elm-quick-confirm { font-size: 11px; padding: 3px 10px; }
 
 .elm-check-label {
   display: flex; align-items: center; gap: 6px;

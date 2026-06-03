@@ -55,6 +55,7 @@ const {
   openSmartPicker, cancelSmartLoopPicking, onSmartLoopConfirm,
   onElementPicked, onActionRePick, openPicker, closePicker,
   onLoopAddChild, onActionTry, onTestAction,
+  showLoopCallFlowPicker, onLoopAddCallFlow, onLoopConfirmCallFlow,
 } = usePickerOrchestrator(props.bridge, editingFlow, activeTabId, requireTab, pickedCssSelector, pickMode, scanDom)
 
 const {
@@ -78,6 +79,11 @@ const {
 } = useConditionEditor(editingFlow, openPicker)
 
 const { dragSrcIdx, dragInsertIdx, onHandleMouseDown, onDragStart, onDragOver, onDrop, onDragEnd } = useStepDrag(editingFlow)
+
+function onLoopCallFlowConfirm(id: string) {
+  const name = flowStore.allFlows().find(f => f.id === id)?.name ?? id
+  onLoopConfirmCallFlow(id, name)
+}
 
 props.bridge.on((evt) => {
   if (evt.type === 'DOM_MUTATION' && showPickerModal.value && !domScanning.value) domMutated.value = true
@@ -230,6 +236,7 @@ props.bridge.on((evt) => {
       @reselect-child="onLoopReselectChild"
       @edit-child="onLoopEditChild"
       @add-child="onLoopAddChild"
+      @add-call-flow="onLoopAddCallFlow"
     />
 
     <!-- 条件配置模态框 -->
@@ -279,6 +286,14 @@ props.bridge.on((evt) => {
       :flow="editingFlow"
       @close="showSettingsModal = false"
       @confirm="onSettingsConfirm"
+    />
+
+    <!-- 嵌入流程选择（循环子步骤） -->
+    <CallFlowPickerModal
+      v-if="showLoopCallFlowPicker"
+      :flows="flowStore.allFlows().filter(f => f.id !== editingFlow?.id)"
+      @confirm="onLoopCallFlowConfirm"
+      @cancel="showLoopCallFlowPicker = false"
     />
 
     <!-- 嵌入流程选择 -->

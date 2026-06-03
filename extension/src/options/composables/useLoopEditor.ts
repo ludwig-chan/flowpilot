@@ -205,6 +205,30 @@ export function useLoopEditor(
     }
   }
 
+  // ── 循环内嵌入流程 ────────────────────────────────────────────────────
+  const showLoopCallFlowPicker = ref(false)
+
+  /** EditLoopModal "嵌入流程" → 保存当前状态，关闭 Modal，显示流程选择器 */
+  function onLoopAddCallFlow(currentState: FlowStep) {
+    es.editingLoopStep       = currentState
+    es.showEditLoopModal     = false
+    showLoopCallFlowPicker.value = true
+  }
+
+  /** 流程选择确认 → 将 call_flow 子步骤写入 children[]，重新打开 EditLoopModal */
+  function onLoopConfirmCallFlow(id: string, name: string) {
+    showLoopCallFlowPicker.value = false
+    if (!es.editingLoopStep) return
+    es.editingLoopStep.children = es.editingLoopStep.children ?? []
+    es.editingLoopStep.children.push({
+      id:      `step_${Date.now()}_${Math.random().toString(36).slice(2, 5)}`,
+      type:    'call_flow',
+      label:   `嵌入流程：${name}`,
+      flowRef: id,
+    })
+    es.showEditLoopModal = true
+  }
+
   return {
     editingLoopStepIdx,
     reselectingLoopChild,
@@ -221,5 +245,8 @@ export function useLoopEditor(
     onListBuilderDoneDirect,
     onSmartLoopConfirm,
     getLoopChildActionOpts,
+    showLoopCallFlowPicker,
+    onLoopAddCallFlow,
+    onLoopConfirmCallFlow,
   }
 }

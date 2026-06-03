@@ -34,6 +34,9 @@ export function usePickerOrchestrator(
     onLoopEditChild,
     onSmartLoopConfirm: _onSmartLoopConfirmLoop,
     getLoopChildActionOpts,
+    showLoopCallFlowPicker,
+    onLoopAddCallFlow,
+    onLoopConfirmCallFlow,
   } = useLoopEditor(editingFlow, bridge, scanDom, pickedCssSelector)
 
   // ── useStepEditor ─────────────────────────────────────────────────
@@ -119,5 +122,7 @@ export function usePickerOrchestrator(
     // Wrappers
     onElementPicked, onActionRePick, openPicker, closePicker,
     onLoopAddChild, onActionTry, onTestAction,
+    // 循环嵌入流程
+    showLoopCallFlowPicker, onLoopAddCallFlow, onLoopConfirmCallFlow,
   }
 }
