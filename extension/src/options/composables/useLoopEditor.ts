@@ -3,15 +3,11 @@ import type { Ref } from 'vue'
 import type { LocalFlow } from '../stores/useFlowStore'
 import type { FlowStep } from '@shared/types/flow'
 import type { SerializedElement } from '@shared/types/dom'
-import { useExtensionBridge } from './useExtensionBridge'
 import { computeRelativeSelector } from '../utils/selectorUtils'
 import { useEditorStore } from '../stores/useEditorStore'
 
-type Bridge = ReturnType<typeof useExtensionBridge>
-
 export function useLoopEditor(
   editingFlow: Ref<LocalFlow | null>,
-  bridge: Bridge,
   scanDom: () => void,
   pickedCssSelector: Ref<string>,
 ) {

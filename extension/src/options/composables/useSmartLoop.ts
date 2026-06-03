@@ -1,20 +1,17 @@
-import { ref, computed, onUnmounted } from 'vue'
+import { ref, onUnmounted } from 'vue'
 import type { Ref } from 'vue'
 import type { LocalFlow } from '../stores/useFlowStore'
 import type { FlowStep } from '@shared/types/flow'
 import type { RepeatingCandidate } from '@shared/types/message'
 import type { SerializedElement } from '@shared/types/dom'
-import { useExtensionBridge } from './useExtensionBridge'
-import type { BridgeEvent } from './useExtensionBridge'
-
-type Bridge = ReturnType<typeof useExtensionBridge>
+import { type BridgeEvent } from './useExtensionBridge'
+import { useBridge } from './useBridge'
 
 export function useSmartLoop(
-  bridge: Bridge,
-  activeTabId: Ref<number | null>,
   editingFlow: Ref<LocalFlow | null>,
   onLoopConfirm: (candidate: RepeatingCandidate) => void,
 ) {
+  const bridge = useBridge()
   const showSmartLoopModal   = ref(false)
   const smartLoopCandidates  = ref<RepeatingCandidate[]>([])
   const smartLoopPickedEl    = ref<SerializedElement | null>(null)

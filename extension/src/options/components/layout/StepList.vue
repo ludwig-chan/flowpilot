@@ -4,7 +4,7 @@ import { computed } from 'vue'
 import { useEditorStore } from '../../stores/useEditorStore'
 import { useFlowStore } from '../../stores/useFlowStore'
 import { useTabStore } from '../../stores/useTabStore'
-import { useExtensionBridge } from '../../composables/useExtensionBridge'
+import { useBridge } from '../../composables/useBridge'
 import { useDomPicker } from '../../composables/useDomPicker'
 import { usePickerOrchestrator } from '../../composables/usePickerOrchestrator'
 import { useFlowEditor } from '../../composables/useFlowEditor'
@@ -23,10 +23,7 @@ import CallFlowPickerModal from '../step-editor/CallFlowPickerModal.vue'
 import EditDelayModal from '../step-editor/EditDelayModal.vue'
 import DropdownMenu from '@shared/components/DropdownMenu.vue'
 
-type Bridge = ReturnType<typeof useExtensionBridge>
-
 const props = defineProps<{
-  bridge:  Bridge
   running: boolean
 }>()
 
@@ -43,6 +40,8 @@ const tabStore = useTabStore()
 const { activeTabId } = storeToRefs(tabStore)
 const { requireTab } = tabStore
 
+const bridge = useBridge()
+
 const {
   saveToast, selectDelayLevel,
   showSettingsModal, onSettingsConfirm,
@@ -52,7 +51,7 @@ const {
 const {
   domTree, domFilter, domScanning, domMutated, domTabTitle,
   pickMode, pickedCssSelector, scanDom, togglePickMode,
-} = useDomPicker(props.bridge, activeTabId)
+} = useDomPicker(activeTabId)
 
 const {
   showPickerModal,
@@ -64,7 +63,7 @@ const {
   onElementPicked, onActionRePick, openPicker, closePicker,
   onLoopAddChild, onActionTry, onTestAction,
   showLoopCallFlowPicker, onLoopAddCallFlow, onLoopConfirmCallFlow,
-} = usePickerOrchestrator(props.bridge, editingFlow, activeTabId, requireTab, pickedCssSelector, pickMode, scanDom)
+} = usePickerOrchestrator(editingFlow, activeTabId, requireTab, pickedCssSelector, pickMode, scanDom)
 
 const {
   removeStep, addDelayStep, editDelayStep, onDelayConfirm,

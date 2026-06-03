@@ -3,15 +3,12 @@ import type { Ref } from 'vue'
 import type { LocalFlow } from '../stores/useFlowStore'
 import type { FlowStep, ActionType } from '@shared/types/flow'
 import type { SerializedElement } from '@shared/types/dom'
-import { useExtensionBridge } from './useExtensionBridge'
+import { useBridge } from './useBridge'
 import { useLoopEditor } from './useLoopEditor'
 import { useStepEditor } from './useStepEditor'
 import { useSmartLoop } from './useSmartLoop'
 
-type Bridge = ReturnType<typeof useExtensionBridge>
-
 export function usePickerOrchestrator(
-  bridge: Bridge,
   editingFlow: Ref<LocalFlow | null>,
   activeTabId: Ref<number | null>,
   requireTab: (cb: () => void) => void,
@@ -19,6 +16,7 @@ export function usePickerOrchestrator(
   pickMode: Ref<boolean>,
   scanDom: () => void,
 ) {
+  const bridge = useBridge()
   const showPickerModal = ref(false)
 
   // ── useLoopEditor ─────────────────────────────────────────────────
@@ -37,7 +35,7 @@ export function usePickerOrchestrator(
     showLoopCallFlowPicker,
     onLoopAddCallFlow,
     onLoopConfirmCallFlow,
-  } = useLoopEditor(editingFlow, bridge, scanDom, pickedCssSelector)
+  } = useLoopEditor(editingFlow, scanDom, pickedCssSelector)
 
   // ── useStepEditor ─────────────────────────────────────────────────
   const {
@@ -58,7 +56,7 @@ export function usePickerOrchestrator(
     openSmartPicker,
     cancelSmartLoopPicking,
     onSmartLoopConfirm,
-  } = useSmartLoop(bridge, activeTabId, editingFlow, _onSmartLoopConfirmLoop)
+  } = useSmartLoop(editingFlow, _onSmartLoopConfirmLoop)
 
   // ── Wrappers ──────────────────────────────────────────────────────
 

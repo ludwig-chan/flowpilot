@@ -1,16 +1,15 @@
 import { ref, onUnmounted } from 'vue'
 import type { Ref } from 'vue'
-import { useExtensionBridge, type BridgeEvent } from './useExtensionBridge'
+import { type BridgeEvent } from './useExtensionBridge'
+import { useBridge } from './useBridge'
 import type { SerializedDomNode } from '@shared/types/dom'
-
-type Bridge = ReturnType<typeof useExtensionBridge>
 
 const SCAN_TIMEOUT_MS = 10_000
 
 export function useDomPicker(
-  bridge:      Bridge,
   activeTabId: Ref<number | null>,
 ) {
+  const bridge = useBridge()
   const domTree     = ref<SerializedDomNode[]>([])
   const domFilter   = ref('')
   const domScanning = ref(false)

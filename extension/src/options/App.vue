@@ -1,5 +1,5 @@
 ﻿<script setup lang="ts">
-import { onMounted, computed, watch } from 'vue'
+import { onMounted, computed, watch, provide } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useFlowStore } from './stores/useFlowStore'
 import { useExtensionBridge } from './composables/useExtensionBridge'
@@ -14,6 +14,7 @@ import StepList from './components/layout/StepList.vue'
 
 const flowStore = useFlowStore()
 const bridge    = useExtensionBridge()
+provide('bridge', bridge)
 
 const tabStore = useTabStore()
 tabStore.init(bridge)
@@ -37,7 +38,7 @@ async function onTabPickerConfirm(tabId: number) {
 // 当前目标 tab 的标题（用于 header 显示）
 const activeTab = computed(() => tabs.value.find(t => t.id === activeTabId.value) ?? null)
 
-const { logs, running, logDrawerOpen, runCurrentFlow, stopCurrentFlow } = useFlowRunner(bridge, editingFlow, flowStore.allFlows)
+const { logs, running, logDrawerOpen, runCurrentFlow, stopCurrentFlow } = useFlowRunner(editingFlow, flowStore.allFlows)
 
 onMounted(async () => {
   await flowStore.load()
@@ -72,7 +73,6 @@ const { sidebarWidth, logDrawerHeight, startResize, startLogResize } = useResiza
 
       <main class="app__main">
         <StepList
-          :bridge="bridge"
           :running="running"
           @run="requireTab(runCurrentFlow)"
           @stop="stopCurrentFlow()"
