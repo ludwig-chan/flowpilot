@@ -34,9 +34,18 @@ function bundleManifestPlugin() {
         return result
       }
 
+      const now = new Date()
+      const pad = (n: number) => String(n).padStart(2, '0')
+      const offset = -now.getTimezoneOffset()
+      const sign = offset >= 0 ? '+' : '-'
+      const absOffset = Math.abs(offset)
+      const localISOString =
+        `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}` +
+        `T${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}.${String(now.getMilliseconds()).padStart(3, '0')}` +
+        `${sign}${pad(Math.floor(absOffset / 60))}:${pad(absOffset % 60)}`
       const manifest: BundleManifest = {
         hash,
-        builtAt: new Date().toISOString(),
+        builtAt: localISOString,
         files: collectFiles(distDir),
       }
       writeFileSync(

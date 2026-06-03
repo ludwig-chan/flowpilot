@@ -1,6 +1,6 @@
 ﻿<script setup lang="ts">
-import { ref, computed, onMounted, nextTick } from 'vue'
-import { useFlowStore, type LocalFlow, type FlowFolder, type FlowNode, type ExportPayload } from './stores/useFlowStore'
+import { ref, onMounted } from 'vue'
+import { useFlowStore, type LocalFlow } from './stores/useFlowStore'
 import { useExtensionBridge } from './composables/useExtensionBridge'
 import { useDomPicker } from './composables/useDomPicker'
 import { useFlowRunner } from './composables/useFlowRunner'
@@ -11,6 +11,8 @@ import { useStepEditor } from './composables/useStepEditor'
 import { useConditionEditor } from './composables/useConditionEditor'
 import { useEditorStore } from './stores/useEditorStore'
 import { useSmartLoop } from './composables/useSmartLoop'
+import { useTabManager } from './composables/useTabManager'
+import { useFlowTreeActions } from './composables/useFlowTreeActions'
 import FlowTreeNode from './components/flow-tree/FlowTreeNode.vue'
 import LogPanel from './components/layout/LogPanel.vue'
 import ElementPickerModal from './components/element-picker/ElementPickerModal.vue'
@@ -28,65 +30,20 @@ import SmartLoopPickerModal from './components/step-editor/SmartLoopPickerModal.
 import ConditionBranchView from './components/step-editor/ConditionBranchView.vue'
 import FlowEditorHeader from './components/layout/FlowEditorHeader.vue'
 import CallFlowPickerModal from './components/step-editor/CallFlowPickerModal.vue'
-import { filterNodesByIds } from './stores/useFlowStore'
-import { BUILTIN_PRESETS, type BuiltinPreset } from '@/presets/index'
+import { useFlowIO } from './composables/useFlowIO'
 import type { SerializedElement } from '@shared/types/dom'
 import type { FlowStep, StepDelayLevel, ActionType } from '@shared/types/flow'
-import { STEP_DELAY_PRESETS } from '@shared/types/flow'
 import BaseButton from '@shared/components/BaseButton.vue'
 import DropdownMenu from '@shared/components/DropdownMenu.vue'
-
-const DELAY_LEVELS: { value: StepDelayLevel; label: string; hint?: string }[] = [
-  { value: 'none',   label: '无' },
-  { value: 'low',    label: '低',   hint: `${STEP_DELAY_PRESETS.low[0]}~${STEP_DELAY_PRESETS.low[1]} ms` },
-  { value: 'medium', label: '中',   hint: `${STEP_DELAY_PRESETS.medium[0]}~${STEP_DELAY_PRESETS.medium[1]} ms` },
-  { value: 'high',   label: '高',   hint: `${STEP_DELAY_PRESETS.high[0]}~${STEP_DELAY_PRESETS.high[1]} ms` },
-  { value: 'custom', label: '自定义' },
-]
+import { useFlowEstimate } from './composables/useFlowEstimate'
 
 const flowStore = useFlowStore()
 const bridge    = useExtensionBridge()
 
-// 新增弹窗
-const showCreateModal         = ref(false)
-const createModalInitParentId = ref<string | undefined>(undefined)
-
-function openCreateModal(initialParentId?: string) {
-  createModalInitParentId.value = initialParentId
-  showCreateModal.value = true
-}
-
-async function onConfirmCreate(kind: 'flow' | 'folder', name: string, parentId?: string) {
-  if (kind === 'flow') {
-    const id = await flowStore.saveFlow(name, [], parentId)
-    const found = flowStore.allFlows().find(f => f.id === id)
-    if (found) editingFlow.value = JSON.parse(JSON.stringify(found))
-  } else {
-    await flowStore.saveFolder(name, parentId)
-  }
-  showCreateModal.value = false
-}
-
-// Tab selection
-const tabs        = ref<chrome.tabs.Tab[]>([])
-const activeTabId = ref<number | null>(null)
-
-async function refreshTabs() {
-  tabs.value = (await bridge.getTabs()).filter(t => t.url && !t.url.startsWith('chrome'))
-  const stillValid = activeTabId.value !== null && tabs.value.some(t => t.id === activeTabId.value)
-  if (!stillValid) {
-    const active = await bridge.getActiveTab()
-    const targetId = (active?.id != null && tabs.value.some(t => t.id === active.id))
-      ? active.id
-      : (tabs.value[0]?.id ?? null)
-    if (targetId !== null) await selectTab(targetId)
-  }
-}
-
-async function selectTab(tabId: number) {
-  activeTabId.value = tabId
-  await bridge.setActiveTab(tabId)
-}
+const {
+  tabs, activeTabId, refreshTabs, selectTab,
+  showTabPickerModal, requireTab, onTabPickerConfirm, cancelTabPicker,
+} = useTabManager(bridge)
 
 const {
   domTree, domFilter, domScanning, domMutated, domTabTitle,
@@ -96,6 +53,14 @@ const {
 // Flow editing (定义在此处，供 composables 引用)
 const editingFlow  = ref<LocalFlow | null>(null)
 const saveToast    = ref(false)
+
+const {
+  showCreateModal, createModalInitParentId,
+  openCreateModal, onConfirmCreate,
+  deleteFlowOrFolder,
+  showEditModal, editingNodeId, editingNodeName, editingNodeKind, editingNodeParentId,
+  handleEdit, onConfirmEdit,
+} = useFlowTreeActions(flowStore, editingFlow)
 
 // ── Editor Store ──────────────────────────────────────────────────
 const es = useEditorStore()
@@ -136,23 +101,6 @@ function onElementPicked(el: SerializedElement) {
 /** ActionPickerModal 点击「换元素」 → 保留动作状态，重新打开元素选择器 */
 function onActionRePick(type: import('@shared/types/flow').ActionType, value: string | undefined) {
   _onActionRePickBase(type, value, showPickerModal, pickedCssSelector)
-}
-
-// ── Tab 选择拦截 ──────────────────────────────────────────────────
-const showTabPickerModal      = ref(false)
-const pendingAfterTabSelect   = ref<(() => void) | null>(null)
-
-function requireTab(then: () => void) {
-  if (activeTabId.value) { then(); return }
-  pendingAfterTabSelect.value = then
-  showTabPickerModal.value = true
-}
-
-async function onTabPickerConfirm(tabId: number) {
-  await selectTab(tabId)
-  showTabPickerModal.value = false
-  pendingAfterTabSelect.value?.()
-  pendingAfterTabSelect.value = null
 }
 
 function openPicker() {
@@ -266,47 +214,7 @@ function selectDelayLevel(level: StepDelayLevel) {
 const showSettingsModal = ref(false)
 
 // ── 预估完成时间 ──────────────────────────────────────────────────
-function estimateStepListMs(steps: FlowStep[], interStepMs: number): number | null {
-  let total = 0
-  for (const step of steps) {
-    if (step.type === 'call_flow' || step.type === 'loop_items') return null
-    if (step.type === 'delay') {
-      total += Number(step.value) || 0
-    } else {
-      total += interStepMs
-    }
-    if (step.foundDelay) total += (step.foundDelay[0] + step.foundDelay[1]) / 2
-    if (step.type === 'condition') {
-      const ifMs   = estimateStepListMs(step.children    ?? [], interStepMs)
-      const elseMs = estimateStepListMs(step.elseChildren ?? [], interStepMs)
-      if (ifMs === null || elseMs === null) return null
-      total += Math.max(ifMs, elseMs)
-    }
-  }
-  return total
-}
-
-const estimatedFlowTime = computed<string | null>(() => {
-  if (!editingFlow.value) return null
-  const flow = editingFlow.value
-  let interStepMs: number
-  if (flow.stepDelayLevel === 'none') {
-    interStepMs = 0
-  } else if (flow.stepDelayLevel === 'custom' && flow.stepDelayRange) {
-    interStepMs = (flow.stepDelayRange[0] + flow.stepDelayRange[1]) / 2
-  } else {
-    const lvl = (flow.stepDelayLevel ?? 'medium') as 'low' | 'medium' | 'high'
-    const p   = STEP_DELAY_PRESETS[lvl] ?? STEP_DELAY_PRESETS.medium
-    interStepMs = (p[0] + p[1]) / 2
-  }
-  const ms = estimateStepListMs(flow.steps, interStepMs)
-  if (ms === null) return null
-  if (ms < 1000)  return '< 1 秒'
-  if (ms < 60000) return `≈ ${(ms / 1000).toFixed(1)} 秒`
-  const min = Math.floor(ms / 60000)
-  const sec = Math.round((ms % 60000) / 1000)
-  return `≈ ${min} 分 ${sec} 秒`
-})
+const { estimatedFlowTime } = useFlowEstimate(editingFlow)
 
 function onSettingsConfirm(data: { waitTimeout: number; stepDelayLevel: StepDelayLevel; stepDelayRange: [number, number] | undefined }) {
   if (!editingFlow.value) return
@@ -330,83 +238,12 @@ async function saveFlow() {
   _toastTimer = setTimeout(() => { saveToast.value = false }, 2000)
 }
 
-function findNodeInTree(nodes: FlowNode[], id: string): FlowNode | undefined {
-  for (const n of nodes) {
-    if (n.id === id) return n
-    if (n.kind === 'folder') { const r = findNodeInTree(n.children, id); if (r) return r }
-  }
-}
-
-async function deleteFlowOrFolder(id: string) {
-  const node = findNodeInTree(flowStore.tree, id)
-  if (!node) return
-  const childCount = node.kind === 'folder' ? (node as FlowFolder).children.length : 0
-  const msg = node.kind === 'folder' && childCount > 0
-    ? `确定删除分组「${node.name}」及其中所有内容（${childCount} 项）？`
-    : `确定删除「${node.name}」？`
-  if (!confirm(msg)) return
-  await flowStore.remove(id)
-  if (editingFlow.value?.id === id) editingFlow.value = null
-}
-
-// ── 导出 ──────────────────────────────────────────────────────────
-// ── 导出弹窗 ──────────────────────────────────────────────────────
-const showExportModal = ref(false)
-
-function handleExportSelected(ids: Set<string>) {
-  const payload = flowStore.exportSelected(ids)
-  const date = new Date().toISOString().slice(0, 10)
-  const filename = `flowpilot-export-${date}.flowpilot`
-  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url; a.download = filename; a.click()
-  URL.revokeObjectURL(url)
-  showExportModal.value = false
-}
-
-// ── 导入弹窗 ──────────────────────────────────────────────────────
-const showImportModal = ref(false)
-
-async function handleImportConfirm(payload: ExportPayload, selectedIds: Set<string>, targetId?: string) {
-  const filtered = { ...payload, nodes: filterNodesByIds(payload.nodes, selectedIds) }
-  const count = await flowStore.importInto(filtered, targetId)
-  alert(`成功导入 ${count} 个项目`)
-  showImportModal.value = false
-}
-
-// ── 预设库 ──────────────────────────────────────────────────
-
-const showPresetsModal = ref(false)
-
-async function onInstallPreset(preset: BuiltinPreset) {
-  await flowStore.importInto(preset.payload as Parameters<typeof flowStore.importInto>[0], undefined)
-}
-
-// ── 编辑节点 ──────────────────────────────────────────────────────
-const showEditModal       = ref(false)
-const editingNodeId       = ref('')
-const editingNodeName     = ref('')
-const editingNodeKind     = ref<'flow' | 'folder'>('flow')
-const editingNodeParentId = ref<string | undefined>(undefined)
-
-function handleEdit(id: string) {
-  const node = findNodeInTree(flowStore.tree, id)
-  if (!node) return
-  editingNodeId.value       = id
-  editingNodeName.value     = node.name
-  editingNodeKind.value     = node.kind
-  editingNodeParentId.value = flowStore.getParentFolderId(id)
-  showEditModal.value       = true
-}
-
-async function onConfirmEdit(id: string, name: string, parentId: string | undefined) {
-  await flowStore.renameNode(id, name)
-  const currentParent = flowStore.getParentFolderId(id)
-  if (currentParent !== parentId) await flowStore.moveNode(id, parentId)
-  if (editingFlow.value?.id === id) editingFlow.value.name = name
-  showEditModal.value = false
-}
+const {
+  showExportModal, handleExportSelected,
+  showImportModal, handleImportConfirm,
+  showPresetsModal, onInstallPreset,
+  BUILTIN_PRESETS,
+} = useFlowIO(flowStore)
 
 function usePickedElement(el: SerializedElement) {
   if (!editingFlow.value) return
@@ -790,7 +627,7 @@ const stepTypeLabels: Record<string, string> = {
       v-if="showTabPickerModal"
       :tabs="tabs"
       @confirm="onTabPickerConfirm"
-      @cancel="showTabPickerModal = false; pendingAfterTabSelect = null"
+      @cancel="cancelTabPicker"
     />
 
   </div>

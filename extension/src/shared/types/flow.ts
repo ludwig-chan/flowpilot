@@ -78,3 +78,11 @@ export const STEP_DELAY_PRESETS: Record<'low' | 'medium' | 'high', [number, numb
   medium: [1000, 3000],
   high:   [3000, 8000],
 }
+
+export const DELAY_LEVELS: { value: StepDelayLevel; label: string; hint?: string }[] = [
+  { value: 'none',   label: '无' },
+  { value: 'low',    label: '低',   hint: `${STEP_DELAY_PRESETS.low[0]}~${STEP_DELAY_PRESETS.low[1]} ms` },
+  { value: 'medium', label: '中',   hint: `${STEP_DELAY_PRESETS.medium[0]}~${STEP_DELAY_PRESETS.medium[1]} ms` },
+  { value: 'high',   label: '高',   hint: `${STEP_DELAY_PRESETS.high[0]}~${STEP_DELAY_PRESETS.high[1]} ms` },
+  { value: 'custom', label: '自定义' },
+]

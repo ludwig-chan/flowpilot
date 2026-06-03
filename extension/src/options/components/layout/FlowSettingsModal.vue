@@ -2,17 +2,9 @@
 import { ref } from 'vue'
 import type { LocalFlow } from '../stores/useFlowStore'
 import type { StepDelayLevel } from '@shared/types/flow'
-import { STEP_DELAY_PRESETS } from '@shared/types/flow'
+import { DELAY_LEVELS } from '@shared/types/flow'
 import BaseModal from '@shared/components/BaseModal.vue'
 import BaseButton from '@shared/components/BaseButton.vue'
-
-const DELAY_LEVELS: { value: StepDelayLevel; label: string; hint?: string }[] = [
-  { value: 'none',   label: '无' },
-  { value: 'low',    label: '低',   hint: `${STEP_DELAY_PRESETS.low[0]}~${STEP_DELAY_PRESETS.low[1]} ms` },
-  { value: 'medium', label: '中',   hint: `${STEP_DELAY_PRESETS.medium[0]}~${STEP_DELAY_PRESETS.medium[1]} ms` },
-  { value: 'high',   label: '高',   hint: `${STEP_DELAY_PRESETS.high[0]}~${STEP_DELAY_PRESETS.high[1]} ms` },
-  { value: 'custom', label: '自定义' },
-]
 
 const props = defineProps<{ flow: LocalFlow }>()
 
