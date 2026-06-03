@@ -19,6 +19,7 @@ import FlowSettingsModal from './FlowSettingsModal.vue'
 import SmartLoopPickerModal from '../step-editor/SmartLoopPickerModal.vue'
 import ConditionBranchView from '../step-editor/ConditionBranchView.vue'
 import CallFlowPickerModal from '../step-editor/CallFlowPickerModal.vue'
+import EditDelayModal from '../step-editor/EditDelayModal.vue'
 import DropdownMenu from '@shared/components/DropdownMenu.vue'
 
 type Bridge = ReturnType<typeof useExtensionBridge>
@@ -59,7 +60,8 @@ const {
 } = usePickerOrchestrator(props.bridge, editingFlow, activeTabId, requireTab, pickedCssSelector, pickMode, scanDom)
 
 const {
-  removeStep, addDelayStep, editDelayStep,
+  removeStep, addDelayStep, editDelayStep, onDelayConfirm,
+  showDelayModal, delayEditTarget,
   selectedStepIds, toggleSelect, deleteSelected,
   showCallFlowPicker, addCallFlowStep, confirmCallFlow,
 } = useStepActions(editingFlow, flowStore)
@@ -302,6 +304,14 @@ props.bridge.on((evt) => {
       :flows="flowStore.allFlows().filter(f => f.id !== editingFlow?.id)"
       @confirm="confirmCallFlow"
       @cancel="showCallFlowPicker = false"
+    />
+
+    <!-- 等待步骤编辑弹窗 -->
+    <EditDelayModal
+      v-if="showDelayModal"
+      :initial-ms="delayEditTarget ? Number(delayEditTarget.value) : undefined"
+      @confirm="onDelayConfirm"
+      @cancel="showDelayModal = false"
     />
   </Teleport>
 

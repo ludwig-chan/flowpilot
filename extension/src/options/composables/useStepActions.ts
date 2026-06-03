@@ -16,22 +16,35 @@ export const stepTypeLabels: Record<string, string> = {
 export function useStepActions(editingFlow: Ref<LocalFlow | null>, flowStore: FlowStore) {
   function removeStep(index: number) { editingFlow.value?.steps.splice(index, 1) }
 
+  const showDelayModal  = ref(false)
+  const delayEditTarget = ref<FlowStep | null>(null)
+
   function addDelayStep() {
     if (!editingFlow.value) return
-    editingFlow.value.steps.push({
-      id:    `step_${Date.now()}`,
-      type:  'delay',
-      label: '等待',
-      value: '1000',
-    })
+    delayEditTarget.value = null
+    showDelayModal.value  = true
   }
 
   function editDelayStep(step: FlowStep) {
-    const v = prompt('等待时长 (ms)', step.value ?? '1000')
-    if (v === null) return
-    const ms = Number(v) || 1000
-    step.value = String(ms)
-    step.label = `等待 ${ms} ms`
+    delayEditTarget.value = step
+    showDelayModal.value  = true
+  }
+
+  function onDelayConfirm(ms: number) {
+    if (!editingFlow.value) return
+    if (delayEditTarget.value) {
+      delayEditTarget.value.value = String(ms)
+      delayEditTarget.value.label = `等待 ${ms} ms`
+    } else {
+      editingFlow.value.steps.push({
+        id:    `step_${Date.now()}`,
+        type:  'delay',
+        label: `等待 ${ms} ms`,
+        value: String(ms),
+      })
+    }
+    showDelayModal.value  = false
+    delayEditTarget.value = null
   }
 
   const selectedStepIds = ref<string[]>([])
@@ -71,7 +84,8 @@ export function useStepActions(editingFlow: Ref<LocalFlow | null>, flowStore: Fl
   }
 
   return {
-    removeStep, addDelayStep, editDelayStep,
+    removeStep, addDelayStep, editDelayStep, onDelayConfirm,
+    showDelayModal, delayEditTarget,
     selectedStepIds, toggleSelect, deleteSelected,
     showCallFlowPicker, addCallFlowStep, confirmCallFlow,
   }
