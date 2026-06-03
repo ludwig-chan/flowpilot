@@ -14,8 +14,15 @@ export const useTabStore = defineStore('tab', () => {
   // Set once by App.vue after bridge is created; not reactive
   let _bridge: Bridge | null = null
 
+  function _onReconnect() {
+    if (_bridge && activeTabId.value !== null) {
+      _bridge.setActiveTab(activeTabId.value).catch(() => {})
+    }
+  }
+
   function init(bridge: Bridge) {
     _bridge = bridge
+    bridge.onReconnect(_onReconnect)
   }
 
   async function refreshTabs() {

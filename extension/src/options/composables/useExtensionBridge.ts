@@ -21,6 +21,7 @@ type BridgeHandler = (e: BridgeEvent) => void
 export function useExtensionBridge() {
   let port: chrome.runtime.Port | null = null
   const handlers: BridgeHandler[] = []
+  const reconnectHandlers: (() => void)[] = []
 
   function connect() {
     port = chrome.runtime.connect({ name: 'options-panel' })
@@ -30,7 +31,11 @@ export function useExtensionBridge() {
     port.onDisconnect.addListener(() => {
       port = null
       // 短暂延迟后重连（Service Worker 休眠时会断开）
-      setTimeout(connect, 300)
+      setTimeout(() => {
+        connect()
+        // 重连成功后通知外部同步状态（如重新告知后台当前 activeTabId）
+        reconnectHandlers.forEach(h => h())
+      }, 300)
     })
   }
 
@@ -44,6 +49,15 @@ export function useExtensionBridge() {
   function off(handler: BridgeHandler) {
     const idx = handlers.indexOf(handler)
     if (idx >= 0) handlers.splice(idx, 1)
+  }
+
+  function onReconnect(handler: () => void) {
+    reconnectHandlers.push(handler)
+  }
+
+  function offReconnect(handler: () => void) {
+    const idx = reconnectHandlers.indexOf(handler)
+    if (idx >= 0) reconnectHandlers.splice(idx, 1)
   }
 
   async function send(msg: object): Promise<unknown> {
@@ -113,5 +127,5 @@ export function useExtensionBridge() {
     )
   }
 
-  return { on, off, setActiveTab, requestDomScan, requestPickElement, cancelPickElement, requestHighlight, testClick, runFlow, stopFlow, getTabs, getActiveTab, requestSmartLoopAnalyze, highlightLoopCandidates, clearLoopHighlights }
+  return { on, off, onReconnect, offReconnect, setActiveTab, requestDomScan, requestPickElement, cancelPickElement, requestHighlight, testClick, runFlow, stopFlow, getTabs, getActiveTab, requestSmartLoopAnalyze, highlightLoopCandidates, clearLoopHighlights }
 }

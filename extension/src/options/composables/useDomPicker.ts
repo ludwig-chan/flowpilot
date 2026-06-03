@@ -5,6 +5,8 @@ import type { SerializedDomNode } from '@shared/types/dom'
 
 type Bridge = ReturnType<typeof useExtensionBridge>
 
+const SCAN_TIMEOUT_MS = 10_000
+
 export function useDomPicker(
   bridge:      Bridge,
   activeTabId: Ref<number | null>,
@@ -17,12 +19,30 @@ export function useDomPicker(
   const pickMode    = ref(false)
   const pickedCssSelector = ref('')
 
+  let scanTimer: ReturnType<typeof setTimeout> | null = null
+
+  function clearScanTimer() {
+    if (scanTimer !== null) { clearTimeout(scanTimer); scanTimer = null }
+  }
+
   async function scanDom() {
     if (!activeTabId.value) { alert('请先选择一个目标 Tab'); return }
     domScanning.value = true
     domMutated.value  = false
     domTree.value     = []
-    await bridge.requestDomScan()
+    clearScanTimer()
+    scanTimer = setTimeout(() => {
+      if (domScanning.value) {
+        domScanning.value = false
+        alert('扫描超时，请确认页面已加载完成后重试')
+      }
+    }, SCAN_TIMEOUT_MS)
+    try {
+      await bridge.requestDomScan()
+    } catch {
+      clearScanTimer()
+      domScanning.value = false
+    }
   }
 
   async function togglePickMode() {
@@ -38,6 +58,7 @@ export function useDomPicker(
 
   const handler = (evt: BridgeEvent) => {
     if (evt.type === 'DOM_SCAN_RESULT') {
+      clearScanTimer()
       domScanning.value = false
       domTree.value     = evt.tree
       domTabTitle.value = evt.tabTitle
@@ -48,7 +69,7 @@ export function useDomPicker(
     }
   }
   bridge.on(handler)
-  onUnmounted(() => bridge.off(handler))
+  onUnmounted(() => { bridge.off(handler); clearScanTimer() })
 
   return { domTree, domFilter, domScanning, domMutated, domTabTitle, pickMode, pickedCssSelector, scanDom, togglePickMode }
 }
