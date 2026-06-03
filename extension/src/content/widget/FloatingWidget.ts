@@ -286,7 +286,6 @@ const STATUS_TEXT: Partial<Record<TaskStatus, string>> = {
   running: '运行中',
   done:    '已完成',
   error:   '出错',
-  paused:  '已暂停',
 }
 
 // ── CSS ───────────────────────────────────────────────────────────────────────
@@ -369,7 +368,6 @@ function buildCSS(): string {
 .fp-badge--running{background:#dcfce7;color:#16a34a}
 .fp-badge--done   {background:#cffafe;color:#0891b2}
 .fp-badge--error  {background:#fee2e2;color:#dc2626}
-.fp-badge--paused {background:#fef9c3;color:#ca8a04}
 
 .fp-arrow{font-size:9px;color:#9ca3af;flex-shrink:0;}
 

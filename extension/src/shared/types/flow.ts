@@ -66,7 +66,7 @@ export interface FlowTrigger {
 }
 
 // ─── 运行时状态 ────────────────────────────────────────────────────────────────
-export type TaskStatus = 'idle' | 'running' | 'paused' | 'done' | 'error'
+export type TaskStatus = 'idle' | 'running' | 'done' | 'error'
 
 // ─── 步骤间隔档位 ──────────────────────────────────────────────────────────────
 export type StepDelayLevel = 'none' | 'low' | 'medium' | 'high' | 'custom'
@@ -78,10 +78,3 @@ export const STEP_DELAY_PRESETS: Record<'low' | 'medium' | 'high', [number, numb
   high:   [3000, 8000],
 }
 
-export const DELAY_LEVELS: { value: StepDelayLevel; label: string; hint?: string }[] = [
-  { value: 'none',   label: '无' },
-  { value: 'low',    label: '低',   hint: `${STEP_DELAY_PRESETS.low[0]}~${STEP_DELAY_PRESETS.low[1]} ms` },
-  { value: 'medium', label: '中',   hint: `${STEP_DELAY_PRESETS.medium[0]}~${STEP_DELAY_PRESETS.medium[1]} ms` },
-  { value: 'high',   label: '高',   hint: `${STEP_DELAY_PRESETS.high[0]}~${STEP_DELAY_PRESETS.high[1]} ms` },
-  { value: 'custom', label: '自定义' },
-]

@@ -533,32 +533,6 @@ async function resolveElementByStrategy(
   })
 }
 
-export function waitForElement(selector: string, timeout = 10000): Promise<Element> {
-  return new Promise((resolve, reject) => {
-    const existing = document.querySelector(selector)
-    if (existing) {
-      resolve(existing)
-      return
-    }
-
-    const timer = setTimeout(() => {
-      observer.disconnect()
-      reject(new Error(`等待元素超时：${selector}`))
-    }, timeout)
-
-    const observer = new MutationObserver(() => {
-      const el = document.querySelector(selector)
-      if (el) {
-        clearTimeout(timer)
-        observer.disconnect()
-        resolve(el)
-      }
-    })
-
-    observer.observe(document.body, { childList: true, subtree: true })
-  })
-}
-
 function waitForElementToDisappear(selector: string, timeout = 10000): Promise<void> {
   return new Promise((resolve, reject) => {
     if (!document.querySelector(selector)) {

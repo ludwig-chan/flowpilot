@@ -2,6 +2,8 @@
 // MVP 阶段：保持 Service Worker 存活，透传消息
 // v0.2 起承担任务调度、状态持久化职责
 
+import type { UrlMatchMode } from '@shared/types/flow'
+
 const MAX_LOGS = 500
 const bgLogs: string[] = []
 
@@ -188,8 +190,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 })
 
 // ── 触发器工具函数 ─────────────────────────────────────────────────────────────
-
-type UrlMatchMode = 'contains' | 'startsWith' | 'equals' | 'regex'
 
 function matchUrl(url: string, pattern: string, mode: UrlMatchMode = 'contains'): boolean {
   try {
