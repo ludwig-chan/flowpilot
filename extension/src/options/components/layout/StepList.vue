@@ -331,3 +331,154 @@ props.bridge.on((evt) => {
     </Transition>
   </Teleport>
 </template>
+
+<style scoped lang="scss">
+.editor__placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 12px;
+  color: #6c7086;
+}
+.editor__placeholder-icon { font-size: 48px; }
+
+.step-list { display: flex; flex-direction: column; }
+.step-insert-line { height: 3px; border-radius: 2px; margin: 1px 0; transition: background 0.1s; }
+.step-insert-line--active { background: #89b4fa; box-shadow: 0 0 6px #89b4fa88; }
+
+.step-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  background: #313244;
+  border-radius: 6px;
+  padding: 8px 10px;
+  border: 1px solid #45475a;
+  margin: 2px 0;
+}
+.step-card--dragging { opacity: 0.4; }
+.step-card__handle {
+  flex-shrink: 0;
+  width: 14px;
+  color: #45475a;
+  font-size: 13px;
+  line-height: 1;
+  cursor: grab;
+  user-select: none;
+  padding-top: 1px;
+  letter-spacing: -1px;
+  &:hover { color: #6c7086; }
+}
+.step-card__handle--grabbing { cursor: grabbing; }
+.step-card__check { flex-shrink: 0; width: 14px; height: 14px; margin-top: 3px; cursor: pointer; accent-color: #89b4fa; }
+.step-card__index {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #45475a;
+  color: #cdd6f4;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+}
+.step-card__body { flex: 1; min-width: 0; }
+.step-card__label { font-size: 13px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.step-card__type  { font-size: 11px; color: #89b4fa; margin-top: 2px; }
+.step-card__wait { display: flex; align-items: center; gap: 4px; margin-top: 5px; flex-wrap: wrap; }
+.step-card__wait-label { font-size: 11px; color: #6c7086; white-space: nowrap; }
+.step-card__wait-sep   { font-size: 11px; color: #6c7086; white-space: nowrap; margin-left: 4px; }
+.step-card__wait-tilde { font-size: 11px; color: #6c7086; }
+.step-card__wait-unit  { font-size: 11px; color: #6c7086; }
+.step-card__wait-input {
+  width: 60px;
+  background: #1e1e2e;
+  border: 1px solid #313244;
+  border-radius: 3px;
+  color: #a6adc8;
+  padding: 2px 4px;
+  font-size: 11px;
+  text-align: right;
+  &:focus { outline: none; border-color: #89b4fa; }
+}
+.step-card__actions { display: flex; gap: 4px; flex-shrink: 0; }
+.step-card__btn {
+  background: none;
+  border: 1px solid #45475a;
+  border-radius: 3px;
+  color: #6c7086;
+  cursor: pointer;
+  font-size: 11px;
+  padding: 2px 5px;
+  &:hover { color: #cdd6f4; border-color: #6c7086; }
+  &:disabled { opacity: 0.3; cursor: default; }
+  &--edit:hover { color: #89b4fa; border-color: #89b4fa; }
+  &--del:hover  { color: #f38ba8; border-color: #f38ba8; }
+}
+.step-card__cond-toggle {
+  background: none;
+  border: 1px solid #45475a;
+  border-radius: 3px;
+  color: #6c7086;
+  cursor: pointer;
+  font-size: 10px;
+  padding: 2px 6px;
+  white-space: nowrap;
+  margin-top: 4px;
+  display: block;
+  &:hover { color: #cdd6f4; border-color: #6c7086; }
+}
+.step-card__cond-count { color: #585b70; font-size: 10px; margin-left: 2px; }
+
+.step-add-toolbar {
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+  padding: 10px 0 2px;
+  border-top: 1px solid #313244;
+  margin-top: 8px;
+  background: #1e1e2e;
+  display: flex;
+  justify-content: flex-end;
+}
+.step-add-btn { flex: 1; min-width: 90px; justify-content: center; }
+
+.dm-item {
+  background: none;
+  border: none;
+  color: #cdd6f4;
+  cursor: pointer;
+  padding: 6px 10px;
+  border-radius: 4px;
+  text-align: left;
+  font-size: 12px;
+  white-space: nowrap;
+  width: 100%;
+  &:hover { background: #313244; }
+}
+
+.save-toast {
+  position: fixed;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #a6e3a1;
+  color: #1e1e2e;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 20px;
+  border-radius: 20px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  pointer-events: none;
+  z-index: 9999;
+  white-space: nowrap;
+}
+.toast-enter-active { transition: opacity 0.2s, transform 0.2s; }
+.toast-leave-active { transition: opacity 0.4s, transform 0.4s; }
+.toast-enter-from { opacity: 0; transform: translateX(-50%) translateY(8px); }
+.toast-leave-to   { opacity: 0; transform: translateX(-50%) translateY(8px); }
+</style>

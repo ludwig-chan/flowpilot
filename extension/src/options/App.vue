@@ -102,4 +102,47 @@ const { sidebarWidth, logDrawerHeight, startResize, startLogResize } = useResiza
 
 </template>
 
-<style lang="scss" src="./styles/app.scss" />
+<style lang="scss">
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: #1e1e2e;
+  color: #cdd6f4;
+  font-family: -apple-system, 'Segoe UI', sans-serif;
+  font-size: 13px;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.app { display: flex; flex-direction: column; height: 100vh; }
+.app__header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px;
+  background: #181825;
+  border-bottom: 1px solid #313244;
+  flex-shrink: 0;
+}
+.app__logo { font-weight: 700; font-size: 15px; color: #89b4fa; white-space: nowrap; }
+.app__tab-selector { flex: 1; display: flex; align-items: center; gap: 6px; min-width: 0; }
+.app__actions { display: flex; gap: 8px; flex-shrink: 0; }
+.app__body { display: flex; flex: 1; min-height: 0; }
+.app__aside {
+  width: 320px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  background: #181825;
+  min-width: 180px;
+  max-width: 600px;
+}
+.resize-handle {
+  width: 4px;
+  flex-shrink: 0;
+  background: #313244;
+  cursor: col-resize;
+  transition: background 0.15s;
+  &:hover { background: #89b4fa; }
+}
+.app__main { flex: 1; overflow-y: auto; padding: 16px; background: #1e1e2e; }
+</style>

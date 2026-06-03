@@ -106,3 +106,24 @@ const {
     />
   </Teleport>
 </template>
+
+<style scoped lang="scss">
+.panel {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+.panel__toolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+.panel__title { font-weight: 600; font-size: 12px; flex: 1; }
+.panel__subtitle { font-weight: 400; color: #6c7086; font-size: 11px; }
+.flow-list { flex: 1; overflow-y: auto; padding: 4px; }
+</style>
