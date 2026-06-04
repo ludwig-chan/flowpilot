@@ -3,13 +3,15 @@
   "name": "FlowPilot",
   "version": "0.1.0",
   "description": "浏览器自动化流程工具",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAop9nUWQGdjrKG6nU8NO3fSMxH42wpjHDxRrkiduqnj5X3b+23i5k+GbhG2E93OlLrA3Gx/7dpzTvBzn7oBUFelMZ7CGKnNglqSoDwUuC8g3fqtP5OyYvcucFzemr+JgJ09z2L24M4e3B1yAFfLvEqwcdVYHppJp+z9LQ3RAE0kHTrFmZuKCEwDGdlbqt4Rlkg1dEpq/tKSDFH9436hXccktQNJTwZGYDDkmOSmnSbHx2e8FrOyt0hnso0e3gp1z38vsbzkU+jDsB3Ixl78Nl22ksQVVSiYaQHcziZCyZvceZKgWj4z0KlD+B2kb7JfOYUGzQFtBtPEPs/OwTly53AwIDAQAB",
   "permissions": [
     "activeTab",
     "tabs",
     "storage",
     "debugger",
     "scripting",
-    "contextMenus"
+    "contextMenus",
+    "nativeMessaging"
   ],
   "host_permissions": [
     "<all_urls>"

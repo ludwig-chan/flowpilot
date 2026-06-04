@@ -110,6 +110,22 @@ const BROADCAST_TO_OPTIONS = new Set([
   'SMART_LOOP_ANALYZED', 'FLOW_STEP_EVENT_FROM_TAB',
 ])
 
+function handleSaveScreenshot(msg: any, _s: any, sr: (r: unknown) => void): true {
+  chrome.runtime.sendNativeMessage(
+    'com.flowpilot.host',
+    { type: 'SAVE_SCREENSHOT', dataUrl: msg.dataUrl, filename: msg.filename },
+    (response) => {
+      if (chrome.runtime.lastError) {
+        // 客户端未运行，返回 error 信号让 content 降级处理
+        sr({ ok: false, error: chrome.runtime.lastError.message })
+      } else {
+        sr(response ?? { ok: false, error: 'no response' })
+      }
+    }
+  )
+  return true
+}
+
 const MSG_HANDLERS: Record<string, MsgHandler> = {
   GET_LOGS:          handleGetLogs,
   CLEAR_LOGS:        handleClearLogs,
@@ -120,6 +136,7 @@ const MSG_HANDLERS: Record<string, MsgHandler> = {
   OPEN_OPTIONS_PAGE: handleOpenOptionsPage,
   SET_ACTIVE_TAB:    handleSetActiveTab,
   GET_ACTIVE_TAB:    handleGetActiveTab,
+  SAVE_SCREENSHOT:   handleSaveScreenshot,
 }
 
 // 中转消息分发

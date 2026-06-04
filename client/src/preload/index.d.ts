@@ -4,6 +4,8 @@ interface AppConfig {
   extensionDir: string
   extensionHash: string
   lastUpdatedAt: string
+  screenshotDir?: string
+  launchAtStartup?: boolean
   currentVersion: string
 }
 
@@ -22,6 +24,8 @@ interface FlowPilotAPI {
   openBrowserExtPage: (browserId: string) => Promise<{ success: boolean; error?: string }>
   loadExtensionAuto: (browserId: string) => Promise<{ success: boolean; error?: string }>
   ocrImage: (dataUrl: string) => Promise<{ success: boolean; text?: string; error?: string }>
+  getLaunchAtStartup: () => Promise<boolean>
+  setLaunchAtStartup: (enabled: boolean) => Promise<boolean>
 }
 
 declare global {

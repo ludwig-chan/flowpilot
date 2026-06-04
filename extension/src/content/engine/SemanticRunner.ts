@@ -254,14 +254,26 @@ async function executeStep(
 
       if (!dataUrl) { onLog('  [跳过] 截图失败，无法保存'); break }
 
-      const a = document.createElement('a')
-      a.href = dataUrl
-      a.download = `screenshot-${ts}.png`
-      a.style.display = 'none'
-      document.body.appendChild(a)
-      a.click()
-      a.remove()
-      onLog(`  已保存 → screenshot-${ts}.png（${Math.round(dataUrl.length * 0.75 / 1024)} KB）`)
+      const filename = `screenshot-${ts}.png`
+      const saved = await chrome.runtime.sendMessage({
+        type: 'SAVE_SCREENSHOT',
+        dataUrl,
+        filename,
+      }) as { ok: boolean; path?: string; error?: string } | undefined
+
+      if (saved?.ok) {
+        onLog(`  已保存 → ${saved.path ?? filename}（${Math.round(dataUrl.length * 0.75 / 1024)} KB）`)
+      } else {
+        // 降级：客户端未运行时回退到浏览器下载
+        const a = document.createElement('a')
+        a.href = dataUrl
+        a.download = filename
+        a.style.display = 'none'
+        document.body.appendChild(a)
+        a.click()
+        a.remove()
+        onLog(`  已保存（浏览器下载）→ ${filename}（${Math.round(dataUrl.length * 0.75 / 1024)} KB）`)
+      }
       break
     }
 

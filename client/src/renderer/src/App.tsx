@@ -2,8 +2,9 @@ import React, { useState, useCallback } from 'react'
 import Home from './pages/Home'
 import Tutorial from './pages/Tutorial'
 import Usage from './pages/Usage'
+import Settings from './pages/Settings'
 
-type Page = 'home' | 'tutorial' | 'usage'
+type Page = 'home' | 'tutorial' | 'usage' | 'settings'
 
 interface Toast {
   id: number
@@ -47,6 +48,12 @@ export default function App(): React.JSX.Element {
           >
             <span className="nav-icon">🎓</span> 使用教程
           </div>
+          <div
+            className={`nav-item ${page === 'settings' ? 'active' : ''}`}
+            onClick={() => setPage('settings')}
+          >
+            <span className="nav-icon">⚙️</span> 设置
+          </div>
         </nav>
       </aside>
 
@@ -54,6 +61,7 @@ export default function App(): React.JSX.Element {
         {page === 'home' && <Home showToast={showToast} />}
         {page === 'tutorial' && <Tutorial showToast={showToast} />}
         {page === 'usage' && <Usage />}
+        {page === 'settings' && <Settings showToast={showToast} />}
       </main>
 
       {toasts.map((t) => (

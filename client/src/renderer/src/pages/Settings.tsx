@@ -4,6 +4,8 @@ interface AppConfig {
   extensionDir: string
   extensionHash: string
   lastUpdatedAt: string
+  screenshotDir?: string
+  launchAtStartup?: boolean
   currentVersion: string
 }
 
@@ -16,17 +18,42 @@ export default function Settings({ showToast }: SettingsProps): React.JSX.Elemen
     extensionDir: '',
     extensionHash: '',
     lastUpdatedAt: '',
+    screenshotDir: '',
+    launchAtStartup: false,
     currentVersion: 'v0.0.0'
   })
   const [saving, setSaving] = useState(false)
+  const [togglingStartup, setTogglingStartup] = useState(false)
 
   useEffect(() => {
-    window.api.getConfig().then(setConfig)
+    window.api.getConfig().then((cfg) => setConfig(cfg))
+    window.api.getLaunchAtStartup().then((val: boolean) =>
+      setConfig((prev) => ({ ...prev, launchAtStartup: val }))
+    )
   }, [])
 
   const handleBrowse = async (): Promise<void> => {
     const dir = await window.api.openDirDialog()
     if (dir) setConfig((prev) => ({ ...prev, extensionDir: dir }))
+  }
+
+  const handleBrowseScreenshot = async (): Promise<void> => {
+    const dir = await window.api.openDirDialog()
+    if (dir) setConfig((prev) => ({ ...prev, screenshotDir: dir }))
+  }
+
+  const handleToggleLaunchAtStartup = async (): Promise<void> => {
+    setTogglingStartup(true)
+    try {
+      const next = !config.launchAtStartup
+      await window.api.setLaunchAtStartup(next)
+      setConfig((prev) => ({ ...prev, launchAtStartup: next }))
+      showToast(next ? '已开启开机自动启动' : '已关闭开机自动启动', 'success')
+    } catch {
+      showToast('操作失败', 'error')
+    } finally {
+      setTogglingStartup(false)
+    }
   }
 
   const handleSave = async (): Promise<void> => {
@@ -91,6 +118,56 @@ export default function Settings({ showToast }: SettingsProps): React.JSX.Elemen
             {config.currentVersion}
           </div>
           <div className="form-hint">自动从插件目录的 manifest.json 读取</div>
+        </div>
+      </div>
+
+      <div className="card">
+        <div className="card-title">截图保存目录</div>
+        <div className="form-group">
+          <label className="form-label">保存路径</label>
+          <div className="input-row">
+            <input
+              className="form-input"
+              type="text"
+              value={config.screenshotDir ?? ''}
+              onChange={(e) => setConfig((prev) => ({ ...prev, screenshotDir: e.target.value }))}
+              placeholder="默认：~/Downloads/FlowPilot"
+            />
+            <button className="btn btn-secondary" onClick={handleBrowseScreenshot}>
+              浏览…
+            </button>
+            {config.screenshotDir && (
+              <button
+                className="btn btn-secondary"
+                onClick={() => window.api.openInExplorer(config.screenshotDir!)}
+              >
+                📂
+              </button>
+            )}
+          </div>
+          <div className="form-hint">元素截图将保存到此目录（需要 FlowPilot 客户端保持运行）</div>
+        </div>
+      </div>
+
+      <div className="card">
+        <div className="card-title">系统</div>
+        <div className="form-group" style={{ marginBottom: 0 }}>
+          <div className="input-row" style={{ alignItems: 'center', gap: 12 }}>
+            <label className="form-label" style={{ marginBottom: 0, flex: 1 }}>
+              开机自动启动
+              <div className="form-hint" style={{ marginTop: 2 }}>
+                电脑开机后自动在后台运行客户端（托盘图标可见）
+              </div>
+            </label>
+            <button
+              className={`btn ${config.launchAtStartup ? 'btn-primary' : 'btn-secondary'}`}
+              onClick={handleToggleLaunchAtStartup}
+              disabled={togglingStartup}
+              style={{ minWidth: 72, flexShrink: 0 }}
+            >
+              {config.launchAtStartup ? '已开启' : '已关闭'}
+            </button>
+          </div>
         </div>
       </div>
 

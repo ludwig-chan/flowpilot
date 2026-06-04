@@ -6,6 +6,8 @@ export interface AppConfig {
   extensionDir: string
   extensionHash: string
   lastUpdatedAt: string
+  screenshotDir?: string   // 截图保存目录
+  launchAtStartup?: boolean // 开机自动启动
   currentVersion?: string  // 运行时字段，不持久化
 }
 

@@ -110,6 +110,20 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
     }
   })
 
+  // 获取开机启动状态
+  ipcMain.handle('get-launch-at-startup', () => {
+    return app.getLoginItemSettings().openAtLogin
+  })
+
+  // 设置开机启动
+  ipcMain.handle('set-launch-at-startup', (_event, enabled: boolean) => {
+    app.setLoginItemSettings({ openAtLogin: enabled, openAsHidden: true })
+    const config = loadConfig()
+    config.launchAtStartup = enabled
+    saveConfig(config)
+    return true
+  })
+
   // 自动加载插件（浏览器需已关闭）
   ipcMain.handle('load-extension-auto', (_event, browserId: string) => {
     const cfg = loadConfig()
