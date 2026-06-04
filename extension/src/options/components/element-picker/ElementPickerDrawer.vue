@@ -13,6 +13,7 @@
 import { ref, computed } from 'vue'
 import DomTreeViewer from './DomTreeViewer.vue'
 import BaseInput from '@shared/components/BaseInput.vue'
+import DropdownMenu from '@shared/components/DropdownMenu.vue'
 import type { SerializedDomNode } from '@shared/types/dom'
 
 const props = defineProps<{
@@ -42,7 +43,7 @@ const emit = defineEmits<{
 // ── pending / more 状态 ────────────────────────────────────────────────────
 const pendingNode = ref<SerializedDomNode | null>(null)
 const moreNode    = ref<SerializedDomNode | null>(null)
-const morePos     = ref({ x: 0, y: 0 })
+const moreAnchor  = ref({ x: 0, y: 0 })
 
 const pendingCss = computed(() =>
   pendingNode.value?.item?.selector.cssSelector ?? ''
@@ -51,13 +52,6 @@ const pendingCss = computed(() =>
 const effectiveHighlight = computed(() =>
   pendingCss.value || props.highlightSelector || props.pickedCssSelector
 )
-
-const popupStyle = computed(() => {
-  // 浮层固定在点击位置左上方，避免超出视口
-  const x = Math.max(8, morePos.value.x - 148)
-  const y = Math.min(morePos.value.y, window.innerHeight - 220)
-  return { left: x + 'px', top: y + 'px' }
-})
 
 interface TestAction { type: string; label: string; value?: string; divider?: true }
 
@@ -103,7 +97,7 @@ function onMore(node: SerializedDomNode, event: MouseEvent) {
   const isSame = moreNode.value?.item?.selector.cssSelector === css
   // 不修改 pendingNode，避免 effectiveHighlight 变化导致滚动
   moreNode.value = isSame ? null : node
-  if (!isSame) morePos.value = { x: event.clientX, y: event.clientY }
+  if (!isSame) moreAnchor.value = { x: event.clientX, y: event.clientY }
 }
 
 function confirmPending() {
@@ -217,23 +211,25 @@ function onTestClick(node: SerializedDomNode) {
     </div>
   </div>
 
-  <!-- ── 更多动作浮层（Teleport 到 body 避免被裁剪） ── -->
-  <Teleport to="body">
-    <template v-if="moreNode">
-      <div class="epd-more-backdrop" @click="moreNode = null" />
-      <div class="epd-more-popup" :style="popupStyle">
-        <div class="epd-more-popup__title">触发动作</div>
-        <template v-for="(a, i) in TEST_ACTIONS" :key="i">
-          <hr v-if="a.divider" class="epd-more-popup__divider" />
-          <BaseButton
-            v-else
-            class="epd-more-popup__item"
-            @click="runTestAction(a.type, a.value)"
-          >{{ a.label }}</BaseButton>
-        </template>
-      </div>
+  <!-- ── 更多动作浮层（复用 DropdownMenu 浮动模式，全方向防溢出） ── -->
+  <DropdownMenu
+    :open="!!moreNode"
+    :anchor-x="moreAnchor.x"
+    :anchor-y="moreAnchor.y"
+    @close="moreNode = null"
+  >
+    <template #default="{ close }">
+      <div class="epd-more-title">触发动作</div>
+      <template v-for="(a, i) in TEST_ACTIONS" :key="i">
+        <hr v-if="a.divider" class="epd-more-divider" />
+        <BaseButton
+          v-else
+          class="epd-more-item"
+          @click="runTestAction(a.type, a.value); close()"
+        >{{ a.label }}</BaseButton>
+      </template>
     </template>
-  </Teleport>
+  </DropdownMenu>
 </template>
 
 <style lang="scss" scoped>
@@ -304,42 +300,27 @@ function onTestClick(node: SerializedDomNode) {
   &__size  { font-size: 11px; color: #a6e3a1; flex-shrink: 0; white-space: nowrap; display: flex; align-items: center; gap: 4px; }
   &__scroll { color: #f38ba8; font-size: 11px; }
 }
-
+// ── 更多动作菜单项 ──────────────────────────────────────────────────────────
+.epd-more-title {
+  font-size: 10px; color: #6c7086; padding: 4px 10px 2px;
+  text-transform: uppercase; letter-spacing: .05em;
+}
+.epd-more-item {
+  background: transparent; border: none; border-radius: 5px;
+  color: #cdd6f4; cursor: pointer; font-size: 13px;
+  padding: 7px 12px; text-align: left; white-space: nowrap; width: 100%;
+  &:hover { background: #45475a; color: #fff; }
+  &:active { background: #585b70; }
+}
+.epd-more-divider {
+  border: none; border-top: 1px solid #45475a; margin: 3px 8px;
+}
 // ── DOM 树 ───────────────────────────────────────────────────────────────────
 .epd-tree {
   flex: 1; overflow-y: auto; padding: 4px 0;
 
   &__empty {
     padding: 24px; text-align: center; color: #585b70; font-size: 12px;
-  }
-}
-</style>
-
-<!-- 浮层样式需脱离 scoped 才能作用于 Teleport 内容 -->
-<style lang="scss">
-.epd-more-backdrop {
-  position: fixed; inset: 0; z-index: 1070;
-}
-.epd-more-popup {
-  position: fixed; z-index: 1071;
-  background: #313244; border: 1px solid #585b70; border-radius: 8px;
-  padding: 4px; min-width: 130px;
-  box-shadow: 0 6px 24px rgba(0, 0, 0, .6);
-
-  &__title {
-    font-size: 10px; color: #6c7086; padding: 4px 10px 2px;
-    text-transform: uppercase; letter-spacing: .05em;
-  }
-  &__item {
-    display: block; width: 100%;
-    background: transparent; border: none; border-radius: 5px;
-    color: #cdd6f4; cursor: pointer; font-size: 13px;
-    padding: 7px 12px; text-align: left; white-space: nowrap;
-    &:hover { background: #45475a; color: #fff; }
-    &:active { background: #585b70; }
-  }
-  &__divider {
-    border: none; border-top: 1px solid #45475a; margin: 3px 8px;
   }
 }
 </style>
