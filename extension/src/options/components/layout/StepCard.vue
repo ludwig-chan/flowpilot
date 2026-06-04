@@ -25,6 +25,7 @@ const emit = defineEmits<{
   (e: 'edit-branch',   condStepId: string, branch: 'if' | 'else', child: FlowStep, ci: number): void
   (e: 'remove-branch', condStepId: string, branch: 'if' | 'else', ci: number): void
   (e: 'open-picker',   condStepId: string, branch: 'if' | 'else'): void
+  (e: 'convert-to-element-branch', step: FlowStep, index: number): void
 }>()
 </script>
 
@@ -73,6 +74,12 @@ const emit = defineEmits<{
         title="编辑步骤"
         @click="$emit('edit', step, index)"
       >✎</BaseButton>
+      <BaseButton
+        v-if="!!step.selector && step.type !== 'element_branch' && step.type !== 'loop_items' && step.type !== 'condition'"
+        class="step-card__btn step-card__btn--branch"
+        title="转为元素分支"
+        @click="$emit('convert-to-element-branch', step, index)"
+      >⑂</BaseButton>
       <BaseButton class="step-card__btn step-card__btn--del" @click="$emit('remove', index)">✖</BaseButton>
     </div>
   </div>

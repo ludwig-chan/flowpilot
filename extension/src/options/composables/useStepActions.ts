@@ -84,10 +84,24 @@ export function useStepActions(editingFlow: Ref<LocalFlow | null>, flowStore: Fl
     showCallFlowPicker.value = false
   }
 
+  function convertToElementBranch(step: FlowStep, index: number) {
+    if (!editingFlow.value || !step.selector) return
+    const wrapped: FlowStep = { ...step, id: `step_${Date.now()}` }
+    editingFlow.value.steps.splice(index, 1, {
+      id:           `step_${Date.now() + 1}`,
+      type:         'element_branch',
+      label:        `元素分支：${step.selector.cssSelector.slice(0, 30)}`,
+      selector:     step.selector,
+      children:     [wrapped],
+      elseChildren: [],
+    })
+  }
+
   return {
     removeStep, addDelayStep, editDelayStep, onDelayConfirm,
     showDelayModal, delayEditTarget,
     selectedStepIds, toggleSelect, deleteSelected,
     showCallFlowPicker, addCallFlowStep, confirmCallFlow,
+    convertToElementBranch,
   }
 }

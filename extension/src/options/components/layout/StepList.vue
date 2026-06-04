@@ -74,6 +74,7 @@ const {
   showDelayModal, delayEditTarget,
   selectedStepIds, toggleSelect, deleteSelected,
   showCallFlowPicker, addCallFlowStep, confirmCallFlow,
+  convertToElementBranch,
 } = useStepActions(editingFlow, flowStore)
 
 const {
@@ -189,6 +190,7 @@ provide(STEP_EDITOR_MODALS_KEY, {
           @edit-branch="editBranchStep"
           @remove-branch="removeBranchStep"
           @open-picker="openBranchPicker"
+          @convert-to-element-branch="(step, i) => convertToElementBranch(step, i)"
         />
       </template>
       <div
