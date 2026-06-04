@@ -91,6 +91,7 @@ function onConfirm() {
             <span class="fs-modal__label">延迟范围：</span>
             <RangeInput
               :model-value="stepDelayRange"
+              :multiplier="100"
               :presets="[
                 { label: '低', value: STEP_DELAY_PRESETS.low },
                 { label: '中', value: STEP_DELAY_PRESETS.medium },

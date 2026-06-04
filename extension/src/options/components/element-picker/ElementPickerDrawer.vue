@@ -179,7 +179,7 @@ function onTestClick(node: SerializedDomNode) {
             title="元素内容宽度超出可见区域"
           >↔ {{ pendingNode.scrollW }}</span>
         </span>
-        <BaseButton variant="primary" style="flex-shrink:0;padding:2px 10px;font-size:11px" @click="confirmPending">确定 ✓</BaseButton>
+        <BaseButton variant="primary" size="sm" style="flex-shrink:0" @click="confirmPending">确定 ✓</BaseButton>
       </div>
 
       <!-- ── DOM 树 ── -->
