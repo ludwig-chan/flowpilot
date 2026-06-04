@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import type { FlowStep, ActionType } from '@shared/types/flow'
+import { STEP_DELAY_PRESETS } from '@shared/types/flow'
 import BaseInput from '@shared/components/BaseInput.vue'
+import RangeInput from '@shared/components/RangeInput.vue'
 
 const props = defineProps<{
   step: FlowStep
@@ -18,8 +20,7 @@ const emit = defineEmits<{
 }>()
 
 const label       = ref(props.step.label)
-const delayMin    = ref(props.step.itemDelay?.[0] ?? 800)
-const delayMax    = ref(props.step.itemDelay?.[1] ?? 2000)
+const itemDelay   = ref<[number | undefined, number | undefined]>([props.step.itemDelay?.[0] ?? 800, props.step.itemDelay?.[1] ?? 2000])
 const childSel    = ref(props.step.loopChildSelector ?? '')
 const children    = ref<FlowStep[]>(JSON.parse(JSON.stringify(props.step.children ?? [])))
 const showAdvanced = ref(false)
@@ -37,7 +38,7 @@ function currentState(): FlowStep {
   return {
     ...props.step,
     label:             label.value.trim() || props.step.label,
-    itemDelay:         [Math.max(0, Number(delayMin.value) || 0), Math.max(0, Number(delayMax.value) || 0)],
+    itemDelay:         [Math.max(0, itemDelay.value[0] ?? 0), Math.max(0, itemDelay.value[1] ?? 0)],
     loopChildSelector: childSel.value || undefined,
     children:          children.value,
   }
@@ -222,12 +223,14 @@ function onQuickConfirm() {
       </div>
       <div v-if="showAdvanced" class="elm-section elm-advanced-body">
         <label class="elm-label">每项处理间隔</label>
-        <div class="elm-delay-range">
-          <BaseInput v-model="delayMin" class="elm-range-input" type="number" min="0" step="100" />
-          <span class="elm-range-sep">~</span>
-          <BaseInput v-model="delayMax" class="elm-range-input" type="number" min="0" step="100" />
-          <span class="elm-delay-hint">ms</span>
-        </div>
+        <RangeInput
+          v-model="itemDelay"
+          :presets="[
+            { label: '低', value: STEP_DELAY_PRESETS.low },
+            { label: '中', value: STEP_DELAY_PRESETS.medium },
+            { label: '高', value: STEP_DELAY_PRESETS.high },
+          ]"
+        />
       </div>
 
       <!-- 底部 -->
@@ -362,16 +365,4 @@ function onQuickConfirm() {
 }
 
 .elm-advanced-body { border-top: none; }
-
-.elm-delay-range {
-  display: flex; align-items: center; gap: 6px;
-}
-
-.elm-range-input { width: 72px; }
-
-.elm-range-sep {
-  font-size: 13px; color: $color-text-muted; flex-shrink: 0; line-height: 1;
-}
-
-.elm-delay-hint { font-size: 11px; color: $color-text-muted; flex-shrink: 0; }
 </style>

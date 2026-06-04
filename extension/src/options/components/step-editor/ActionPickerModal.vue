@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import type { SerializedElement } from '@shared/types/dom'
 import type { FlowStep, ActionType } from '@shared/types/flow'
 import BaseInput from '@shared/components/BaseInput.vue'
+import RangeInput from '@shared/components/RangeInput.vue'
 
 interface ActionOption {
   type:              ActionType
@@ -90,8 +91,7 @@ const inputValue        = ref(props.initialValue ?? '')
 const stepLabel         = ref(props.initialLabel ?? '')
 const tryState          = ref<'idle' | 'running' | 'done'>('idle')
 const stepWaitTimeout   = ref<number | undefined>(props.initialWaitTimeout)
-const stepFoundDelayMin = ref<number | undefined>(props.initialFoundDelay?.[0])
-const stepFoundDelayMax = ref<number | undefined>(props.initialFoundDelay?.[1])
+const stepFoundDelay    = ref<[number | undefined, number | undefined]>([props.initialFoundDelay?.[0], props.initialFoundDelay?.[1]])
 const showAdvanced      = ref(!!(props.initialWaitTimeout || props.initialFoundDelay))
 
 const currentOpt = computed(() => ACTION_OPTIONS.find(o => o.type === selectedType.value)!)
@@ -113,8 +113,7 @@ function buildStep(): FlowStep {
   const sel   = props.overrideSel
     ? { ...props.element.selector, cssSelector: props.overrideSel }
     : props.element.selector
-  const fdMin = stepFoundDelayMin.value ?? 0
-  const fdMax = stepFoundDelayMax.value ?? 0
+  const [fdMin, fdMax] = stepFoundDelay.value
   return {
     id:               `step_${Date.now()}_${Math.random().toString(36).slice(2, 5)}`,
     type:             selectedType.value,
@@ -123,7 +122,7 @@ function buildStep(): FlowStep {
     value:            inputValue.value.trim() || undefined,
     relativeSelector: props.isRelative || undefined,
     waitTimeout:      stepWaitTimeout.value || undefined,
-    foundDelay:       (fdMin > 0 || fdMax > 0) ? [fdMin, fdMax] : undefined,
+    foundDelay:       ((fdMin ?? 0) > 0 || (fdMax ?? 0) > 0) ? [fdMin ?? 0, fdMax ?? 0] : undefined,
   }
 }
 
@@ -201,22 +200,12 @@ function tryAction() {
             </div>
             <div class="action-modal__adv-row">
               <span class="action-modal__adv-label">出现后延迟</span>
-              <input
-                type="number" min="0" step="100"
-                class="action-modal__adv-input"
-                placeholder="最小"
-                :value="stepFoundDelayMin ?? ''"
-                @change="stepFoundDelayMin = Number(($event.target as HTMLInputElement).value) || undefined"
+              <RangeInput
+                v-model="stepFoundDelay"
+                :allow-empty="true"
+                placeholder-min="最小"
+                placeholder-max="最大"
               />
-              <span class="action-modal__adv-tilde">~</span>
-              <input
-                type="number" min="0" step="100"
-                class="action-modal__adv-input"
-                placeholder="最大"
-                :value="stepFoundDelayMax ?? ''"
-                @change="stepFoundDelayMax = Number(($event.target as HTMLInputElement).value) || undefined"
-              />
-              <span class="action-modal__adv-unit">ms</span>
               <span class="action-modal__adv-hint">找到元素后随机等待，模拟人工操作</span>
             </div>
           </div>
@@ -296,7 +285,6 @@ function tryAction() {
     &:focus { outline: none; border-color: $color-blue; }
   }
   &__adv-unit   { font-size: 11px; color: $color-text-muted; flex-shrink: 0; }
-  &__adv-tilde  { font-size: 11px; color: $color-text-muted; }
   &__adv-hint   { font-size: 10px; color: $color-text-muted; font-style: italic; flex-shrink: 0; }
 }
 

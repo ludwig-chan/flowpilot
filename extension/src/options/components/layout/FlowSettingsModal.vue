@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import type { LocalFlow } from '../stores/useFlowStore'
 import type { StepDelayLevel } from '@shared/types/flow'
 import { STEP_DELAY_PRESETS } from '@shared/types/flow'
+import RangeInput from '@shared/components/RangeInput.vue'
 
 const props = defineProps<{ flow: LocalFlow }>()
 
@@ -25,12 +26,6 @@ const stepDelayRange = ref<[number, number]>(
 
 const enabled = computed(() => stepDelayLevel.value !== 'none')
 
-const activePreset = computed<'low' | 'medium' | 'high' | null>(() =>
-  (['low', 'medium', 'high'] as const).includes(stepDelayLevel.value as any)
-    ? stepDelayLevel.value as 'low' | 'medium' | 'high'
-    : null
-)
-
 function toggleEnabled(val: boolean) {
   if (!val) {
     if (!confirm('不设置步骤间隔会导致操作极速触发，容易被网站风控识别和封号，确定要关闭间隔吗？')) return
@@ -41,16 +36,11 @@ function toggleEnabled(val: boolean) {
   }
 }
 
-function selectPreset(preset: 'low' | 'medium' | 'high') {
-  stepDelayLevel.value = preset
-  stepDelayRange.value = [...STEP_DELAY_PRESETS[preset]]
-}
-
-function onRangeChange(side: 'min' | 'max', val: number) {
-  stepDelayLevel.value = 'custom'
-  stepDelayRange.value = side === 'min'
-    ? [val, stepDelayRange.value[1]]
-    : [stepDelayRange.value[0], val]
+function onDelayRangeChange(range: [number | undefined, number | undefined]) {
+  stepDelayRange.value = [range[0] ?? 0, range[1] ?? 0]
+  const matched = (Object.keys(STEP_DELAY_PRESETS) as Array<'low' | 'medium' | 'high'>)
+    .find(k => STEP_DELAY_PRESETS[k][0] === range[0] && STEP_DELAY_PRESETS[k][1] === range[1])
+  stepDelayLevel.value = matched ?? 'custom'
 }
 
 function onConfirm() {
@@ -98,32 +88,16 @@ function onConfirm() {
 
         <div v-if="enabled" class="delay-sub">
           <div class="fs-modal__row">
-            <span class="fs-modal__label">快捷档位：</span>
-            <div class="delay-presets">
-              <button
-                v-for="p in (['low', 'medium', 'high'] as const)"
-                :key="p"
-                :class="['delay-preset-btn', activePreset === p && 'delay-preset-btn--active']"
-                @click="selectPreset(p)"
-              >{{ p === 'low' ? '低' : p === 'medium' ? '中' : '高' }}</button>
-            </div>
-          </div>
-          <div class="fs-modal__row delay-range">
             <span class="fs-modal__label">延迟范围：</span>
-            <input
-              class="fs-modal__num-input"
-              type="number" min="0" step="100"
-              :value="stepDelayRange[0]"
-              @change="onRangeChange('min', Number(($event.target as HTMLInputElement).value))"
+            <RangeInput
+              :model-value="stepDelayRange"
+              :presets="[
+                { label: '低', value: STEP_DELAY_PRESETS.low },
+                { label: '中', value: STEP_DELAY_PRESETS.medium },
+                { label: '高', value: STEP_DELAY_PRESETS.high },
+              ]"
+              @update:model-value="onDelayRangeChange"
             />
-            <span class="fs-modal__unit">~</span>
-            <input
-              class="fs-modal__num-input"
-              type="number" min="0" step="100"
-              :value="stepDelayRange[1]"
-              @change="onRangeChange('max', Number(($event.target as HTMLInputElement).value))"
-            />
-            <span class="fs-modal__unit">ms</span>
           </div>
         </div>
 
@@ -198,33 +172,6 @@ function onConfirm() {
   display: flex; flex-direction: column; gap: 8px;
   padding-left: 78px;
 }
-
-// 低 / 中 / 高 快捷档位
-.delay-presets {
-  display: inline-flex;
-  border: 1px solid $color-surface-2;
-  border-radius: $radius;
-  overflow: hidden;
-}
-.delay-preset-btn {
-  padding: 4px 14px;
-  border: none;
-  border-right: 1px solid $color-surface-2;
-  background: $color-surface-1;
-  color: $color-text-secondary;
-  font-size: 12px;
-  cursor: pointer;
-  transition: background 0.15s, color 0.15s;
-  &:last-child { border-right: none; }
-  &:hover:not(.delay-preset-btn--active) { background: $color-surface-2; color: $color-text; }
-  &--active {
-    background: $color-focus-bg;
-    color: $color-blue;
-  }
-}
-
-// 范围输入行
-.delay-range { gap: 6px; }
 
 // 关闭时警告
 .delay-warn {
