@@ -32,6 +32,7 @@ export default function Tutorial({ showToast }: TutorialProps): React.JSX.Elemen
   const [extensionDir, setExtensionDir] = useState('')
   const [selectedBrowser, setSelectedBrowser] = useState<BrowserOption>(BROWSER_OPTIONS[0])
   const [currentStep, setCurrentStep] = useState(0)
+  const [lightboxImg, setLightboxImg] = useState<string | null>(null)
 
   useEffect(() => {
     window.api.getConfig().then((cfg) => setExtensionDir(cfg.extensionDir))
@@ -141,8 +142,8 @@ export default function Tutorial({ showToast }: TutorialProps): React.JSX.Elemen
         {/* 步骤说明 */}
         <div className="tut-step-desc">{step.content}</div>
 
-        {/* 图片区：灰底固定高度 + 底部渐变遮罩 */}
-        <div className="tut-img-wrap">
+        {/* 图片区：点击可放大 */}
+        <div className="tut-img-wrap" onClick={() => setLightboxImg(step.image)}>
           <img src={step.image} alt={step.imageAlt} />
         </div>
 
@@ -157,6 +158,19 @@ export default function Tutorial({ showToast }: TutorialProps): React.JSX.Elemen
           </button>
         )}
       </div>
+      {lightboxImg && (
+        <div className="tut-lightbox" onClick={() => setLightboxImg(null)}>
+          <button
+            className="tut-lightbox-close"
+            onClick={(e) => { e.stopPropagation(); setLightboxImg(null) }}
+          >✕</button>
+          <img
+            src={lightboxImg}
+            alt="放大预览"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
     </div>
   )
 }
