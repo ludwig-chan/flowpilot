@@ -11,6 +11,7 @@ import { useDomPicker } from '../../composables/useDomPicker'
 import { usePickerOrchestrator } from '../../composables/usePickerOrchestrator'
 import { useFlowEditor } from '../../composables/useFlowEditor'
 import { useStepActions, stepTypeLabels } from '../../composables/useStepActions'
+import { showConfirm } from '@shared/utils/dialog'
 import { useConditionEditor } from '../../composables/useConditionEditor'
 import { useStepDrag } from '../../composables/useStepDrag'
 import FlowEditorHeader from './FlowEditorHeader.vue'
@@ -74,8 +75,16 @@ const {
   showDelayModal, delayEditTarget,
   selectedStepIds, toggleSelect, deleteSelected,
   showCallFlowPicker, addCallFlowStep, confirmCallFlow,
-  convertToElementBranch,
+  convertToElementBranch, revertElementBranch,
 } = useStepActions(editingFlow, flowStore)
+
+async function handleConvertToElementBranch(step: FlowStep, i: number) {
+  const ok = await showConfirm(
+    `将"${step.label}"转为元素分支？\n原步骤将成为"元素存在"时执行的子步骤，此操作可以还原。`,
+    '转为元素分支'
+  )
+  if (ok) convertToElementBranch(step, i)
+}
 
 const {
   showConditionModal,
@@ -191,7 +200,8 @@ provide(STEP_EDITOR_MODALS_KEY, {
           @edit-branch="editBranchStep"
           @remove-branch="removeBranchStep"
           @open-picker="openBranchPicker"
-          @convert-to-element-branch="(step, i) => convertToElementBranch(step, i)"
+          @convert-to-element-branch="handleConvertToElementBranch"
+          @revert-element-branch="(step, i) => revertElementBranch(step, i)"
           @branch-dragover="onBranchDragOver"
           @branch-drop="onBranchDrop"
         />

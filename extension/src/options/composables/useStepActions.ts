@@ -97,11 +97,19 @@ export function useStepActions(editingFlow: Ref<LocalFlow | null>, flowStore: Fl
     })
   }
 
+  function revertElementBranch(step: FlowStep, index: number) {
+    if (!editingFlow.value) return
+    if (step.type !== 'element_branch') return
+    if (step.children?.length !== 1 || step.elseChildren?.length) return
+    const original: FlowStep = { ...step.children[0] }
+    editingFlow.value.steps.splice(index, 1, original)
+  }
+
   return {
     removeStep, addDelayStep, editDelayStep, onDelayConfirm,
     showDelayModal, delayEditTarget,
     selectedStepIds, toggleSelect, deleteSelected,
     showCallFlowPicker, addCallFlowStep, confirmCallFlow,
-    convertToElementBranch,
+    convertToElementBranch, revertElementBranch,
   }
 }

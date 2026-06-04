@@ -28,6 +28,7 @@ const emit = defineEmits<{
   (e: 'remove-branch',  condStepId: string, branch: 'if' | 'else', ci: number): void
   (e: 'open-picker',    condStepId: string, branch: 'if' | 'else'): void
   (e: 'convert-to-element-branch', step: FlowStep, index: number): void
+  (e: 'revert-element-branch',     step: FlowStep, index: number): void
   (e: 'branch-dragover', stepId: string, branch: 'if' | 'else', insertIdx: number): void
   (e: 'branch-drop'): void
 }>()
@@ -84,6 +85,12 @@ const emit = defineEmits<{
         title="转为元素分支"
         @click="$emit('convert-to-element-branch', step, index)"
       >⑂</BaseButton>
+      <BaseButton
+        v-if="step.type === 'element_branch' && step.children?.length === 1 && !step.elseChildren?.length"
+        class="step-card__btn step-card__btn--revert"
+        title="还原为元素步骤"
+        @click="$emit('revert-element-branch', step, index)"
+      >↩</BaseButton>
       <BaseButton class="step-card__btn step-card__btn--del" @click="$emit('remove', index)">✖</BaseButton>
     </div>
   </div>
@@ -143,8 +150,11 @@ const emit = defineEmits<{
   padding: 2px 5px;
   &:hover { color: #cdd6f4; border-color: #6c7086; }
   &:disabled { opacity: 0.3; cursor: default; }
-  &--edit:hover { color: #89b4fa; border-color: #89b4fa; }
-  &--del:hover  { color: #f38ba8; border-color: #f38ba8; }
+  &--edit:hover   { color: #89b4fa; border-color: #89b4fa; }
+  &--branch       { font-size: 9px; }
+  &--branch:hover { color: #a6e3a1; border-color: #a6e3a1; }
+  &--revert:hover { color: #fab387; border-color: #fab387; }
+  &--del:hover    { color: #f38ba8; border-color: #f38ba8; }
 }
 .step-card__cond-toggle {
   background: none;
