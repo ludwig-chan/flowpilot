@@ -14,10 +14,10 @@ function createWindow(): BrowserWindow {
     : join(process.resourcesPath, 'icon.png')
 
   const win = new BrowserWindow({
-    width: 1000,
-    height: 700,
-    minWidth: 780,
-    minHeight: 560,
+    width: 1280,
+    height: 800,
+    minWidth: 900,
+    minHeight: 600,
     show: false,
     autoHideMenuBar: true,
     title: 'FlowPilot Client',
@@ -29,7 +29,10 @@ function createWindow(): BrowserWindow {
     }
   })
 
-  win.on('ready-to-show', () => win.show())
+  win.on('ready-to-show', () => {
+    win.maximize()
+    win.show()
+  })
 
   win.on('close', (e) => {
     if (!(app as typeof app & { isQuitting: boolean }).isQuitting) {
