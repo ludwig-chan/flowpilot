@@ -38,11 +38,12 @@ const {
       <BaseButton
         v-if="BUILTIN_PRESETS.length > 0"
         size="sm"
+        icon="📦"
         title="浏览内置预设库"
         @click="showPresetsModal = true"
-      >📦 预设</BaseButton>
-      <BaseButton size="sm" title="导入流程" @click="showImportModal = true">📥 导入</BaseButton>
-      <BaseButton size="sm" title="导出流程" @click="showExportModal = true">📤 导出</BaseButton>
+      >预设</BaseButton>
+      <BaseButton size="sm" icon="📥" title="导入流程" @click="showImportModal = true">导入</BaseButton>
+      <BaseButton size="sm" icon="📤" title="导出流程" @click="showExportModal = true">导出</BaseButton>
       <BaseButton size="sm" variant="primary" @click="openCreateModal()">&#xFF0B; 新增</BaseButton>
     </div>
 

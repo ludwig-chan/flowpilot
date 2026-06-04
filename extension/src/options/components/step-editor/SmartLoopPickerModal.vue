@@ -56,7 +56,7 @@ function tagIcon(tagName: string): string {
         </div>
 
         <div v-else class="slp-candidates">
-          <button
+          <BaseButton
             v-for="(c, idx) in candidates"
             :key="idx"
             class="slp-candidate"
@@ -84,7 +84,7 @@ function tagIcon(tagName: string): string {
             </div>
 
             <span v-if="selectedIdx === idx" class="slp-candidate__check">✓</span>
-          </button>
+          </BaseButton>
         </div>
       </div>
 

@@ -31,12 +31,13 @@ function toggle(id: string) {
         :style="{ paddingLeft: `${(depth ?? 0) * 16 + 8}px` }"
         @click="emit('select', node.id)"
       >
-        <button
+        <BaseButton
+          variant="ghost"
           class="fpn-toggle"
           @click.stop="toggle(node.id)"
         >
           {{ node.children.some(c => c.kind === 'folder') ? (collapsed.has(node.id) ? '▶' : '▼') : '' }}
-        </button>
+        </BaseButton>
         <span class="fpn-icon">📁</span>
         <span class="fpn-name">{{ node.name }}</span>
         <span v-if="selectedId === node.id" class="fpn-check">✓</span>

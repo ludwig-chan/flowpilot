@@ -80,7 +80,7 @@ withDefaults(defineProps<{
 
 // Adaptive icon/text button
 .btn--adaptive {
-  .btn__icon { display: none; }
+  .btn__icon { display: inline; }
   .btn__text  { display: inline; }
 }
 </style>

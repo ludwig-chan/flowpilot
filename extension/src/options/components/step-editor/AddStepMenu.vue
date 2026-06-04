@@ -24,10 +24,10 @@ const emit = defineEmits<{
       <BaseButton size="sm" @click="toggle">{{ label }} {{ isOpen ? '▴' : '▾' }}</BaseButton>
     </template>
     <template #default="{ close }">
-      <button class="asm-item" @click="emit('pick-element'); close()">🖱 选择元素</button>
-      <button class="asm-item" @click="emit('add-condition'); close()">🔀 条件判断</button>
-      <button class="asm-item" @click="emit('add-call-flow'); close()">▶ 嵌入流程</button>
-      <button class="asm-item" @click="emit('add-delay'); close()">⏱ 等待</button>
+      <BaseButton variant="ghost" class="asm-item" @click="emit('pick-element'); close()">🖱 选择元素</BaseButton>
+      <BaseButton variant="ghost" class="asm-item" @click="emit('add-condition'); close()">🔀 条件判断</BaseButton>
+      <BaseButton variant="ghost" class="asm-item" @click="emit('add-call-flow'); close()">▶ 嵌入流程</BaseButton>
+      <BaseButton variant="ghost" class="asm-item" @click="emit('add-delay'); close()">⏱ 等待</BaseButton>
     </template>
   </DropdownMenu>
 </template>

@@ -55,9 +55,9 @@ function handleChange(node: FlowNode, checked: boolean) {
             :indeterminate="getState(node) === 'some'"
             @change="handleChange(node, ($event.target as HTMLInputElement).checked)"
           />
-          <button class="cft-arrow" @click.stop="toggle(node.id)">
+          <BaseButton variant="ghost" class="cft-arrow" @click.stop="toggle(node.id)">
             {{ collapsed.has(node.id) ? '▶' : '▼' }}
-          </button>
+          </BaseButton>
           <span class="cft-icon">📁</span>
           <span class="cft-name">{{ node.name }}</span>
           <span class="cft-count">{{ (node as FlowFolder).children.length }}</span>

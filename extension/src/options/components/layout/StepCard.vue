@@ -57,23 +57,23 @@ const emit = defineEmits<{
         class="step-card__broken"
         title="引用的流程不存在或已被删除"
       >⚠ 流程已丢失</div>
-      <button
+      <BaseButton
         v-if="step.type === 'condition'"
         class="step-card__cond-toggle"
         @click.stop="$emit('toggle-condition-expand', step.id)"
       >
         {{ expandedConditions.has(step.id) ? '▲ 收起' : '▼ 展开分支' }}
         <span class="step-card__cond-count">(IF:{{ step.children?.length ?? 0 }} | ELSE:{{ step.elseChildren?.length ?? 0 }})</span>
-      </button>
+      </BaseButton>
     </div>
     <div class="step-card__actions">
-      <button
+      <BaseButton
         v-if="step.type !== 'call_flow' && (step.type === 'condition' || step.type === 'delay' || step.type === 'loop_items' || !!step.selector)"
         class="step-card__btn step-card__btn--edit"
         title="编辑步骤"
         @click="$emit('edit', step, index)"
-      >✎</button>
-      <button class="step-card__btn step-card__btn--del" @click="$emit('remove', index)">✖</button>
+      >✎</BaseButton>
+      <BaseButton class="step-card__btn step-card__btn--del" @click="$emit('remove', index)">✖</BaseButton>
     </div>
   </div>
   <ConditionBranchView

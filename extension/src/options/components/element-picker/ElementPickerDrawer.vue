@@ -225,11 +225,11 @@ function onTestClick(node: SerializedDomNode) {
         <div class="epd-more-popup__title">触发动作</div>
         <template v-for="(a, i) in TEST_ACTIONS" :key="i">
           <hr v-if="a.divider" class="epd-more-popup__divider" />
-          <button
+          <BaseButton
             v-else
             class="epd-more-popup__item"
             @click="runTestAction(a.type, a.value)"
-          >{{ a.label }}</button>
+          >{{ a.label }}</BaseButton>
         </template>
       </div>
     </template>

@@ -33,8 +33,8 @@ function clearLogs() {
         <span v-else-if="logs.length > 0" class="log-drawer__count">（{{ logs.length }} 条）</span>
       </span>
       <template v-if="open">
-        <button class="log-drawer__action-btn" title="复制全部日志" @click.stop="copyLogs">📋 复制</button>
-        <button class="log-drawer__action-btn log-drawer__action-btn--danger" title="清空日志" @click.stop="clearLogs">🗑 清空</button>
+        <BaseButton class="log-drawer__action-btn" icon="📋" title="复制全部日志" @click.stop="copyLogs">复制</BaseButton>
+        <BaseButton class="log-drawer__action-btn log-drawer__action-btn--danger" icon="🗑" title="清空日志" @click.stop="clearLogs">清空</BaseButton>
       </template>
     </div>
     <div v-if="open" class="log-drawer__body" :style="{ height: logDrawerHeight + 'px' }">

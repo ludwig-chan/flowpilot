@@ -33,8 +33,8 @@ const emit = defineEmits<{
             <span v-if="child.selector" class="cond-child-card__sel" :title="child.selector.cssSelector">{{ child.selector.cssSelector.slice(0, 50) }}</span>
           </div>
           <div class="cond-child-card__actions">
-            <button v-if="child.selector" class="step-card__btn step-card__btn--edit" title="编辑" @click="emit('edit-branch', step.id, 'if', child, ci)">✎</button>
-            <button class="step-card__btn step-card__btn--del" @click="emit('remove-branch', step.id, 'if', ci)">✖</button>
+            <BaseButton v-if="child.selector" class="step-card__btn step-card__btn--edit" title="编辑" @click="emit('edit-branch', step.id, 'if', child, ci)">✎</BaseButton>
+            <BaseButton class="step-card__btn step-card__btn--del" @click="emit('remove-branch', step.id, 'if', ci)">✖</BaseButton>
           </div>
         </div>
       </div>
@@ -58,8 +58,8 @@ const emit = defineEmits<{
             <span v-if="child.selector" class="cond-child-card__sel" :title="child.selector.cssSelector">{{ child.selector.cssSelector.slice(0, 50) }}</span>
           </div>
           <div class="cond-child-card__actions">
-            <button v-if="child.selector" class="step-card__btn step-card__btn--edit" title="编辑" @click="emit('edit-branch', step.id, 'else', child, ci)">✎</button>
-            <button class="step-card__btn step-card__btn--del" @click="emit('remove-branch', step.id, 'else', ci)">✖</button>
+            <BaseButton v-if="child.selector" class="step-card__btn step-card__btn--edit" title="编辑" @click="emit('edit-branch', step.id, 'else', child, ci)">✎</BaseButton>
+            <BaseButton class="step-card__btn step-card__btn--del" @click="emit('remove-branch', step.id, 'else', ci)">✖</BaseButton>
           </div>
         </div>
       </div>

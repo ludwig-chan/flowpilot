@@ -181,10 +181,10 @@ function tryAction() {
           />
         </div>
         <div class="action-modal__adv">
-          <button type="button" class="action-modal__adv-toggle" @click="showAdvanced = !showAdvanced">
+          <BaseButton type="button" class="action-modal__adv-toggle" @click="showAdvanced = !showAdvanced">
             <span class="action-modal__adv-arrow">{{ showAdvanced ? '▼' : '▶' }}</span>
             高级设置
-          </button>
+          </BaseButton>
           <div v-show="showAdvanced" class="action-modal__adv-body">
             <div class="action-modal__adv-row">
               <span class="action-modal__adv-label">超时</span>

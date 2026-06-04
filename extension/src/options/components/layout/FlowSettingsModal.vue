@@ -75,14 +75,14 @@ function onConfirm() {
         <div class="fs-modal__row">
           <span class="fs-modal__label">步骤间隔：</span>
           <div class="delay-toggle">
-            <button
+            <BaseButton
               :class="['delay-toggle__btn', !enabled && 'delay-toggle__btn--danger']"
               @click="toggleEnabled(false)"
-            >关闭</button>
-            <button
+            >关闭</BaseButton>
+            <BaseButton
               :class="['delay-toggle__btn', enabled && 'delay-toggle__btn--active']"
               @click="toggleEnabled(true)"
-            >启用</button>
+            >启用</BaseButton>
           </div>
         </div>
 

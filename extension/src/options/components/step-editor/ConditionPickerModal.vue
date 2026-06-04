@@ -141,14 +141,14 @@ function confirm() {
       <div class="cp-field">
         <label class="cp-field__label">条件类型</label>
         <div class="cp-mode-tabs">
-          <button
+          <BaseButton
             :class="['cp-mode-tab', { 'cp-mode-tab--active': mode === 'expr' }]"
             @click="mode = 'expr'"
-          >📝 表达式</button>
-          <button
+          >📝 表达式</BaseButton>
+          <BaseButton
             :class="['cp-mode-tab', { 'cp-mode-tab--active': mode === 'elem' }]"
             @click="mode = 'elem'"
-          >🔍 元素存在</button>
+          >🔍 元素存在</BaseButton>
         </div>
       </div>
 
@@ -166,25 +166,24 @@ function confirm() {
         <!-- 可选变量列表 -->
         <div v-if="props.availableVars?.length" class="cp-vars">
           <span class="cp-vars__label">可用变量：</span>
-          <button
+          <BaseButton
             v-for="v in props.availableVars"
             :key="v"
             class="cp-var-chip"
-            v-text="'{{' + v + '}}'"
-          @click="insertVar(v)"
-          ></button>
+            @click="insertVar(v)"
+          >&#123;&#123;{{ v }}&#125;&#125;</BaseButton>
         </div>
         <div class="cp-hints">
           <div class="cp-hints__title">支持的运算符（点击插入）</div>
           <div class="cp-op-chips">
-            <button class="cp-op-chip" title="大于" @click="insertOp('>')"><code>&gt;</code><span>大于</span></button>
-            <button class="cp-op-chip" title="小于" @click="insertOp('<')"><code>&lt;</code><span>小于</span></button>
-            <button class="cp-op-chip" title="大于等于" @click="insertOp('>=')"><code>&gt;=</code><span>大于等于</span></button>
-            <button class="cp-op-chip" title="小于等于" @click="insertOp('<=')"><code>&lt;=</code><span>小于等于</span></button>
-            <button class="cp-op-chip" title="等于" @click="insertOp('==')"><code>==</code><span>等于</span></button>
-            <button class="cp-op-chip" title="不等于" @click="insertOp('!=')"><code>!=</code><span>不等于</span></button>
-            <button class="cp-op-chip" title="包含文字" @click="insertOp('contains')"><code>contains</code><span>包含</span></button>
-            <button class="cp-op-chip" title="不包含文字" @click="insertOp('not_contains')"><code>not_contains</code><span>不包含</span></button>
+            <BaseButton class="cp-op-chip" title="大于" @click="insertOp('>')"><code>&gt;</code><span>大于</span></BaseButton>
+            <BaseButton class="cp-op-chip" title="小于" @click="insertOp('<')"><code>&lt;</code><span>小于</span></BaseButton>
+            <BaseButton class="cp-op-chip" title="大于等于" @click="insertOp('>=')"><code>&gt;=</code><span>大于等于</span></BaseButton>
+            <BaseButton class="cp-op-chip" title="小于等于" @click="insertOp('<=')"><code>&lt;=</code><span>小于等于</span></BaseButton>
+            <BaseButton class="cp-op-chip" title="等于" @click="insertOp('==')"><code>==</code><span>等于</span></BaseButton>
+            <BaseButton class="cp-op-chip" title="不等于" @click="insertOp('!=')"><code>!=</code><span>不等于</span></BaseButton>
+            <BaseButton class="cp-op-chip" title="包含文字" @click="insertOp('contains')"><code>contains</code><span>包含</span></BaseButton>
+            <BaseButton class="cp-op-chip" title="不包含文字" @click="insertOp('not_contains')"><code>not_contains</code><span>不包含</span></BaseButton>
           </div>
           <div class="cp-hints__example">
             示例：<code>{{text}} contains 优惠</code>、<code>{{count}} >= 3</code>

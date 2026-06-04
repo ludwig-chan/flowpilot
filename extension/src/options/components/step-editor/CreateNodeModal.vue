@@ -40,20 +40,20 @@ const hasFolders = (nodes: FlowNode[]): boolean =>
 
       <!-- 类型选择 -->
       <div class="create-modal__type-row">
-        <button
+        <BaseButton
           :class="['type-btn', { 'type-btn--active': kind === 'flow' }]"
           @click="kind = 'flow'"
         >
           <span class="type-btn__icon">▶</span>
           <span>流程</span>
-        </button>
-        <button
+        </BaseButton>
+        <BaseButton
           :class="['type-btn', { 'type-btn--active': kind === 'folder' }]"
           @click="kind = 'folder'"
         >
           <span class="type-btn__icon">📁</span>
           <span>目录</span>
-        </button>
+        </BaseButton>
       </div>
 
       <!-- 名称输入 -->

@@ -154,12 +154,13 @@ function onDeleteBranchChild(condChildId: string, branch: 'if' | 'else', childId
         <template v-for="(child, ci) in children" :key="child.id">
           <!-- 步骤行 -->
           <div class="elm-child-row">
-            <button
+            <BaseButton
               v-if="child.type === 'condition'"
+              variant="ghost"
               class="elm-cond-toggle"
               :title="expandedConditions.has(child.id) ? '折叠分支' : '展开分支'"
               @click="toggleCondExpand(child.id)"
-            >{{ expandedConditions.has(child.id) ? '▾' : '▸' }}</button>
+            >{{ expandedConditions.has(child.id) ? '▾' : '▸' }}</BaseButton>
             <span class="elm-child-type">{{ ACTION_LABELS[child.type] ?? child.type }}</span>
             <span class="elm-child-label" :title="child.label">{{ child.label }}</span>
             <div class="elm-child-actions">
