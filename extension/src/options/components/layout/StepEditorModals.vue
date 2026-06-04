@@ -26,7 +26,8 @@ const {
   showPickerModal, closePicker, onElementPicked, onTestAction,
   showSmartLoopModal, smartLoopCandidates, smartLoopPickedEl, onSmartLoopConfirm,
   onLoopSave, onLoopClose, onLoopReselect, onLoopReselectChild, onLoopEditChild,
-  onLoopAddChild, onLoopAddCallFlow,
+  onLoopAddChild, onLoopAddCallFlow, onLoopAddCondition, onLoopAddDelay,
+  onLoopAddBranchChild, onLoopAddBranchCallFlow, onLoopAddBranchCondition, onLoopEditBranchChild,
   onActionConfirm, onActionTry, onActionRePick, cancelActionModal,
   showLoopCallFlowPicker, onLoopCallFlowConfirm,
   showConditionModal, conditionModalStep, conditionModalIdx, conditionAvailableVars, onConditionConfirm,
@@ -90,6 +91,12 @@ function onCancelSmartLoop() {
       @edit-child="onLoopEditChild"
       @add-child="onLoopAddChild"
       @add-call-flow="onLoopAddCallFlow"
+      @add-condition="onLoopAddCondition"
+      @add-delay="onLoopAddDelay"
+      @add-branch-child="onLoopAddBranchChild"
+      @add-branch-call-flow="onLoopAddBranchCallFlow"
+      @add-branch-condition="onLoopAddBranchCondition"
+      @edit-branch-child="onLoopEditBranchChild"
     />
 
     <!-- 条件配置模态框 -->

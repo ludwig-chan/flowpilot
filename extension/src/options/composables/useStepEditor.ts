@@ -86,14 +86,39 @@ export function useStepEditor(
     es.editingStepIdx    = null
     es.addingToBranch    = null
     es.editingBranchStep = null
-    es.editingLoopChild  = null
-    es.addingToLoopChild = false
+    es.editingLoopChild   = null
+    es.addingToLoopChild  = false
+    es.addingToLoopBranch = null
     if (wasLoopChild || wasAddingToLoop) es.returnToLoop()
   }
 
   /** ActionPickerModal 确认 → 将步骤写入流程（新建）或替换现有步骤（编辑） */
   function onActionConfirm(step: FlowStep) {
     es.showActionModal = false
+
+    // 编辑/添加条件分支内子步骤（loop 上下文）
+    if (es.addingToLoopBranch && es.editingLoopStep) {
+      const { condChildId, branch } = es.addingToLoopBranch
+      const cond = es.editingLoopStep.children?.find(c => c.id === condChildId)
+      if (cond) {
+        const arr = branch === 'if'
+          ? (cond.children     = cond.children     ?? [])
+          : (cond.elseChildren = cond.elseChildren ?? [])
+        const idx = es.editingLoopChild
+        if (idx !== null && arr[idx]) {
+          const origId = arr[idx].id
+          arr[idx] = { ...step, id: origId }
+        } else {
+          arr.push(step)
+        }
+      }
+      es.addingToLoopBranch = null
+      es.addingToLoopChild  = false
+      es.editingLoopChild   = null
+      es.clearEditState()
+      es.returnToLoop()
+      return
+    }
 
     // 编辑循环步骤的子步骤
     if (es.editingLoopChild !== null && es.editingLoopStep) {

@@ -63,24 +63,29 @@ export function useLoopEditor(
 
   /** EditLoopModal "添加操作" → 保存当前状态，打开元素选择器 */
   function onLoopAddChild(currentState: FlowStep, openPickerModal: () => void) {
-    es.editingLoopStep   = currentState
-    es.addingToLoopChild = true
-    es.showEditLoopModal = false
+    es.editingLoopStep    = currentState
+    es.addingToLoopChild  = true
+    es.addingToLoopBranch = null
+    es.showEditLoopModal  = false
     pickedCssSelector.value = ''
     openPickerModal()
     scanDom()
   }
 
-  /** EditLoopModal 编辑子步骤 → 打开 ActionPickerModal */
-  function onLoopEditChild(childIdx: number, currentState: FlowStep) {
-    es.editingLoopStep   = currentState
-    es.editingLoopChild  = childIdx
-    es.showEditLoopModal = false
+  /** EditLoopModal 编辑子步骤 → 打开 ActionPickerModal / CallFlowPicker / ConditionModal */
+  function onLoopEditChild(childIdx: number, currentState: FlowStep, openConditionModal?: () => void) {
+    es.editingLoopStep    = currentState
+    es.editingLoopChild   = childIdx
+    es.addingToLoopBranch = null
+    es.showEditLoopModal  = false
     const child = currentState.children?.[childIdx]
     if (!child) return
-    // call_flow 子步骤没有 selector，走流程选择器而非元素选择器
     if (child.type === 'call_flow') {
       showLoopCallFlowPicker.value = true
+      return
+    }
+    if (child.type === 'condition') {
+      openConditionModal?.()
       return
     }
     if (!child.selector) return
@@ -211,9 +216,10 @@ export function useLoopEditor(
 
   /** EditLoopModal "嵌入流程" → 保存当前状态，关闭 Modal，显示流程选择器（新增模式） */
   function onLoopAddCallFlow(currentState: FlowStep) {
-    es.editingLoopStep       = currentState
-    es.editingLoopChild      = null   // 明确为新增模式
-    es.showEditLoopModal     = false
+    es.editingLoopStep        = currentState
+    es.editingLoopChild       = null
+    es.addingToLoopBranch     = null
+    es.showEditLoopModal      = false
     showLoopCallFlowPicker.value = true
   }
 
@@ -221,6 +227,35 @@ export function useLoopEditor(
   function onLoopConfirmCallFlow(id: string, name: string) {
     showLoopCallFlowPicker.value = false
     if (!es.editingLoopStep) return
+
+    // ── 分支模式：写入条件子步骤的 if/else 分支 ──────────────────────
+    const branchCtx = es.addingToLoopBranch
+    if (branchCtx) {
+      const cond = es.editingLoopStep.children?.find(c => c.id === branchCtx.condChildId)
+      if (cond) {
+        const arr = branchCtx.branch === 'if'
+          ? (cond.children     = cond.children     ?? [])
+          : (cond.elseChildren = cond.elseChildren ?? [])
+        const childIdx = es.editingLoopChild
+        if (childIdx !== null && arr[childIdx]) {
+          const originalId = arr[childIdx].id
+          arr[childIdx] = { id: originalId, type: 'call_flow', label: `嵌入流程：${name}`, flowRef: id }
+        } else {
+          arr.push({
+            id:      `step_${Date.now()}_${Math.random().toString(36).slice(2, 5)}`,
+            type:    'call_flow',
+            label:   `嵌入流程：${name}`,
+            flowRef: id,
+          })
+        }
+      }
+      es.addingToLoopBranch = null
+      es.editingLoopChild   = null
+      es.showEditLoopModal  = true
+      return
+    }
+
+    // ── 顶层模式：写入 editingLoopStep.children ───────────────────────
     es.editingLoopStep.children = es.editingLoopStep.children ?? []
     const childIdx = es.editingLoopChild
     if (childIdx !== null && es.editingLoopStep.children[childIdx]) {
@@ -245,6 +280,112 @@ export function useLoopEditor(
     es.showEditLoopModal = true
   }
 
+  // ── 循环内添加条件 / 延迟 ────────────────────────────────────────────
+
+  /** EditLoopModal "添加条件" → 保存当前状态，打开条件编辑器（写入 loop children） */
+  function onLoopAddCondition(currentState: FlowStep, openConditionModal: () => void) {
+    es.editingLoopStep    = currentState
+    es.addingToLoopBranch = null
+    es.editingLoopChild   = null
+    es.showEditLoopModal  = false
+    openConditionModal()
+  }
+
+  /** EditLoopModal "添加延迟" → 直接追加 delay 步骤并重新打开 Modal */
+  function onLoopAddDelay(currentState: FlowStep) {
+    currentState.children = currentState.children ?? []
+    currentState.children.push({
+      id:    `step_${Date.now()}_${Math.random().toString(36).slice(2, 5)}`,
+      type:  'delay',
+      label: '等待 1000 ms',
+      value: '1000',
+    })
+    es.editingLoopStep   = currentState
+    es.showEditLoopModal = true
+  }
+
+  // ── 条件分支内步骤操作 ────────────────────────────────────────────────
+
+  /** EditLoopModal 分支内添加元素操作 */
+  function onLoopAddBranchChild(
+    condChildId: string,
+    branch: 'if' | 'else',
+    currentState: FlowStep,
+    openPickerModal: () => void,
+  ) {
+    es.editingLoopStep    = currentState
+    es.addingToLoopBranch = { condChildId, branch }
+    es.addingToLoopChild  = true
+    es.showEditLoopModal  = false
+    pickedCssSelector.value = ''
+    openPickerModal()
+    scanDom()
+  }
+
+  /** EditLoopModal 分支内嵌入流程 */
+  function onLoopAddBranchCallFlow(
+    condChildId: string,
+    branch: 'if' | 'else',
+    currentState: FlowStep,
+  ) {
+    es.editingLoopStep        = currentState
+    es.addingToLoopBranch     = { condChildId, branch }
+    es.editingLoopChild       = null
+    es.showEditLoopModal      = false
+    showLoopCallFlowPicker.value = true
+  }
+
+  /** EditLoopModal 分支内添加条件 */
+  function onLoopAddBranchCondition(
+    condChildId: string,
+    branch: 'if' | 'else',
+    currentState: FlowStep,
+    openConditionModal: () => void,
+  ) {
+    es.editingLoopStep    = currentState
+    es.addingToLoopBranch = { condChildId, branch }
+    es.editingLoopChild   = null
+    es.showEditLoopModal  = false
+    openConditionModal()
+  }
+
+  /** EditLoopModal 分支内编辑已有子步骤 */
+  function onLoopEditBranchChild(
+    condChildId: string,
+    branch: 'if' | 'else',
+    childIdx: number,
+    currentState: FlowStep,
+  ) {
+    es.editingLoopStep    = currentState
+    es.addingToLoopBranch = { condChildId, branch }
+    es.showEditLoopModal  = false
+    const cond = currentState.children?.find(c => c.id === condChildId)
+    if (!cond) return
+    const branchArr = branch === 'if' ? cond.children : cond.elseChildren
+    const child = branchArr?.[childIdx]
+    if (!child) return
+    if (child.type === 'call_flow') {
+      es.editingLoopChild = childIdx
+      showLoopCallFlowPicker.value = true
+      return
+    }
+    if (!child.selector) return
+    es.editingLoopChild = childIdx
+    const el: SerializedElement = {
+      kind:       child.type === 'input' || child.type === 'clear' ? 'input'
+                  : child.type === 'select' ? 'select'
+                  : 'click',
+      confidence: 'high',
+      label:      child.label,
+      matchCount: 1,
+      selector:   child.selector,
+    }
+    es.openActionModal(el, {
+      isRelative: child.relativeSelector ?? false,
+      context:    'single',
+    })
+  }
+
   return {
     editingLoopStepIdx,
     reselectingLoopChild,
@@ -264,5 +405,11 @@ export function useLoopEditor(
     showLoopCallFlowPicker,
     onLoopAddCallFlow,
     onLoopConfirmCallFlow,
+    onLoopAddCondition,
+    onLoopAddDelay,
+    onLoopAddBranchChild,
+    onLoopAddBranchCallFlow,
+    onLoopAddBranchCondition,
+    onLoopEditBranchChild,
   }
 }

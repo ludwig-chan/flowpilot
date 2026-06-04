@@ -52,13 +52,20 @@ const {
 
 const {
   showPickerModal,
-  editLoopStep, onLoopSave, onLoopClose, onLoopReselect, onLoopReselectChild, onLoopEditChild,
+  editLoopStep, onLoopSave, onLoopClose, onLoopReselect, onLoopReselectChild,
+  onLoopEditChild:           _onLoopEditChildRaw,
   editStep, cancelActionModal, onActionConfirm, editBranchStep,
   showSmartLoopModal, smartLoopCandidates, smartLoopPickedEl,
   openSmartPicker, onSmartLoopConfirm,
   onElementPicked, onActionRePick, openPicker, closePicker,
   onLoopAddChild, onActionTry, onTestAction,
   showLoopCallFlowPicker, onLoopAddCallFlow, onLoopConfirmCallFlow,
+  onLoopAddCondition:        _onLoopAddConditionRaw,
+  onLoopAddDelay,
+  onLoopAddBranchChild,
+  onLoopAddBranchCallFlow,
+  onLoopAddBranchCondition:  _onLoopAddBranchConditionRaw,
+  onLoopEditBranchChild,
 } = usePickerOrchestrator(editingFlow, activeTabId, requireTab, pickedCssSelector, pickMode, scanDom)
 
 const {
@@ -92,6 +99,18 @@ function onLoopCallFlowConfirm(id: string) {
   onLoopConfirmCallFlow(id, name)
 }
 
+// 循环条件相关包装器（注入 showConditionModal 开启回调）
+function loopOpenCondition() { showConditionModal.value = true }
+function onLoopEditChild(childIdx: number, currentState: FlowStep) {
+  _onLoopEditChildRaw(childIdx, currentState, loopOpenCondition)
+}
+function onLoopAddCondition(currentState: FlowStep) {
+  _onLoopAddConditionRaw(currentState, loopOpenCondition)
+}
+function onLoopAddBranchCondition(condChildId: string, branch: 'if' | 'else', currentState: FlowStep) {
+  _onLoopAddBranchConditionRaw(condChildId, branch, currentState, loopOpenCondition)
+}
+
 function handleEdit(step: FlowStep, i: number) {
   if (step.type === 'condition')  return editConditionStep(step, i)
   if (step.type === 'delay')      return editDelayStep(step)
@@ -112,8 +131,10 @@ provide(STEP_EDITOR_MODALS_KEY, {
   // usePickerOrchestrator
   showPickerModal, closePicker, onElementPicked, onTestAction,
   showSmartLoopModal, smartLoopCandidates, smartLoopPickedEl, onSmartLoopConfirm,
-  onLoopSave, onLoopClose, onLoopReselect, onLoopReselectChild, onLoopEditChild,
-  onLoopAddChild, onLoopAddCallFlow,
+  onLoopSave, onLoopClose, onLoopReselect, onLoopReselectChild,
+  onLoopEditChild, onLoopAddChild, onLoopAddCallFlow,
+  onLoopAddCondition, onLoopAddDelay,
+  onLoopAddBranchChild, onLoopAddBranchCallFlow, onLoopAddBranchCondition, onLoopEditBranchChild,
   onActionConfirm, onActionTry, onActionRePick, cancelActionModal,
   showLoopCallFlowPicker, onLoopCallFlowConfirm,
   // useConditionEditor

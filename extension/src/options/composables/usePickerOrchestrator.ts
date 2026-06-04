@@ -28,13 +28,19 @@ export function usePickerOrchestrator(
     onLoopClose,
     onLoopReselect,
     onLoopReselectChild,
-    onLoopAddChild: _onLoopAddChildRaw,
-    onLoopEditChild,
-    onSmartLoopConfirm: _onSmartLoopConfirmLoop,
+    onLoopAddChild:            _onLoopAddChildRaw,
+    onLoopEditChild:           _onLoopEditChildRaw,
+    onSmartLoopConfirm:        _onSmartLoopConfirmLoop,
     getLoopChildActionOpts,
     showLoopCallFlowPicker,
     onLoopAddCallFlow,
     onLoopConfirmCallFlow,
+    onLoopAddCondition:        _onLoopAddConditionRaw,
+    onLoopAddDelay,
+    onLoopAddBranchChild:      _onLoopAddBranchChildRaw,
+    onLoopAddBranchCallFlow,
+    onLoopAddBranchCondition:  _onLoopAddBranchConditionRaw,
+    onLoopEditBranchChild,
   } = useLoopEditor(editingFlow, scanDom, pickedCssSelector)
 
   // ── useStepEditor ─────────────────────────────────────────────────
@@ -90,6 +96,31 @@ export function usePickerOrchestrator(
     _onLoopAddChildRaw(currentState, () => { showPickerModal.value = true })
   }
 
+  /** EditLoopModal 编辑子步骤 wrapper（支持条件类型，需传入 openConditionModal） */
+  function onLoopEditChild(childIdx: number, currentState: FlowStep, openConditionModal?: () => void) {
+    _onLoopEditChildRaw(childIdx, currentState, openConditionModal)
+  }
+
+  /** EditLoopModal "添加条件" wrapper（需传入 openConditionModal） */
+  function onLoopAddCondition(currentState: FlowStep, openConditionModal: () => void) {
+    _onLoopAddConditionRaw(currentState, openConditionModal)
+  }
+
+  /** 分支内添加元素 wrapper */
+  function onLoopAddBranchChild(condChildId: string, branch: 'if' | 'else', currentState: FlowStep) {
+    _onLoopAddBranchChildRaw(condChildId, branch, currentState, () => { showPickerModal.value = true })
+  }
+
+  /** 分支内添加条件 wrapper（需传入 openConditionModal） */
+  function onLoopAddBranchCondition(
+    condChildId: string,
+    branch: 'if' | 'else',
+    currentState: FlowStep,
+    openConditionModal: () => void,
+  ) {
+    _onLoopAddBranchConditionRaw(condChildId, branch, currentState, openConditionModal)
+  }
+
   /** ActionPickerModal 试一下 → 临时执行单个步骤 */
   async function onActionTry(step: FlowStep) {
     await bridge.runFlow([step])
@@ -111,7 +142,7 @@ export function usePickerOrchestrator(
     showPickerModal,
     // useLoopEditor
     editingLoopStepIdx, reselectingLoopChild,
-    editLoopStep, onLoopSave, onLoopClose, onLoopReselect, onLoopReselectChild, onLoopEditChild,
+    editLoopStep, onLoopSave, onLoopClose, onLoopReselect, onLoopReselectChild,
     // useStepEditor
     editStep, cancelActionModal, onActionConfirm, editBranchStep,
     // useSmartLoop
@@ -119,8 +150,11 @@ export function usePickerOrchestrator(
     openSmartPicker, cancelSmartLoopPicking, onSmartLoopConfirm,
     // Wrappers
     onElementPicked, onActionRePick, openPicker, closePicker,
-    onLoopAddChild, onActionTry, onTestAction,
+    onLoopAddChild, onLoopEditChild, onActionTry, onTestAction,
     // 循环嵌入流程
     showLoopCallFlowPicker, onLoopAddCallFlow, onLoopConfirmCallFlow,
+    // 新增：循环内条件 / 延迟 / 分支
+    onLoopAddCondition, onLoopAddDelay,
+    onLoopAddBranchChild, onLoopAddBranchCallFlow, onLoopAddBranchCondition, onLoopEditBranchChild,
   }
 }

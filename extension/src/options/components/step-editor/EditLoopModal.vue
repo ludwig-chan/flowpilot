@@ -1,29 +1,37 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import type { FlowStep, ActionType } from '@shared/types/flow'
+import { ref } from 'vue'
+import type { FlowStep } from '@shared/types/flow'
 import { STEP_DELAY_PRESETS } from '@shared/types/flow'
 import BaseInput from '@shared/components/BaseInput.vue'
 import RangeInput from '@shared/components/RangeInput.vue'
+import AddStepMenu from './AddStepMenu.vue'
 
 const props = defineProps<{
   step: FlowStep
 }>()
 
 const emit = defineEmits<{
-  (e: 'save',          step: FlowStep): void
-  (e: 'close'):                        void
-  (e: 'reselect'):                     void
-  (e: 'reselect-child', currentState: FlowStep): void
-  (e: 'edit-child',    childIdx: number, currentState: FlowStep): void
-  (e: 'add-child',      currentState: FlowStep): void
-  (e: 'add-call-flow',  currentState: FlowStep): void
+  (e: 'save',                 step: FlowStep): void
+  (e: 'close'):                                void
+  (e: 'reselect'):                             void
+  (e: 'reselect-child',       currentState: FlowStep): void
+  (e: 'edit-child',           childIdx: number, currentState: FlowStep): void
+  (e: 'add-child',            currentState: FlowStep): void
+  (e: 'add-call-flow',        currentState: FlowStep): void
+  (e: 'add-condition',        currentState: FlowStep): void
+  (e: 'add-delay',            currentState: FlowStep): void
+  (e: 'add-branch-child',     condChildId: string, branch: 'if' | 'else', currentState: FlowStep): void
+  (e: 'add-branch-call-flow', condChildId: string, branch: 'if' | 'else', currentState: FlowStep): void
+  (e: 'add-branch-condition', condChildId: string, branch: 'if' | 'else', currentState: FlowStep): void
+  (e: 'edit-branch-child',    condChildId: string, branch: 'if' | 'else', childIdx: number, currentState: FlowStep): void
 }>()
 
 const label       = ref(props.step.label)
 const itemDelay   = ref<[number | undefined, number | undefined]>([props.step.itemDelay?.[0] ?? 800, props.step.itemDelay?.[1] ?? 2000])
 const childSel    = ref(props.step.loopChildSelector ?? '')
-const children    = ref<FlowStep[]>(JSON.parse(JSON.stringify(props.step.children ?? [])))
-const showAdvanced = ref(false)
+const children           = ref<FlowStep[]>(JSON.parse(JSON.stringify(props.step.children ?? [])))
+const showAdvanced       = ref(false)
+const expandedConditions = ref(new Set<string>())
 
 const ACTION_LABELS: Record<string, string> = {
   click: '点击', double_click: '双击', right_click: '右键', hover: '悬停',
@@ -56,80 +64,54 @@ function onDeleteChild(idx: number) {
   children.value.splice(idx, 1)
 }
 
-// ── 快速添加动作（loopChildSelector 已填时内联展开） ─────────────────
-interface QuickActionOption {
-  type:         ActionType
-  label:        string
-  needValue:    boolean
-  placeholder?: string
+function toggleCondExpand(id: string) {
+  const s = new Set(expandedConditions.value)
+  if (s.has(id)) s.delete(id); else s.add(id)
+  expandedConditions.value = s
 }
-const ACTION_QUICK_GROUPS: { label: string; options: QuickActionOption[] }[] = [
-  {
-    label: '鼠标',
-    options: [
-      { type: 'click',        label: '🖱 点击', needValue: false },
-      { type: 'double_click', label: '🖱 双击', needValue: false },
-      { type: 'right_click',  label: '🖱 右键', needValue: false },
-      { type: 'hover',        label: '👆 悬停', needValue: false },
-    ],
-  },
-  {
-    label: '文本',
-    options: [
-      { type: 'input', label: '⌨️ 输入文本', needValue: true,  placeholder: '要输入的文本，支持 {{变量}}' },
-      { type: 'clear', label: '🗑 清空文本',  needValue: false },
-    ],
-  },
-  {
-    label: '表单',
-    options: [
-      { type: 'select',    label: '🔽 选择选项', needValue: true,  placeholder: '选项值（value 属性）' },
-      { type: 'check',     label: '☑ 勾选',      needValue: true,  placeholder: 'true / false / 留空=切换' },
-      { type: 'focus',     label: '🎯 聚焦',      needValue: false },
-      { type: 'press_key', label: '⌨️ 按键',      needValue: true,  placeholder: 'Enter、Tab、Escape…' },
-    ],
-  },
-  {
-    label: '数据',
-    options: [
-      { type: 'get_text',       label: '📋 获取文字', needValue: true,  placeholder: '存入变量名（如 myVar）' },
-      { type: 'wait_appear',    label: '⏳ 等待出现', needValue: false },
-      { type: 'wait_disappear', label: '🕐 等待消失', needValue: false },
-      { type: 'scroll_to',      label: '📜 滚动到',   needValue: false },
-    ],
-  },
-]
-const ACTION_QUICK_OPTS = ACTION_QUICK_GROUPS.flatMap(g => g.options)
 
-const showQuickAdd    = ref(false)
-const quickType       = ref<ActionType>('click')
-const quickValue      = ref('')
-const currentQuickOpt = computed(
-  () => ACTION_QUICK_OPTS.find(o => o.type === quickType.value) ?? ACTION_QUICK_OPTS[0]
-)
+// ── 顶层步骤菜单 ──────────────────────────────────────────────────────────
+function onTopMenuSelect(type: 'pick-element' | 'add-condition' | 'add-call-flow' | 'add-delay') {
+  const state = currentState()
+  if (type === 'pick-element')  emit('add-child',     state)
+  if (type === 'add-condition') emit('add-condition', state)
+  if (type === 'add-call-flow') emit('add-call-flow', state)
+  if (type === 'add-delay')     emit('add-delay',     state)
+}
 
-function handleAddChild() {
-  if (childSel.value) {
-    showQuickAdd.value = !showQuickAdd.value
-  } else {
-    emit('add-child', currentState())
+// ── 条件分支内步骤管理 ────────────────────────────────────────────────────
+function getBranchArr(condChildId: string, branch: 'if' | 'else'): FlowStep[] | null {
+  const cond = children.value.find(c => c.id === condChildId)
+  if (!cond) return null
+  if (branch === 'if') { cond.children = cond.children ?? []; return cond.children }
+  cond.elseChildren = cond.elseChildren ?? []; return cond.elseChildren
+}
+
+function onBranchMenuSelect(
+  type: 'pick-element' | 'add-condition' | 'add-call-flow' | 'add-delay',
+  condChildId: string,
+  branch: 'if' | 'else',
+) {
+  const state = currentState()
+  if (type === 'pick-element')  { emit('add-branch-child',     condChildId, branch, state); return }
+  if (type === 'add-call-flow') { emit('add-branch-call-flow', condChildId, branch, state); return }
+  if (type === 'add-condition') { emit('add-branch-condition', condChildId, branch, state); return }
+  if (type === 'add-delay') {
+    getBranchArr(condChildId, branch)?.push({
+      id:    `step_${Date.now()}_${Math.random().toString(36).slice(2, 5)}`,
+      type:  'delay',
+      label: '等待 1000 ms',
+      value: '1000',
+    })
   }
 }
 
-function onQuickConfirm() {
-  const opt    = currentQuickOpt.value
-  const action = opt.label.replace(/^\S+\s*/, '')
-  const child: FlowStep = {
-    id:               `step_${Date.now()}_${Math.random().toString(36).slice(2, 5)}`,
-    type:             quickType.value,
-    label:            `${action}：${childSel.value.slice(0, 30)}`,
-    selector:         { cssSelector: childSel.value },
-    relativeSelector: true,
-    value:            opt.needValue && quickValue.value.trim() ? quickValue.value.trim() : undefined,
-  }
-  children.value.push(child)
-  showQuickAdd.value = false
-  quickValue.value   = ''
+function onEditBranchChild(condChildId: string, branch: 'if' | 'else', childIdx: number) {
+  emit('edit-branch-child', condChildId, branch, childIdx, currentState())
+}
+
+function onDeleteBranchChild(condChildId: string, branch: 'if' | 'else', childIdx: number) {
+  getBranchArr(condChildId, branch)?.splice(childIdx, 1)
 }
 </script>
 
@@ -163,57 +145,100 @@ function onQuickConfirm() {
         </div>
       </div>
 
-      <!-- 子动作列表 -->
+      <!-- 子步骤列表 -->
       <div class="elm-section">
-        <label class="elm-label">每项执行的动作</label>
-        <div v-if="children.length === 0" class="elm-empty">暂无动作</div>
-        <div v-for="(child, ci) in children" :key="child.id" class="elm-child-row">
-          <span class="elm-child-type">{{ ACTION_LABELS[child.type] ?? child.type }}</span>
-          <span class="elm-child-label" :title="child.label">{{ child.label }}</span>
-          <div class="elm-child-actions">
-            <BaseButton
-              v-if="child.selector || child.type === 'call_flow'"
-              variant="ghost"
-              size="icon"
-              class="elm-child-btn"
-              title="编辑"
-              @click="onEditChild(ci)"
-            >✎</BaseButton>
-            <BaseButton variant="ghost" size="icon" class="elm-child-btn elm-child-btn--del" title="删除" @click="onDeleteChild(ci)">✖</BaseButton>
+        <label class="elm-label">每项执行的步骤</label>
+        <div v-if="children.length === 0" class="elm-empty">暂无步骤</div>
+        <template v-for="(child, ci) in children" :key="child.id">
+          <!-- 步骤行 -->
+          <div class="elm-child-row">
+            <button
+              v-if="child.type === 'condition'"
+              class="elm-cond-toggle"
+              :title="expandedConditions.has(child.id) ? '折叠分支' : '展开分支'"
+              @click="toggleCondExpand(child.id)"
+            >{{ expandedConditions.has(child.id) ? '▾' : '▸' }}</button>
+            <span class="elm-child-type">{{ ACTION_LABELS[child.type] ?? child.type }}</span>
+            <span class="elm-child-label" :title="child.label">{{ child.label }}</span>
+            <div class="elm-child-actions">
+              <BaseButton
+                v-if="child.selector || child.type === 'call_flow' || child.type === 'condition'"
+                variant="ghost"
+                size="icon"
+                class="elm-child-btn"
+                title="编辑"
+                @click="onEditChild(ci)"
+              >✎</BaseButton>
+              <BaseButton variant="ghost" size="icon" class="elm-child-btn elm-child-btn--del" title="删除" @click="onDeleteChild(ci)">✖</BaseButton>
+            </div>
           </div>
-        </div>
+
+          <!-- 条件分支展开区域 -->
+          <div v-if="child.type === 'condition' && expandedConditions.has(child.id)" class="elm-cond-branches">
+            <!-- IF 分支 -->
+            <div class="elm-cond-branch">
+              <div class="elm-cond-branch__header">
+                <span class="elm-cond-branch__label elm-cond-branch__label--if">✅ 条件成立 (IF)</span>
+              </div>
+              <div class="elm-cond-branch__steps">
+                <div v-if="!child.children?.length" class="elm-empty">暂无步骤</div>
+                <div v-for="(bc, bci) in child.children" :key="bc.id" class="elm-cond-child-card">
+                  <div class="elm-cond-child-card__body">
+                    <span class="elm-cond-child-card__type">{{ ACTION_LABELS[bc.type] ?? bc.type }}</span>
+                    <span class="elm-cond-child-card__label">{{ bc.label }}</span>
+                  </div>
+                  <div class="elm-cond-child-card__actions">
+                    <BaseButton v-if="bc.selector || bc.type === 'call_flow'" variant="ghost" size="icon" class="elm-child-btn" title="编辑" @click="onEditBranchChild(child.id, 'if', bci)">✎</BaseButton>
+                    <BaseButton variant="ghost" size="icon" class="elm-child-btn elm-child-btn--del" title="删除" @click="onDeleteBranchChild(child.id, 'if', bci)">✖</BaseButton>
+                  </div>
+                </div>
+              </div>
+              <AddStepMenu
+                context="loop" label="＋ 添加" align="left"
+                @pick-element="onBranchMenuSelect('pick-element', child.id, 'if')"
+                @add-condition="onBranchMenuSelect('add-condition', child.id, 'if')"
+                @add-call-flow="onBranchMenuSelect('add-call-flow', child.id, 'if')"
+                @add-delay="onBranchMenuSelect('add-delay', child.id, 'if')"
+              />
+            </div>
+            <!-- ELSE 分支 -->
+            <div class="elm-cond-branch elm-cond-branch--else">
+              <div class="elm-cond-branch__header">
+                <span class="elm-cond-branch__label elm-cond-branch__label--else">❌ 条件不成立 (ELSE)</span>
+              </div>
+              <div class="elm-cond-branch__steps">
+                <div v-if="!child.elseChildren?.length" class="elm-empty">暂无步骤</div>
+                <div v-for="(bc, bci) in child.elseChildren" :key="bc.id" class="elm-cond-child-card">
+                  <div class="elm-cond-child-card__body">
+                    <span class="elm-cond-child-card__type">{{ ACTION_LABELS[bc.type] ?? bc.type }}</span>
+                    <span class="elm-cond-child-card__label">{{ bc.label }}</span>
+                  </div>
+                  <div class="elm-cond-child-card__actions">
+                    <BaseButton v-if="bc.selector || bc.type === 'call_flow'" variant="ghost" size="icon" class="elm-child-btn" title="编辑" @click="onEditBranchChild(child.id, 'else', bci)">✎</BaseButton>
+                    <BaseButton variant="ghost" size="icon" class="elm-child-btn elm-child-btn--del" title="删除" @click="onDeleteBranchChild(child.id, 'else', bci)">✖</BaseButton>
+                  </div>
+                </div>
+              </div>
+              <AddStepMenu
+                context="loop" label="＋ 添加" align="left"
+                @pick-element="onBranchMenuSelect('pick-element', child.id, 'else')"
+                @add-condition="onBranchMenuSelect('add-condition', child.id, 'else')"
+                @add-call-flow="onBranchMenuSelect('add-call-flow', child.id, 'else')"
+                @add-delay="onBranchMenuSelect('add-delay', child.id, 'else')"
+              />
+            </div>
+          </div>
+        </template>
       </div>
 
       <div class="elm-child-add">
-        <div class="elm-add-buttons">
-          <BaseButton class="elm-add-btn" @click="handleAddChild">＋ 添加操作</BaseButton>
-          <BaseButton class="elm-add-btn elm-add-btn--flow" @click="emit('add-call-flow', currentState())">＋ 嵌入流程</BaseButton>
-        </div>
-
-        <!-- 快速选动作面板（有 loopChildSelector 时展开） -->
-        <div v-if="showQuickAdd" class="elm-quick-add">
-          <div class="elm-quick-row">
-            <select
-              class="elm-quick-select"
-              :value="quickType"
-              @change="quickType = ($event.target as HTMLSelectElement).value as ActionType; quickValue = ''"
-            >
-              <optgroup v-for="g in ACTION_QUICK_GROUPS" :key="g.label" :label="g.label">
-                <option v-for="opt in g.options" :key="opt.type" :value="opt.type">{{ opt.label }}</option>
-              </optgroup>
-            </select>
-            <BaseInput
-              v-if="currentQuickOpt.needValue"
-              v-model="quickValue"
-              class="elm-quick-value"
-              :placeholder="currentQuickOpt.placeholder || ''"
-            />
-          </div>
-          <div class="elm-quick-row elm-quick-row--actions">
-            <button class="elm-quick-link" @click="showQuickAdd = false; emit('add-child', currentState())">选择其他元素…</button>
-            <BaseButton variant="primary" class="elm-quick-confirm" @click="onQuickConfirm">确认添加</BaseButton>
-          </div>
-        </div>
+        <AddStepMenu
+          context="loop"
+          @pick-element="onTopMenuSelect('pick-element')"
+          @add-condition="onTopMenuSelect('add-condition')"
+          @add-call-flow="onTopMenuSelect('add-call-flow')"
+          @add-delay="onTopMenuSelect('add-delay')"
+        />
       </div>
 
       <!-- 高级设置折叠 -->
@@ -298,46 +323,56 @@ function onQuickConfirm() {
   &--del { color: $color-text-muted-2; &:hover { color: $color-red !important; } }
 }
 
-.elm-child-add { padding: 4px 14px 8px; }
-.elm-add-buttons {
-  display: flex; gap: 6px;
+.elm-child-add { padding: 8px 14px; }
+
+.elm-cond-toggle {
+  background: none;
+  border: none;
+  color: $color-text-muted;
+  cursor: pointer;
+  padding: 0 2px;
+  font-size: 12px;
+  flex-shrink: 0;
+  line-height: 1;
+  &:hover { color: $color-text; }
 }
 
-.elm-add-btn {
-  flex: 1; font-size: 11px; padding: 4px;
-  border: 1px dashed $color-surface-2 !important; background: transparent; color: $color-text-muted;
-  &:hover { border-color: $color-blue !important; color: $color-blue; }
-  &--flow {
-    &:hover { border-color: $color-green !important; color: $color-green; }
-  }
+.elm-cond-branches {
+  margin: 0 0 4px 12px;
+  border-left: 2px solid $color-surface-2;
 }
 
-.elm-quick-add {
-  margin-top: 6px; padding: 8px;
-  background: $color-surface-1; border: 1px solid $color-surface-2; border-radius: $radius;
-  display: flex; flex-direction: column; gap: 6px;
+.elm-cond-branch {
+  padding: 8px 10px;
+  border-bottom: 1px solid $color-surface-1;
+  &:last-child { border-bottom: none; }
+  &--else { background: rgba(243, 139, 168, 0.04); }
+
+  &__header { display: flex; align-items: center; margin-bottom: 6px; }
+  &__label { font-size: 11px; font-weight: 700; }
+  &__label--if   { color: #a6e3a1; }
+  &__label--else { color: #f38ba8; }
+
+  &__steps { display: flex; flex-direction: column; gap: 3px; margin-bottom: 6px; }
 }
 
-.elm-quick-row {
+.elm-cond-child-card {
   display: flex; align-items: center; gap: 6px;
-  &--actions { justify-content: space-between; }
+  background: $color-surface-0; border: 1px solid $color-surface-2;
+  border-radius: $radius-sm; padding: 4px 8px;
+
+  &__body { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0; }
+  &__type {
+    font-size: 10px; font-weight: 700; color: $color-text-muted;
+    background: $color-surface-2; padding: 1px 4px; border-radius: $radius-sm;
+    white-space: nowrap; flex-shrink: 0;
+  }
+  &__label {
+    font-size: 11px; color: $color-text;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  &__actions { display: flex; gap: 2px; flex-shrink: 0; }
 }
-
-.elm-quick-select {
-  flex: 1; background: $color-base; border: 1px solid $color-surface-2; border-radius: $radius-sm;
-  color: $color-text; padding: 4px 6px; font-size: 11px; cursor: pointer;
-  &:focus { outline: none; border-color: $color-blue; }
-}
-
-.elm-quick-value { flex: 1; }
-
-.elm-quick-link {
-  font-size: 11px; color: $color-text-muted; background: none; border: none;
-  cursor: pointer; padding: 0; text-decoration: underline;
-  &:hover { color: $color-blue; }
-}
-
-.elm-quick-confirm { font-size: 11px; padding: 3px 10px; }
 
 .elm-check-label {
   display: flex; align-items: center; gap: 6px;

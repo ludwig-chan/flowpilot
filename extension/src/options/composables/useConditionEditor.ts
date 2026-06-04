@@ -46,7 +46,6 @@ export function useConditionEditor(
   function onConditionConfirm(data: {
     label: string; mode: 'expr' | 'elem'; value?: string; selector?: string
   }) {
-    if (!editingFlow.value) return
     showConditionModal.value = false
 
     const newSelector = data.mode === 'elem' && data.selector
@@ -54,6 +53,46 @@ export function useConditionEditor(
       : undefined
     const newValue = data.mode === 'expr' ? data.value : undefined
 
+    // ── Loop 上下文：写入 editingLoopStep ──────────────────────────────
+    if (es.editingLoopStep) {
+      const branchCtx = es.addingToLoopBranch
+      if (branchCtx) {
+        // 写入条件子步骤的 if/else 分支
+        const cond = es.editingLoopStep.children?.find(c => c.id === branchCtx.condChildId)
+        if (cond) {
+          const arr = branchCtx.branch === 'if'
+            ? (cond.children     = cond.children     ?? [])
+            : (cond.elseChildren = cond.elseChildren ?? [])
+          arr.push({
+            id: `step_${Date.now()}`, type: 'condition', label: data.label,
+            value: newValue, selector: newSelector, children: [], elseChildren: [],
+          })
+        }
+        es.addingToLoopBranch = null
+      } else {
+        // 写入 loop 顶层 children
+        const loopChildren = (es.editingLoopStep.children = es.editingLoopStep.children ?? [])
+        const idx = es.editingLoopChild
+        if (idx !== null && loopChildren[idx]) {
+          // 编辑模式
+          const s = loopChildren[idx]
+          s.label = data.label; s.value = newValue; s.selector = newSelector
+        } else {
+          loopChildren.push({
+            id: `step_${Date.now()}`, type: 'condition', label: data.label,
+            value: newValue, selector: newSelector, children: [], elseChildren: [],
+          })
+        }
+        es.editingLoopChild = null
+      }
+      conditionModalStep.value = null
+      conditionModalIdx.value  = null
+      es.showEditLoopModal = true
+      return
+    }
+
+    // ── 普通流程上下文 ────────────────────────────────────────────────
+    if (!editingFlow.value) return
     if (conditionModalIdx.value !== null) {
       const s = editingFlow.value.steps[conditionModalIdx.value]
       s.label    = data.label

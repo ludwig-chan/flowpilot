@@ -14,8 +14,9 @@ export const useEditorStore = defineStore('editor', () => {
   // ── Loop 编辑共享状态 ────────────────────────────────────────────
   const showEditLoopModal    = ref(false)
   const editingLoopStep      = ref<FlowStep | null>(null)
-  const editingLoopChild     = ref<number | null>(null)
-  const addingToLoopChild    = ref(false)
+  const editingLoopChild      = ref<number | null>(null)
+  const addingToLoopChild     = ref(false)
+  const addingToLoopBranch    = ref<{ condChildId: string; branch: 'if' | 'else' } | null>(null)
 
   function returnToLoop() {
     showEditLoopModal.value = true
@@ -80,6 +81,7 @@ export const useEditorStore = defineStore('editor', () => {
     editingLoopStep,
     editingLoopChild,
     addingToLoopChild,
+    addingToLoopBranch,
     returnToLoop,
     // action modal
     showActionModal,
