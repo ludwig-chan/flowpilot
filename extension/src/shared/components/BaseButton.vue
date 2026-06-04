@@ -1,11 +1,12 @@
 <script setup lang="ts">
 withDefaults(defineProps<{
-  variant?: 'primary' | 'danger' | 'ghost'
-  size?:    'sm' | 'icon'
-  icon?:    string
-  active?:  boolean
-  loading?: boolean
-  type?:    'button' | 'submit' | 'reset'
+  variant?:  'primary' | 'danger' | 'ghost'
+  size?:     'sm' | 'icon'
+  icon?:     string
+  iconOnly?: boolean
+  active?:   boolean
+  loading?:  boolean
+  type?:     'button' | 'submit' | 'reset'
 }>(), {
   type: 'button',
 })
@@ -21,7 +22,6 @@ withDefaults(defineProps<{
       size    && `btn--${size}`,
       { 'btn--active': active },
       { 'btn--loading': loading },
-      icon    && 'btn--adaptive',
     ]"
   >
     <template v-if="loading">
@@ -30,7 +30,7 @@ withDefaults(defineProps<{
     </template>
     <template v-else-if="icon">
       <span class="btn__icon" aria-hidden="true">{{ icon }}</span>
-      <span class="btn__text"><slot /></span>
+      <span v-if="!iconOnly" class="btn__text"><slot /></span>
     </template>
     <template v-else>
       <slot />
@@ -42,6 +42,9 @@ withDefaults(defineProps<{
 @use '@shared/styles/tokens' as *;
 
 .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   padding: 5px 12px;
   border-radius: $radius;
   border: 1px solid $color-surface-2;
@@ -77,17 +80,4 @@ withDefaults(defineProps<{
 
 .btn--sm   { padding: 3px 8px; font-size: 11px; }
 .btn--icon { padding: 3px 6px; line-height: 1; }
-
-// Adaptive icon/text button
-// 默认只显示文字；当按钮被压缩到 ≤34px 时切换为只显示图标
-.btn--adaptive {
-  container-type: inline-size;
-  .btn__icon { display: none; }
-  .btn__text  { display: inline; }
-}
-
-@container (max-width: 34px) {
-  .btn--adaptive .btn__icon { display: inline; }
-  .btn--adaptive .btn__text  { display: none; }
-}
 </style>

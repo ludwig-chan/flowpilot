@@ -38,16 +38,17 @@ function toggleTrigger() {
     <div class="editor__header-row">
       <span class="editor__name-display">{{ flow.name }}</span>
       <span v-if="estimatedTime" class="editor__est-time">⏱ {{ estimatedTime }}</span>
-      <BaseButton icon="⚙" title="设置" @click="emit('open-settings')">设置</BaseButton>
-      <BaseButton icon="💾" title="保存" variant="primary" @click="emit('save')">保存</BaseButton>
+      <BaseButton icon="⚙" icon-only title="设置" @click="emit('open-settings')">设置</BaseButton>
+      <BaseButton icon="💾" icon-only title="保存" variant="primary" @click="emit('save')">保存</BaseButton>
       <BaseButton
         :icon="stopping ? '⏳' : running ? '⏹' : '▶'"
+        icon-only
         :title="stopping ? '停止中' : running ? '停止' : '运行'"
         :variant="running ? 'danger' : 'primary'"
         :loading="stopping"
         @click="running && !stopping ? emit('stop') : !running ? emit('run') : undefined"
       >{{ stopping ? '停止中' : running ? '停止' : '运行' }}</BaseButton>
-      <BaseButton icon="✖" title="关闭" @click="emit('close')">关闭</BaseButton>
+      <BaseButton icon="✖" icon-only title="关闭" @click="emit('close')">关闭</BaseButton>
     </div>
     <!-- 触发器配置 -->
     <div class="editor__delay-row editor__trigger-row">
@@ -115,14 +116,6 @@ function toggleTrigger() {
 .editor__header { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
 .editor__header-row {
   display: flex; align-items: center; gap: 8px;
-  container-type: inline-size;
-  container-name: header-row;
-}
-@container header-row (max-width: 380px) {
-  :deep(.btn--adaptive) {
-    .btn__icon { display: inline; }
-    .btn__text  { display: none; }
-  }
 }
 .editor__est-time { font-size: 11px; color: #cdd6f4; margin-right: 4px; }
 .editor__name-display { flex: 1; font-size: 14px; font-weight: 600; color: #cdd6f4; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
