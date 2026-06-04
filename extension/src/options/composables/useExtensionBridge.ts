@@ -21,27 +21,32 @@ type BridgeHandler = (e: BridgeEvent) => void
 
 export function useExtensionBridge() {
   let port: chrome.runtime.Port | null = null
+  let destroyed = false
+  let retryDelay = 300
   const handlers: BridgeHandler[] = []
   const reconnectHandlers: (() => void)[] = []
 
   function connect() {
+    if (destroyed) return
     port = chrome.runtime.connect({ name: 'options-panel' })
     port.onMessage.addListener((msg: BridgeEvent) => {
       handlers.forEach(h => h(msg))
     })
     port.onDisconnect.addListener(() => {
+      if (destroyed) return
       port = null
-      // 短暂延迟后重连（Service Worker 休眠时会断开）
+      // 指数退避重连（Service Worker 休眠时会断开），最大 5s
       setTimeout(() => {
+        retryDelay = Math.min(retryDelay * 2, 5000)
         connect()
-        // 重连成功后通知外部同步状态（如重新告知后台当前 activeTabId）
         reconnectHandlers.forEach(h => h())
-      }, 300)
+      }, retryDelay)
     })
+    retryDelay = 300
   }
 
   onMounted(connect)
-  onUnmounted(() => { port?.disconnect(); port = null })
+  onUnmounted(() => { destroyed = true; port?.disconnect(); port = null })
 
   function on(handler: BridgeHandler) {
     handlers.push(handler)

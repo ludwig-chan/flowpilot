@@ -8,6 +8,7 @@ import { showAlert } from '@shared/utils/dialog'
 import { useLoopEditor } from './useLoopEditor'
 import { useStepEditor } from './useStepEditor'
 import { useSmartLoop } from './useSmartLoop'
+import { genId } from '@shared/utils/genId'
 import { useEditorStore } from '../stores/useEditorStore'
 
 export function usePickerOrchestrator(
@@ -77,7 +78,7 @@ export function usePickerOrchestrator(
       if (pickMode.value) { pickMode.value = false; bridge.cancelPickElement() }
       if (!editingFlow.value) return
       editingFlow.value.steps.push({
-        id:           `step_${Date.now()}`,
+        id:           genId('step'),
         type:         'element_branch',
         label:        `元素分支：${el.label || el.selector.cssSelector.slice(0, 30)}`,
         selector:     el.selector,

@@ -3,6 +3,7 @@
 // v0.2 起承担任务调度、状态持久化职责
 
 import type { UrlMatchMode } from '@shared/types/flow'
+import { genId } from '@shared/utils/genId'
 
 const MAX_LOGS = 500
 const bgLogs: string[] = []
@@ -33,77 +34,104 @@ chrome.action.onClicked.addListener(() => {
   chrome.runtime.openOptionsPage()
 })
 
-// 中转消息：支持 GET_LOGS / CLEAR_LOGS / FLOW_LOG 及其他透传
+// ─── 消息处理函数 ─────────────────────────────────────────────────────────────
+
+type MsgHandler = (msg: any, sender: chrome.runtime.MessageSender, sr: (r?: unknown) => void) => true
+
+function handleGetLogs(_m: any, _s: any, sr: (r: unknown) => void): true {
+  sr({ ok: true, logs: [...bgLogs] })
+  return true
+}
+
+function handleClearLogs(_m: any, _s: any, sr: (r: unknown) => void): true {
+  bgLogs.length = 0
+  sr({ ok: true })
+  return true
+}
+
+function handleSaveBuiltFlow(msg: any, _s: any, sr: (r: unknown) => void): true {
+  chrome.storage.local.get({ builtFlows: [] }, (data) => {
+    const flows = data.builtFlows as Array<{ id: string; name: string; steps: unknown[]; createdAt: number }>
+    const id = genId('bf')
+    flows.push({ id, name: msg.name, steps: msg.steps, createdAt: Date.now() })
+    chrome.storage.local.set({ builtFlows: flows }, () => sr({ ok: true, id }))
+  })
+  return true
+}
+
+function handleGetBuiltFlows(_m: any, _s: any, sr: (r: unknown) => void): true {
+  chrome.storage.local.get({ builtFlows: [] }, (data) => {
+    sr({ ok: true, flows: flattenFlows(Array.isArray(data.builtFlows) ? data.builtFlows as RawFlow[] : []) })
+  })
+  return true
+}
+
+function handleDeleteBuiltFlow(msg: any, _s: any, sr: (r: unknown) => void): true {
+  chrome.storage.local.get({ builtFlows: [] }, (data) => {
+    const flows = (data.builtFlows as Array<{ id: string }>).filter(f => f.id !== msg.id)
+    chrome.storage.local.set({ builtFlows: flows }, () => sr({ ok: true }))
+  })
+  return true
+}
+
+function handleSyncFlows(msg: any, _s: any, sr: (r: unknown) => void): true {
+  chrome.storage.local.set({ builtFlows: msg.flows ?? [] }, () => sr({ ok: true }))
+  return true
+}
+
+function handleOpenOptionsPage(_m: any, _s: any, sr: (r: unknown) => void): true {
+  chrome.runtime.openOptionsPage()
+  sr({ ok: true })
+  return true
+}
+
+function handleSetActiveTab(msg: any, _s: any, sr: (r: unknown) => void): true {
+  activeTabId = msg.tabId as number
+  sr({ ok: true })
+  return true
+}
+
+function handleGetActiveTab(_m: any, _s: any, sr: (r: unknown) => void): true {
+  sr({ ok: true, tabId: activeTabId })
+  return true
+}
+
+// 需要转发给 content script 的消息类型
+const FORWARD_TO_CONTENT = new Set([
+  'REQUEST_DOM_SCAN', 'REQUEST_PICK_ELEMENT', 'CANCEL_PICK_ELEMENT',
+  'REQUEST_HIGHLIGHT', 'REQUEST_TEST_CLICK', 'RUN_FLOW_IN_TAB', 'STOP_FLOW_IN_TAB',
+  'REQUEST_SMART_LOOP_ANALYZE', 'HIGHLIGHT_LOOP_CANDIDATES', 'CLEAR_LOOP_HIGHLIGHTS',
+])
+
+// 需要广播给 Options 页面的消息类型
+const BROADCAST_TO_OPTIONS = new Set([
+  'DOM_SCAN_RESULT', 'ELEMENT_PICKED', 'FLOW_LOG_FROM_TAB',
+  'FLOW_DONE_FROM_TAB', 'FLOW_ERROR_FROM_TAB', 'DOM_MUTATION',
+  'SMART_LOOP_ANALYZED', 'FLOW_STEP_EVENT_FROM_TAB',
+])
+
+const MSG_HANDLERS: Record<string, MsgHandler> = {
+  GET_LOGS:          handleGetLogs,
+  CLEAR_LOGS:        handleClearLogs,
+  SAVE_BUILT_FLOW:   handleSaveBuiltFlow,
+  GET_BUILT_FLOWS:   handleGetBuiltFlows,
+  DELETE_BUILT_FLOW: handleDeleteBuiltFlow,
+  SYNC_FLOWS:        handleSyncFlows,
+  OPEN_OPTIONS_PAGE: handleOpenOptionsPage,
+  SET_ACTIVE_TAB:    handleSetActiveTab,
+  GET_ACTIVE_TAB:    handleGetActiveTab,
+}
+
+// 中转消息分发
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   console.log('[FlowPilot background] 收到消息', message, '来自', sender.tab?.url)
 
-  if (message.type === 'GET_LOGS') {
-    sendResponse({ ok: true, logs: [...bgLogs] })
-    return true
-  }
+  // 映射表分发（CRUD + 简单查询）
+  const handler = MSG_HANDLERS[message.type as string]
+  if (handler) return handler(message, sender, sendResponse)
 
-  if (message.type === 'CLEAR_LOGS') {
-    bgLogs.length = 0
-    sendResponse({ ok: true })
-    return true
-  }
-
-  // ── 用户构建的流程 CRUD ─────────────────────────────────────────────────────
-  if (message.type === 'SAVE_BUILT_FLOW') {
-    chrome.storage.local.get({ builtFlows: [] }, (data) => {
-      const flows = data.builtFlows as Array<{ id: string; name: string; steps: unknown[]; createdAt: number }>
-      const id = `bf_${Date.now()}`
-      flows.push({ id, name: message.name, steps: message.steps, createdAt: Date.now() })
-      chrome.storage.local.set({ builtFlows: flows }, () => sendResponse({ ok: true, id }))
-    })
-    return true
-  }
-
-  if (message.type === 'GET_BUILT_FLOWS') {
-    chrome.storage.local.get({ builtFlows: [] }, (data) => {
-      sendResponse({ ok: true, flows: flattenFlows(Array.isArray(data.builtFlows) ? data.builtFlows as RawFlow[] : []) })
-    })
-    return true
-  }
-
-  if (message.type === 'DELETE_BUILT_FLOW') {
-    chrome.storage.local.get({ builtFlows: [] }, (data) => {
-      const flows = (data.builtFlows as Array<{ id: string }>).filter(f => f.id !== message.id)
-      chrome.storage.local.set({ builtFlows: flows }, () => sendResponse({ ok: true }))
-    })
-    return true
-  }
-
-  if (message.type === 'SYNC_FLOWS') {
-    chrome.storage.local.set({ builtFlows: message.flows ?? [] }, () => sendResponse({ ok: true }))
-    return true
-  }
-
-  if (message.type === 'OPEN_OPTIONS_PAGE') {
-    chrome.runtime.openOptionsPage()
-    sendResponse({ ok: true })
-    return true
-  }
-
-  // ── Options ↔ Content Script 中转 ─────────────────────────────────────────
-
-  /** Options 页面设置当前目标 Tab */
-  if (message.type === 'SET_ACTIVE_TAB') {
-    activeTabId = message.tabId as number
-    sendResponse({ ok: true })
-    return true
-  }
-
-  /** Options 页面请求获取当前目标 Tab */
-  if (message.type === 'GET_ACTIVE_TAB') {
-    sendResponse({ ok: true, tabId: activeTabId })
-    return true
-  }
-
-  /** 转发给 content script 的指令 */
-  if (['REQUEST_DOM_SCAN', 'REQUEST_PICK_ELEMENT', 'CANCEL_PICK_ELEMENT',
-       'REQUEST_HIGHLIGHT', 'REQUEST_TEST_CLICK', 'RUN_FLOW_IN_TAB', 'STOP_FLOW_IN_TAB',
-       'REQUEST_SMART_LOOP_ANALYZE', 'HIGHLIGHT_LOOP_CANDIDATES', 'CLEAR_LOOP_HIGHLIGHTS'].includes(message.type)) {
+  // 转发给 content script 的指令
+  if (FORWARD_TO_CONTENT.has(message.type)) {
     const tabId = (message.tabId as number | undefined) ?? activeTabId
     if (!tabId) { sendResponse({ ok: false, error: '未设置目标 Tab' }); return true }
     chrome.tabs.sendMessage(tabId, message).then(r => sendResponse(r)).catch(e => {
@@ -112,11 +140,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true
   }
 
-  /** content script 推送给 Options 的结果（DOM 扫描、元素拾取、日志等） */
-  if (['DOM_SCAN_RESULT', 'ELEMENT_PICKED', 'FLOW_LOG_FROM_TAB',
-       'FLOW_DONE_FROM_TAB', 'FLOW_ERROR_FROM_TAB', 'DOM_MUTATION',
-       'SMART_LOOP_ANALYZED', 'FLOW_STEP_EVENT_FROM_TAB'].includes(message.type)) {
-    // 注入 tabId 便于 Options 页面识别来源
+  // content script 推送给 Options 的结果（DOM 扫描、元素拾取、日志等）
+  if (BROADCAST_TO_OPTIONS.has(message.type)) {
     const enriched = { ...message, tabId: message.tabId ?? sender.tab?.id }
     broadcastToOptions(enriched)
     sendResponse({ ok: true })
@@ -129,7 +154,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (bgLogs.length > MAX_LOGS) bgLogs.splice(0, bgLogs.length - MAX_LOGS)
   }
 
-  // ── 元素触发器：content script 上报已找到目标元素，运行对应流程 ────────────────
+  // 元素触发器：content script 上报已找到目标元素，运行对应流程
   if (message.type === 'ELEMENT_TRIGGER_FIRED') {
     const tabId = sender.tab?.id
     if (tabId) {

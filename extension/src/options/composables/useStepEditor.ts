@@ -3,6 +3,7 @@ import type { LocalFlow } from '../stores/useFlowStore'
 import type { FlowStep, ActionType } from '@shared/types/flow'
 import type { SerializedElement } from '@shared/types/dom'
 import { useEditorStore } from '../stores/useEditorStore'
+import { genId } from '@shared/utils/genId'
 
 export function useStepEditor(
   editingFlow: Ref<LocalFlow | null>,
@@ -172,7 +173,7 @@ export function useStepEditor(
     } else {
       const { itemSel } = es.actionModalContext
       editingFlow.value.steps.push({
-        id:                `step_${Date.now()}`,
+        id:                genId('step'),
         type:              'loop_items',
         label:             `循环列表：${itemSel.slice(0, 40)}`,
         selector:          { cssSelector: itemSel },

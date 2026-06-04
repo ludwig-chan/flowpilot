@@ -4,6 +4,7 @@ import type { useFlowStore } from '../stores/useFlowStore'
 import type { LocalFlow } from '../stores/useFlowStore'
 import type { FlowStep } from '@shared/types/flow'
 import { showAlert } from '@shared/utils/dialog'
+import { genId } from '@shared/utils/genId'
 
 type FlowStore = ReturnType<typeof useFlowStore>
 
@@ -38,7 +39,7 @@ export function useStepActions(editingFlow: Ref<LocalFlow | null>, flowStore: Fl
       delayEditTarget.value.label = `等待 ${ms} ms`
     } else {
       editingFlow.value.steps.push({
-        id:    `step_${Date.now()}`,
+        id:    genId('step'),
         type:  'delay',
         label: `等待 ${ms} ms`,
         value: String(ms),
@@ -76,7 +77,7 @@ export function useStepActions(editingFlow: Ref<LocalFlow | null>, flowStore: Fl
     const target = flowStore.allFlows().find(f => f.id === id)
     if (!target) return
     editingFlow.value.steps.push({
-      id:      `step_${Date.now()}`,
+      id:      genId('step'),
       type:    'call_flow',
       label:   `嵌入流程：${target.name}`,
       flowRef: target.id,
@@ -86,9 +87,9 @@ export function useStepActions(editingFlow: Ref<LocalFlow | null>, flowStore: Fl
 
   function convertToElementBranch(step: FlowStep, index: number) {
     if (!editingFlow.value || !step.selector) return
-    const wrapped: FlowStep = { ...step, id: `step_${Date.now()}` }
+    const wrapped: FlowStep = { ...step, id: genId('step') }
     editingFlow.value.steps.splice(index, 1, {
-      id:           `step_${Date.now() + 1}`,
+      id:           genId('step'),
       type:         'element_branch',
       label:        `元素分支：${step.selector.cssSelector.slice(0, 30)}`,
       selector:     step.selector,

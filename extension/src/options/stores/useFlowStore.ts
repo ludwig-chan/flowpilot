@@ -6,6 +6,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { FlowStep, StepDelayLevel, FlowTrigger } from '@shared/types/flow'
+import { genId } from '@shared/utils/genId'
 
 export interface LocalFlow {
   id:               string
@@ -77,15 +78,14 @@ export function filterNodesByIds(nodes: FlowNode[], ids: Set<string>): FlowNode[
 
 function cloneWithNewIds(nodes: FlowNode[]): FlowNode[] {
   return nodes.map(n => {
-    const sfx = `_${Math.random().toString(36).slice(2, 7)}`
     if (n.kind === 'folder') {
       return {
-        id: `fd_${Date.now()}${sfx}`, kind: 'folder', name: n.name,
+        id: genId('fd'), kind: 'folder', name: n.name,
         children: cloneWithNewIds((n as FlowFolder).children),
       } as FlowFolder
     }
     return {
-      id: `bf_${Date.now()}${sfx}`, kind: 'flow', name: (n as LocalFlow).name,
+      id: genId('bf'), kind: 'flow', name: (n as LocalFlow).name,
       steps: JSON.parse(JSON.stringify((n as LocalFlow).steps)),
     } as LocalFlow
   })
@@ -129,14 +129,14 @@ export const useFlowStore = defineStore('flows', () => {
   }
 
   async function saveFlow(name: string, steps: FlowStep[], parentId?: string): Promise<string> {
-    const id = `bf_${Date.now()}`
+    const id = genId('bf')
     getContainer(parentId).push({ id, kind: 'flow', name, steps })
     await persist()
     return id
   }
 
   async function saveFolder(name: string, parentId?: string): Promise<string> {
-    const id = `fd_${Date.now()}`
+    const id = genId('fd')
     getContainer(parentId).push({ id, kind: 'folder', name, children: [] })
     await persist()
     return id

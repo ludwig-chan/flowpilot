@@ -5,6 +5,7 @@ import type { FlowStep } from '@shared/types/flow'
 import type { SerializedElement } from '@shared/types/dom'
 import { computeRelativeSelector } from '../utils/selectorUtils'
 import { useEditorStore } from '../stores/useEditorStore'
+import { genId } from '@shared/utils/genId'
 
 export function useLoopEditor(
   editingFlow: Ref<LocalFlow | null>,
@@ -134,7 +135,7 @@ export function useLoopEditor(
     // relSel 为空 = 用户选了列表项本身（无子元素相对路径）
     if (!relSel && editingFlow.value) {
       const newStep: FlowStep = {
-        id:       `step_${Date.now()}`,
+        id:       genId('step'),
         type:     'loop_items',
         label:    `循环列表：${itemSel.slice(0, 40)}`,
         selector: { cssSelector: itemSel },
@@ -167,7 +168,7 @@ export function useLoopEditor(
     }
     if (!editingFlow.value) return
     const newStep: FlowStep = {
-      id:       `step_${Date.now()}`,
+      id:       genId('step'),
       type:     'loop_items',
       label:    `循环列表：${itemSel.slice(0, 40)}`,
       selector: { cssSelector: itemSel },
@@ -184,7 +185,7 @@ export function useLoopEditor(
   function onSmartLoopConfirm(candidate: import('@shared/types/message').RepeatingCandidate) {
     if (!editingFlow.value) return
     const newStep: FlowStep = {
-      id:                `step_${Date.now()}`,
+      id:                genId('step'),
       type:              'loop_items',
       label:             `循环列表：${candidate.itemSelector.slice(0, 40)}`,
       selector:          { cssSelector: candidate.itemSelector },
@@ -242,7 +243,7 @@ export function useLoopEditor(
           arr[childIdx] = { id: originalId, type: 'call_flow', label: `嵌入流程：${name}`, flowRef: id }
         } else {
           arr.push({
-            id:      `step_${Date.now()}_${Math.random().toString(36).slice(2, 5)}`,
+            id:      genId('step'),
             type:    'call_flow',
             label:   `嵌入流程：${name}`,
             flowRef: id,
@@ -270,7 +271,7 @@ export function useLoopEditor(
     } else {
       // 新增模式：追加
       es.editingLoopStep.children.push({
-        id:      `step_${Date.now()}_${Math.random().toString(36).slice(2, 5)}`,
+        id:      genId('step'),
         type:    'call_flow',
         label:   `嵌入流程：${name}`,
         flowRef: id,
@@ -295,7 +296,7 @@ export function useLoopEditor(
   function onLoopAddDelay(currentState: FlowStep) {
     currentState.children = currentState.children ?? []
     currentState.children.push({
-      id:    `step_${Date.now()}_${Math.random().toString(36).slice(2, 5)}`,
+      id:    genId('step'),
       type:  'delay',
       label: '等待 1000 ms',
       value: '1000',

@@ -3,10 +3,23 @@ import { STEP_DELAY_PRESETS } from '@shared/types/flow'
 import { screenshotCanvas }  from './screenshotCanvas'
 import { screenshotElement } from './screenshotElement'
 
-let _stopped = false
+// ─── 运行上下文（替代模块级全局变量，支持并发独立控制）──────────────────────────
+interface RunContext {
+  variables: Record<string, string>
+  onLog: (text: string) => void
+  onStep?: (event: StepEvent) => void
+  waitTimeout: number
+  delayLevel: StepDelayLevel
+  delayRange?: [number, number]
+  depth: number
+  context?: Element
+  signal: { stopped: boolean }
+}
+
+let _currentSignal: { stopped: boolean } | null = null
 
 export function stopFlow(): void {
-  _stopped = true
+  if (_currentSignal) _currentSignal.stopped = true
 }
 
 export async function runFlow(
@@ -18,28 +31,28 @@ export async function runFlow(
   stepDelayRange?: [number, number],
   waitTimeout?: number,
 ): Promise<void> {
-  _stopped = false
-  const defaultWaitTimeout = waitTimeout ?? 10000
+  const signal = { stopped: false }
+  _currentSignal = signal
 
-  // undefined 视为 'medium'（与 UI 默认显示一致）
-  const effectiveDelayLevel: StepDelayLevel = stepDelayLevel ?? 'medium'
+  const ctx: RunContext = {
+    variables,
+    onLog,
+    onStep,
+    waitTimeout: waitTimeout ?? 10000,
+    // undefined 视为 'medium'（与 UI 默认显示一致）
+    delayLevel: stepDelayLevel ?? 'medium',
+    delayRange: stepDelayRange,
+    depth: 0,
+    signal,
+  }
 
   for (const step of steps) {
-    if (_stopped) {
+    if (signal.stopped) {
       onLog('流程已停止')
       return
     }
-    await executeStep(step, variables, onLog, onStep, undefined, defaultWaitTimeout, effectiveDelayLevel, stepDelayRange, 0)
-
-    // 步骤间延迟：优先使用步骤自身的 delay，否则使用全局档位
-    if (step.delay) {
-      await humanDelay(step.delay[0], step.delay[1])
-    } else if (effectiveDelayLevel !== 'none') {
-      const range = effectiveDelayLevel === 'custom'
-        ? stepDelayRange
-        : STEP_DELAY_PRESETS[effectiveDelayLevel]
-      if (range) await humanDelay(range[0], range[1])
-    }
+    await executeStep(step, ctx)
+    await applyStepDelay(step, ctx)
   }
 
   onLog('✅ 流程执行完成')
@@ -47,31 +60,25 @@ export async function runFlow(
 
 async function executeStep(
   step: FlowStep,
-  variables: Record<string, string>,
-  onLog: (text: string) => void,
-  onStep: ((event: StepEvent) => void) | undefined,
-  context?: Element,       // loop_items 传入当前列表项，relativeSelector=true 的子步骤在此范围内查找
-  waitTimeout = 10000,     // 等待元素出现的超时（流程级默认，可被步骤级覆盖）
-  delayLevel?: StepDelayLevel,   // 全局延迟档位，子步骤无自身 delay 时 fallback
-  delayRange?: [number, number], // 自定义档位对应的范围
-  depth = 0,
+  ctx: RunContext,
 ): Promise<void> {
+  const { onLog, onStep, signal } = ctx
   onLog(`执行：${step.label}`)
-  onStep?.({ type: 'step_start', stepId: step.id, label: step.label, depth })
+  onStep?.({ type: 'step_start', stepId: step.id, label: step.label, depth: ctx.depth })
 
   // 有效超时：步骤级 > 流程级默认
-  const effectiveTimeout = step.waitTimeout ?? waitTimeout
+  const effectiveTimeout = step.waitTimeout ?? ctx.waitTimeout
 
   // 元素查找 + foundDelay（元素出现后、动作执行前的随机等待）
   const resolveEl = async (strategy: import('@shared/types/flow').SelectorStrategy): Promise<Element> => {
-    const isRelative = step.relativeSelector && context
-    const root: ParentNode = isRelative ? context : document
+    const isRelative = step.relativeSelector && ctx.context
+    const root: ParentNode = isRelative ? ctx.context! : document
     const timeout = isRelative ? undefined : effectiveTimeout
     let el = await resolveElementByStrategy(strategy, root, timeout)
     // 兜底：相对查找失败时检查 context 本身是否匹配选择器
     // （用户将列表项容器自身作为操作目标时，querySelector 无法查到自己）
-    if (!el && isRelative && context) {
-      try { if ((context as Element).matches(strategy.cssSelector)) el = context as Element } catch { /* ignore */ }
+    if (!el && isRelative && ctx.context) {
+      try { if (ctx.context.matches(strategy.cssSelector)) el = ctx.context } catch { /* ignore */ }
     }
     if (!el) {
       throw new Error(`等待元素超时（${effectiveTimeout}ms）：${strategy.cssSelector}`)
@@ -97,7 +104,7 @@ async function executeStep(
 
     case 'input': {
       const el = await resolveEl(step.selector!) as HTMLElement
-      const value = interpolate(step.value ?? '', variables)
+      const value = interpolate(step.value ?? '', ctx.variables)
       el.focus()
 
       if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
@@ -140,7 +147,7 @@ async function executeStep(
 
     case 'select': {
       const el = await resolveEl(step.selector!) as HTMLSelectElement
-      const value = interpolate(step.value ?? '', variables)
+      const value = interpolate(step.value ?? '', ctx.variables)
       el.value = value
       el.dispatchEvent(new Event('change', { bubbles: true }))
       break
@@ -163,7 +170,7 @@ async function executeStep(
     }
 
     case 'navigate': {
-      const url = interpolate(step.value ?? '', variables)
+      const url = interpolate(step.value ?? '', ctx.variables)
       window.location.href = url
       break
     }
@@ -182,7 +189,7 @@ async function executeStep(
       const scrollBehavior = step.scrollBehavior ?? 'none'
       for (let _li = 0; _li < itemsArr.length; _li++) {
         const item = itemsArr[_li]
-        if (_stopped) return
+        if (signal.stopped) return
         onStep?.({ type: 'loop_progress', stepId: step.id, index: _li + 1, total: loopTotal })
         if (scrollBehavior === 'item') {
           ;(item as HTMLElement).scrollIntoView({ behavior: 'smooth', block: 'center' })
@@ -191,14 +198,9 @@ async function executeStep(
         onLog(`  → 处理：${item.textContent?.trim().slice(0, 50)}`)
         if (step.children?.length) {
           for (const child of step.children) {
-            if (_stopped) return
-            await executeStep(child, variables, onLog, onStep, item, waitTimeout, delayLevel, delayRange, depth + 1)
-            if (child.delay) {
-              await humanDelay(child.delay[0], child.delay[1])
-            } else if (delayLevel && delayLevel !== 'none') {
-              const range = delayLevel === 'custom' ? delayRange : STEP_DELAY_PRESETS[delayLevel]
-              if (range) await humanDelay(range[0], range[1])
-            }
+            if (signal.stopped) return
+            await executeStep(child, { ...ctx, context: item as Element, depth: ctx.depth + 1 })
+            await applyStepDelay(child, ctx)
           }
         }
         if (scrollBehavior === 'bottom') {
@@ -218,7 +220,7 @@ async function executeStep(
       const raw = el?.textContent?.trim() ?? ''
       const varKey = step.value?.trim()
       if (varKey) {
-        variables[varKey] = raw
+        ctx.variables[varKey] = raw
         onLog(`  获取文本 「${raw.slice(0, 40)}${raw.length > 40 ? '…' : ''}」 → {{${varKey}}}`)
       } else {
         onLog(`  获取文本 「${raw.slice(0, 40)}${raw.length > 40 ? '…' : ''}」（未指定变量名）`)
@@ -266,7 +268,7 @@ async function executeStep(
     case 'condition': {
       let condMet = false
       if (step.value?.trim()) {
-        const expr = interpolate(step.value.trim(), variables)
+        const expr = interpolate(step.value.trim(), ctx.variables)
         condMet = evalCondition(expr)
         onLog(`  条件表达式：${expr} → ${condMet ? '成立' : '不成立'}`)
       } else if (step.selector) {
@@ -277,14 +279,9 @@ async function executeStep(
       if (branchSteps?.length) {
         onLog(`  执行${condMet ? '成立' : '否则'}分支 (${branchSteps.length} 步)...`)
         for (const child of branchSteps) {
-          if (_stopped) return
-          await executeStep(child, variables, onLog, onStep, undefined, waitTimeout, delayLevel, delayRange, depth + 1)
-          if (child.delay) {
-            await humanDelay(child.delay[0], child.delay[1])
-          } else if (delayLevel && delayLevel !== 'none') {
-            const range = delayLevel === 'custom' ? delayRange : STEP_DELAY_PRESETS[delayLevel]
-            if (range) await humanDelay(range[0], range[1])
-          }
+          if (signal.stopped) return
+          await executeStep(child, { ...ctx, context: undefined, depth: ctx.depth + 1 })
+          await applyStepDelay(child, ctx)
         }
       } else {
         onLog(`  条件${condMet ? '成立' : '不成立'}，无对应分支，跳过`)
@@ -300,14 +297,9 @@ async function executeStep(
       if (branchSteps?.length) {
         onLog(`  执行${elemExists ? '存在' : '不存在'}分支 (${branchSteps.length} 步)...`)
         for (const child of branchSteps) {
-          if (_stopped) return
-          await executeStep(child, variables, onLog, onStep, undefined, waitTimeout, delayLevel, delayRange, depth + 1)
-          if (child.delay) {
-            await humanDelay(child.delay[0], child.delay[1])
-          } else if (delayLevel && delayLevel !== 'none') {
-            const range = delayLevel === 'custom' ? delayRange : STEP_DELAY_PRESETS[delayLevel]
-            if (range) await humanDelay(range[0], range[1])
-          }
+          if (signal.stopped) return
+          await executeStep(child, { ...ctx, context: undefined, depth: ctx.depth + 1 })
+          await applyStepDelay(child, ctx)
         }
       } else {
         onLog(`  元素${elemExists ? '存在' : '不存在'}，无对应分支，跳过`)
@@ -436,14 +428,9 @@ async function executeStep(
       if (!subFlow) { onLog(`[跳过] 找不到嵌入流程 ${step.flowRef}`); break }
       onLog(`→ 嵌入执行：${subFlow.name}`)
       for (const s of subFlow.steps) {
-        if (_stopped) return
-        await executeStep(s, variables, onLog, onStep, undefined, waitTimeout, delayLevel, delayRange, depth + 1)
-        if (s.delay) {
-          await humanDelay(s.delay[0], s.delay[1])
-        } else if (delayLevel && delayLevel !== 'none') {
-          const range = delayLevel === 'custom' ? delayRange : STEP_DELAY_PRESETS[delayLevel]
-          if (range) await humanDelay(range[0], range[1])
-        }
+        if (signal.stopped) return
+        await executeStep(s, { ...ctx, context: undefined, depth: ctx.depth + 1 })
+        await applyStepDelay(s, ctx)
       }
       break
     }
@@ -451,7 +438,17 @@ async function executeStep(
     default:
       onLog(`[跳过] 暂未实现的动作类型：${(step as FlowStep).type}`)
   }
-  onStep?.({ type: 'step_done', stepId: step.id, depth })
+  onStep?.({ type: 'step_done', stepId: step.id, depth: ctx.depth })
+}
+
+// ─── 步骤间延迟（统一逻辑，消除重复）─────────────────────────────────────────────
+async function applyStepDelay(step: FlowStep, ctx: RunContext): Promise<void> {
+  if (step.delay) {
+    await humanDelay(step.delay[0], step.delay[1])
+  } else if (ctx.delayLevel !== 'none') {
+    const range = ctx.delayLevel === 'custom' ? ctx.delayRange : STEP_DELAY_PRESETS[ctx.delayLevel]
+    if (range) await humanDelay(range[0], range[1])
+  }
 }
 
 // ─── 工具函数 ───────────────────────────────────────────────────────────────────

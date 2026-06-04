@@ -3,6 +3,7 @@ import type { Ref } from 'vue'
 import type { LocalFlow } from '../stores/useFlowStore'
 import type { FlowStep } from '@shared/types/flow'
 import { useEditorStore } from '../stores/useEditorStore'
+import { genId } from '@shared/utils/genId'
 
 export function useConditionEditor(
   editingFlow: Ref<LocalFlow | null>,
@@ -64,7 +65,7 @@ export function useConditionEditor(
             ? (cond.children     = cond.children     ?? [])
             : (cond.elseChildren = cond.elseChildren ?? [])
           arr.push({
-            id: `step_${Date.now()}`, type: 'condition', label: data.label,
+            id: genId('step'), type: 'condition', label: data.label,
             value: newValue, selector: newSelector, children: [], elseChildren: [],
           })
         }
@@ -79,7 +80,7 @@ export function useConditionEditor(
           s.label = data.label; s.value = newValue; s.selector = newSelector
         } else {
           loopChildren.push({
-            id: `step_${Date.now()}`, type: 'condition', label: data.label,
+            id: genId('step'), type: 'condition', label: data.label,
             value: newValue, selector: newSelector, children: [], elseChildren: [],
           })
         }
@@ -100,7 +101,7 @@ export function useConditionEditor(
       s.selector = newSelector
     } else {
       editingFlow.value.steps.push({
-        id:           `step_${Date.now()}`,
+        id:           genId('step'),
         type:         'condition',
         label:        data.label,
         value:        newValue,
