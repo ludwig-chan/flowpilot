@@ -1,6 +1,6 @@
 import type { FlowStep, TaskStatus } from '@shared/types/flow'
 import type { ExtensionMessage } from '@shared/types/message'
-import { runFlow, stopFlow as stopFlowEngine } from '../engine/SemanticRunner'
+import { runFlow } from '../engine/SemanticRunner'
 
 const BTN_SIZE = 28
 const PANEL_W  = 288
@@ -59,6 +59,7 @@ export function initFloatingWidget(): void {
   let dragStartX = 0, dragStartY = 0
   let hostLeft   = 0, hostTop    = 0
   const logLines: string[] = []
+  let currentRunner: ReturnType<typeof runFlow> | null = null
   let pinnedFlows: StoredFlow[] = []
   const flowVars: Record<string, Record<string, string>> = {}
 
@@ -168,9 +169,11 @@ export function initFloatingWidget(): void {
     panel.style.display = 'none'
     addLog(`启动「${flow.name}」...`)
 
-    runFlow(flow.steps, { ...flowVars[flow.id] }, addLog)
+    currentRunner = runFlow(flow.steps, { ...flowVars[flow.id] }, addLog)
+    currentRunner.done
       .then(() => {
         activeFlowId = null
+        currentRunner = null
         setBtnStatus('done')
         addLog('✓ 完成')
         renderPanel()
@@ -178,6 +181,7 @@ export function initFloatingWidget(): void {
       })
       .catch((err: Error) => {
         activeFlowId = null
+        currentRunner = null
         setBtnStatus('error')
         addLog(`✗ ${err.message}`)
         renderPanel()
@@ -188,7 +192,8 @@ export function initFloatingWidget(): void {
   function doRun(flow: StoredFlow): void { doRunStored(flow) }
 
   function doStop(): void {
-    stopFlowEngine()
+    currentRunner?.stop()
+    currentRunner = null
     activeFlowId = null
     setBtnStatus('idle')
     addLog('已停止')
