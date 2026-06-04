@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { FlowStep } from '@shared/types/flow'
+import type { BranchDropTarget } from '../../composables/useStepDrag'
 import ConditionBranchView from '../step-editor/ConditionBranchView.vue'
 
 const props = defineProps<{
@@ -10,6 +11,7 @@ const props = defineProps<{
   stepTypeLabels:     Record<string, string>
   expandedConditions: Set<string>
   isBrokenRef:        (flowRef?: string) => boolean
+  branchDropTarget?:  BranchDropTarget | null
 }>()
 
 const emit = defineEmits<{
@@ -22,10 +24,12 @@ const emit = defineEmits<{
   (e: 'edit',                    step: FlowStep,    index: number): void
   (e: 'remove',                  index: number):     void
   (e: 'toggle-condition-expand', stepId: string):    void
-  (e: 'edit-branch',   condStepId: string, branch: 'if' | 'else', child: FlowStep, ci: number): void
-  (e: 'remove-branch', condStepId: string, branch: 'if' | 'else', ci: number): void
-  (e: 'open-picker',   condStepId: string, branch: 'if' | 'else'): void
+  (e: 'edit-branch',    condStepId: string, branch: 'if' | 'else', child: FlowStep, ci: number): void
+  (e: 'remove-branch',  condStepId: string, branch: 'if' | 'else', ci: number): void
+  (e: 'open-picker',    condStepId: string, branch: 'if' | 'else'): void
   (e: 'convert-to-element-branch', step: FlowStep, index: number): void
+  (e: 'branch-dragover', stepId: string, branch: 'if' | 'else', insertIdx: number): void
+  (e: 'branch-drop'): void
 }>()
 </script>
 
@@ -89,9 +93,12 @@ const emit = defineEmits<{
     :step-type-labels="stepTypeLabels"
     :if-label="step.type === 'element_branch' ? '✅ 元素存在时' : undefined"
     :else-label="step.type === 'element_branch' ? '❌ 元素不存在时' : undefined"
+    :branch-drop-target="branchDropTarget"
     @edit-branch="(condId, branch, child, ci) => $emit('edit-branch', condId, branch, child, ci)"
     @remove-branch="(condId, branch, ci) => $emit('remove-branch', condId, branch, ci)"
     @open-picker="(condId, branch) => $emit('open-picker', condId, branch)"
+    @branch-dragover="(stepId, branch, idx) => $emit('branch-dragover', stepId, branch, idx)"
+    @branch-drop="$emit('branch-drop')"
   />
 </template>
 

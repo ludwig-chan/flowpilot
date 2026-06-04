@@ -91,7 +91,7 @@ const {
   openBranchPicker,
 } = useConditionEditor(editingFlow, openPicker)
 
-const { dragSrcIdx, dragInsertIdx, onHandleMouseDown, onDragStart, onDragOver, onDrop, onDragEnd } = useStepDrag(editingFlow)
+const { dragSrcIdx, dragInsertIdx, branchDropTarget, onHandleMouseDown, onDragStart, onDragOver, onTopInsertLineDragOver, onDrop, onBranchDragOver, onBranchDrop, onDragEnd } = useStepDrag(editingFlow)
 
 const validFlowIds = computed(() => new Set(flowStore.allFlows().map(f => f.id)))
 function isBrokenRef(flowRef?: string) { return !!flowRef && !validFlowIds.value.has(flowRef) }
@@ -167,7 +167,7 @@ provide(STEP_EDITOR_MODALS_KEY, {
         <div
           class="step-insert-line"
           :class="{ 'step-insert-line--active': dragInsertIdx === i }"
-          @dragover.prevent="dragInsertIdx = i"
+          @dragover.prevent="onTopInsertLineDragOver(i)"
           @drop="onDrop"
         />
         <StepCard
@@ -178,6 +178,7 @@ provide(STEP_EDITOR_MODALS_KEY, {
           :step-type-labels="stepTypeLabels"
           :expanded-conditions="expandedConditions"
           :is-broken-ref="isBrokenRef"
+          :branch-drop-target="branchDropTarget"
           @dragstart="onDragStart"
           @dragover="onDragOver"
           @drop="onDrop"
@@ -191,12 +192,14 @@ provide(STEP_EDITOR_MODALS_KEY, {
           @remove-branch="removeBranchStep"
           @open-picker="openBranchPicker"
           @convert-to-element-branch="(step, i) => convertToElementBranch(step, i)"
+          @branch-dragover="onBranchDragOver"
+          @branch-drop="onBranchDrop"
         />
       </template>
       <div
         class="step-insert-line"
         :class="{ 'step-insert-line--active': dragInsertIdx === editingFlow.steps.length }"
-        @dragover.prevent="dragInsertIdx = editingFlow.steps.length"
+        @dragover.prevent="onTopInsertLineDragOver(editingFlow.steps.length)"
         @drop="onDrop"
       />
       <div v-if="editingFlow.steps.length === 0" class="empty-hint">点击下方按鈕添加步骤</div>
