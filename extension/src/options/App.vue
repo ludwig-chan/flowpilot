@@ -147,6 +147,7 @@ body {
 }
 .app__logo { font-weight: 700; font-size: 15px; color: #89b4fa; white-space: nowrap; }
 .app__tab-selector { flex: 1; display: flex; align-items: center; gap: 6px; min-width: 0; }
+.app__tab-status { cursor: pointer; }
 .app__actions { display: flex; gap: 8px; flex-shrink: 0; }
 .app__body { display: flex; flex: 1; min-height: 0; }
 .app__aside {
