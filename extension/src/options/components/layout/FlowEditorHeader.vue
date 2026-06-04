@@ -11,7 +11,6 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'save'): void
-  (e: 'close'): void
   (e: 'open-settings'): void
   (e: 'run'): void
   (e: 'stop'): void
@@ -48,7 +47,6 @@ function toggleTrigger() {
         :loading="stopping"
         @click="running && !stopping ? emit('stop') : !running ? emit('run') : undefined"
       >{{ stopping ? '停止中' : running ? '停止' : '运行' }}</BaseButton>
-      <BaseButton icon="✖" icon-only title="关闭" @click="emit('close')">关闭</BaseButton>
     </div>
     <!-- 触发器配置 -->
     <div class="editor__delay-row editor__trigger-row">

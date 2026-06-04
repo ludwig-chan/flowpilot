@@ -61,7 +61,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   if (message.type === 'GET_BUILT_FLOWS') {
     chrome.storage.local.get({ builtFlows: [] }, (data) => {
-      sendResponse({ ok: true, flows: data.builtFlows })
+      sendResponse({ ok: true, flows: flattenFlows(Array.isArray(data.builtFlows) ? data.builtFlows as RawFlow[] : []) })
     })
     return true
   }

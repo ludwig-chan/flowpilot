@@ -166,7 +166,6 @@ provide(STEP_EDITOR_MODALS_KEY, {
       :running="running"
       :stopping="stopping"
       @save="saveFlow"
-      @close="editingFlow = null"
       @open-settings="showSettingsModal = true"
       @run="$emit('run')"
       @stop="$emit('stop')"
