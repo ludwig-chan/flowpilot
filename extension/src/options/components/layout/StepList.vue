@@ -57,7 +57,7 @@ const {
   onLoopEditChild:           _onLoopEditChildRaw,
   editStep, cancelActionModal, onActionConfirm, editBranchStep,
   showSmartLoopModal, smartLoopCandidates, smartLoopPickedEl,
-  openSmartPicker, onSmartLoopConfirm,
+  openSmartLoopPicker, onSmartLoopConfirm,
   onElementPicked, onActionRePick, openPicker, closePicker,
   onLoopAddChild, onActionTry, onTestAction,
   showLoopCallFlowPicker, onLoopAddCallFlow, onLoopConfirmCallFlow,
@@ -228,7 +228,7 @@ provide(STEP_EDITOR_MODALS_KEY, {
         <template #default="{ close }">
           <BaseButton variant="ghost" class="dm-item" @click="openPicker(); close()">🖱 选择元素</BaseButton>
           <BaseButton variant="ghost" class="dm-item" @click="addElementBranch(); close()">🔀 元素分支</BaseButton>
-          <BaseButton variant="ghost" class="dm-item" @click="requireTab(openSmartPicker); close()">🔁 依次点击列表项</BaseButton>
+          <BaseButton variant="ghost" class="dm-item" @click="openSmartLoopPicker(); close()">🔁 依次点击列表项</BaseButton>
           <BaseButton variant="ghost" class="dm-item" @click="addConditionStep(); close()">🔀 条件判断</BaseButton>
           <BaseButton variant="ghost" class="dm-item" @click="addCallFlowStep(); close()">▶ 嵌入流程</BaseButton>
           <BaseButton variant="ghost" class="dm-item" @click="addDelayStep(); close()">⏱ 等待</BaseButton>

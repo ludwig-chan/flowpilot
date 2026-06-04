@@ -14,7 +14,7 @@ export type BridgeEvent =
   | { type: 'FLOW_DONE_FROM_TAB'; tabId: number }
   | { type: 'FLOW_ERROR_FROM_TAB'; tabId: number; error: string }
   | { type: 'DOM_MUTATION'; tabId: number }
-  | { type: 'SMART_LOOP_ANALYZED'; tabId: number; element: SerializedElement; candidates: RepeatingCandidate[] }
+  | { type: 'SMART_LOOP_ANALYZED'; tabId: number; element: SerializedElement | null; candidates: RepeatingCandidate[] }
   | { type: 'FLOW_STEP_EVENT_FROM_TAB'; tabId: number; event: StepEvent }
 
 type BridgeHandler = (e: BridgeEvent) => void
@@ -86,8 +86,8 @@ export function useExtensionBridge() {
     return send({ type: 'CANCEL_PICK_ELEMENT' })
   }
 
-  async function requestSmartLoopAnalyze() {
-    return send({ type: 'REQUEST_SMART_LOOP_ANALYZE' })
+  async function requestSmartLoopFromSelector(cssSelector: string) {
+    return send({ type: 'REQUEST_SMART_LOOP_FROM_SELECTOR', cssSelector })
   }
 
   async function highlightLoopCandidates(selector: string) {
@@ -133,5 +133,5 @@ export function useExtensionBridge() {
     )
   }
 
-  return { on, off, onReconnect, offReconnect, setActiveTab, requestDomScan, requestPickElement, cancelPickElement, requestHighlight, testClick, runFlow, stopFlow, getTabs, getActiveTab, requestSmartLoopAnalyze, highlightLoopCandidates, clearLoopHighlights }
+  return { on, off, onReconnect, offReconnect, setActiveTab, requestDomScan, requestPickElement, cancelPickElement, requestHighlight, testClick, runFlow, stopFlow, getTabs, getActiveTab, requestSmartLoopFromSelector, highlightLoopCandidates, clearLoopHighlights }
 }

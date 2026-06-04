@@ -62,16 +62,24 @@ export function usePickerOrchestrator(
     showSmartLoopModal,
     smartLoopCandidates,
     smartLoopPickedEl,
-    smartLoopPickingMode,
-    openSmartPicker,
-    cancelSmartLoopPicking,
     onSmartLoopConfirm,
   } = useSmartLoop(editingFlow, _onSmartLoopConfirmLoop)
+
+  // ── Smart Loop 模式标志 ───────────────────────────────────────────
+  const smartLoopMode = ref(false)
 
   // ── Wrappers ──────────────────────────────────────────────────────
 
   /** ElementPickerModal 选中元素后 → 打开 ActionPickerModal（或直接创建 element_branch 步骤） */
   function onElementPicked(el: SerializedElement) {
+    // ── Smart Loop 模式：关闭选择器，通知 content script 分析祖先结构 ──
+    if (smartLoopMode.value) {
+      smartLoopMode.value = false
+      showPickerModal.value = false
+      if (pickMode.value) { pickMode.value = false; bridge.cancelPickElement() }
+      bridge.requestSmartLoopFromSelector(el.selector.cssSelector)
+      return
+    }
     if (es.addingElementBranch) {
       es.addingElementBranch = false
       showPickerModal.value = false
@@ -113,6 +121,13 @@ export function usePickerOrchestrator(
       showPickerModal.value = true
       scanDom()
     })
+  }
+
+  /** 打开 SmartLoop 元素选择器（复用普通 ElementPickerModal，选完后分析祖先） */
+  async function openSmartLoopPicker() {
+    if (!editingFlow.value) { await showAlert('请先打开一个流程'); return }
+    smartLoopMode.value = true
+    openPicker()
   }
 
   function closePicker() {
@@ -176,8 +191,8 @@ export function usePickerOrchestrator(
     // useStepEditor
     editStep, cancelActionModal, onActionConfirm, editBranchStep,
     // useSmartLoop
-    showSmartLoopModal, smartLoopCandidates, smartLoopPickedEl, smartLoopPickingMode,
-    openSmartPicker, cancelSmartLoopPicking, onSmartLoopConfirm,
+    showSmartLoopModal, smartLoopCandidates, smartLoopPickedEl,
+    openSmartLoopPicker, onSmartLoopConfirm,
     // Wrappers
     onElementPicked, onActionRePick, openPicker, closePicker,
     onLoopAddChild, onLoopEditChild, onActionTry, onTestAction,

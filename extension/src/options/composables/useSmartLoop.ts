@@ -1,12 +1,10 @@
 import { ref, onUnmounted } from 'vue'
 import type { Ref } from 'vue'
 import type { LocalFlow } from '../stores/useFlowStore'
-import type { FlowStep } from '@shared/types/flow'
 import type { RepeatingCandidate } from '@shared/types/message'
 import type { SerializedElement } from '@shared/types/dom'
 import { type BridgeEvent } from './useExtensionBridge'
 import { useBridge } from './useBridge'
-import { showAlert } from '@shared/utils/dialog'
 
 export function useSmartLoop(
   editingFlow: Ref<LocalFlow | null>,
@@ -16,18 +14,6 @@ export function useSmartLoop(
   const showSmartLoopModal   = ref(false)
   const smartLoopCandidates  = ref<RepeatingCandidate[]>([])
   const smartLoopPickedEl    = ref<SerializedElement | null>(null)
-  const smartLoopPickingMode = ref(false)
-
-  async function openSmartPicker() {
-    if (!editingFlow.value) { await showAlert('请先打开一个流程'); return }
-    smartLoopPickingMode.value = true
-    await bridge.requestSmartLoopAnalyze()
-  }
-
-  function cancelSmartLoopPicking() {
-    smartLoopPickingMode.value = false
-    bridge.cancelPickElement()
-  }
 
   function onSmartLoopConfirm(candidate: RepeatingCandidate) {
     showSmartLoopModal.value = false
@@ -49,9 +35,6 @@ export function useSmartLoop(
     showSmartLoopModal,
     smartLoopCandidates,
     smartLoopPickedEl,
-    smartLoopPickingMode,
-    openSmartPicker,
-    cancelSmartLoopPicking,
     onSmartLoopConfirm,
   }
 }

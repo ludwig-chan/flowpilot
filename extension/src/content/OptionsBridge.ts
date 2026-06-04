@@ -106,8 +106,8 @@ export function initOptionsBridge(): void {
       sendResponse({ ok: true })
       return
     }
-    if (msg.type === 'REQUEST_SMART_LOOP_ANALYZE') {
-      handleSmartLoopAnalyze()
+    if (msg.type === 'REQUEST_SMART_LOOP_FROM_SELECTOR') {
+      handleSmartLoopFromSelector((msg as { type: string; cssSelector: string }).cssSelector)
       sendResponse({ ok: true })
       return
     }
@@ -598,58 +598,19 @@ function handleTestClick(cssSelector: string): void {
   ;(el as HTMLElement).click()
 }
 
-// ─── 智能循环：拾取目标元素并分析重复祖先结构 ─────────────────────────────────
-function handleSmartLoopAnalyze(): void {
-  pickCleanup?.()
-
-  const ov    = document.createElement('div')
-  const hlDiv = document.createElement('div')
-  ov.style.cssText    = 'position:fixed;inset:0;z-index:2147483645;cursor:crosshair'
-  hlDiv.style.cssText = 'position:fixed;pointer-events:none;z-index:2147483645;' +
-    'border:2px solid #fab387;background:rgba(250,179,135,.15);' +
-    'box-sizing:border-box;border-radius:2px;transition:all .05s'
-  document.body.append(ov, hlDiv)
-
-  let cur: Element | null = null
-
-  const onMove = (e: MouseEvent) => {
-    ov.style.pointerEvents = 'none'
-    const t = document.elementFromPoint(e.clientX, e.clientY)
-    ov.style.pointerEvents = ''
-    if (!t || t === hlDiv) return
-    cur = t
-    const r = t.getBoundingClientRect()
-    Object.assign(hlDiv.style, {
-      left: `${r.left}px`, top: `${r.top}px`,
-      width: `${r.width}px`, height: `${r.height}px`,
-    })
+// ─── 智能循环：根据已选元素的 cssSelector 分析重复祖先结构 ───────────────────
+function handleSmartLoopFromSelector(cssSelector: string): void {
+  let el: Element | null
+  try { el = document.querySelector(cssSelector) } catch { el = null }
+  if (!el) {
+    chrome.runtime.sendMessage({ type: 'SMART_LOOP_ANALYZED', element: null, candidates: [] }).catch(() => {})
+    return
   }
-
-  const cleanup = () => {
-    ov.remove(); hlDiv.remove()
-    document.removeEventListener('mousemove', onMove, true)
-    document.removeEventListener('click',     onClick, true)
-    document.removeEventListener('keydown',   onKey,   true)
-    pickCleanup = null
+  const serialized = serializeElement(el, null)
+  const candidates = analyzeRepeatingAncestors(el)
+  if (serialized) {
+    chrome.runtime.sendMessage({ type: 'SMART_LOOP_ANALYZED', element: serialized, candidates }).catch(() => {})
   }
-  pickCleanup = cleanup
-
-  const onClick = (e: MouseEvent) => {
-    e.preventDefault(); e.stopImmediatePropagation()
-    if (!cur) { cleanup(); return }
-    const serialized = serializeElement(cur, null)
-    const candidates = analyzeRepeatingAncestors(cur)
-    cleanup()
-    if (serialized) {
-      chrome.runtime.sendMessage({ type: 'SMART_LOOP_ANALYZED', element: serialized, candidates }).catch(() => {})
-    }
-  }
-
-  const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') cleanup() }
-
-  document.addEventListener('mousemove', onMove, true)
-  document.addEventListener('click',     onClick, true)
-  document.addEventListener('keydown',   onKey,   true)
 }
 
 // ─── 智能循环候选高亮（hover 预览，橙色） ─────────────────────────────────────
