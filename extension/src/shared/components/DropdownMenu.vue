@@ -70,10 +70,27 @@ async function openMenu() {
 
     floatPos.value = { top: top + 'px', left: left + 'px' }
   } else if (triggerRef.value && listRef.value) {
-    // ── 锚定模式：检测垂直溢出 ────────────────────────────────────────────
-    const triggerBottom = triggerRef.value.getBoundingClientRect().bottom
-    const listHeight    = listRef.value.offsetHeight
-    placement.value = (window.innerHeight - triggerBottom < listHeight + 8) ? 'up' : 'down'
+    // ── 锚定模式：用 getBoundingClientRect 计算 fixed 坐标 ────────────────
+    const rect  = triggerRef.value.getBoundingClientRect()
+    const menuW = listRef.value.offsetWidth
+    const menuH = listRef.value.offsetHeight
+    const vw    = window.innerWidth
+    const vh    = window.innerHeight
+
+    // 垂直：优先向下，空间不足则向上翻
+    let top: number
+    if (rect.bottom + menuH + 8 > vh) {
+      top = Math.max(8, rect.top - menuH - 4)
+      placement.value = 'up'
+    } else {
+      top = rect.bottom + 4
+    }
+
+    // 水平：align=left → 从按钮左边，align=right → 从按钮右边向左展开
+    let left = props.align === 'left' ? rect.left : rect.right - menuW
+    left = Math.min(Math.max(8, left), vw - menuW - 8)
+
+    floatPos.value = { top: top + 'px', left: left + 'px' }
   }
   visible.value = true
 }
@@ -98,38 +115,23 @@ onUnmounted(() => document.removeEventListener('click', onDocClick))
 </script>
 
 <template>
-  <!-- ── 锚定模式（自带触发按钮，absolute 定位） ───────────────────────── -->
+  <!-- ── 触发器容器（锚定模式，仅负责 trigger slot） ──────────────────── -->
   <div v-if="anchorX === undefined" class="dm" ref="triggerRef">
-    <!-- 触发区域：支持外部自定义按钮 -->
     <slot name="trigger" :toggle="toggle" :is-open="isOpen">
       <BaseButton @click="toggle">
         <slot name="label">菜单</slot>
       </BaseButton>
     </slot>
-
-    <!-- 下拉列表 -->
-    <div
-      v-if="isOpen"
-      ref="listRef"
-      class="dm__list"
-      :class="[
-        `dm__list--${placement}`,
-        align === 'left' ? 'dm__list--left' : 'dm__list--right',
-      ]"
-      :style="{ visibility: visible ? 'visible' : 'hidden' }"
-      @click.stop
-    >
-      <slot :close="close" />
-    </div>
   </div>
 
-  <!-- ── 浮动模式（受控 open 驱动，Teleport + fixed 定位） ────────────── -->
-  <Teleport v-else to="body">
+  <!-- ── 菜单列表：两种模式统一 Teleport 到 body，fixed 定位 ─────────── -->
+  <Teleport to="body">
     <template v-if="isOpen">
       <div class="dm-float-backdrop" @click.stop="close" />
       <div
         ref="listRef"
-        class="dm__list dm__list--float"
+        class="dm__list"
+        :class="`dm__list--${placement}`"
         :style="{ top: floatPos.top, left: floatPos.left, visibility: visible ? 'visible' : 'hidden' }"
         @click.stop
       >
@@ -148,10 +150,10 @@ onUnmounted(() => document.removeEventListener('click', onDocClick))
   display: inline-block;
 }
 
-// ── 菜单列表（共用基础样式） ─────────────────────────────────────────────
+// ── 菜单列表（fixed 定位，始终 Teleport 到 body） ────────────────────────
 .dm__list {
-  position: absolute;
-  z-index: 200;
+  position: fixed;
+  z-index: 1071;
   background: $color-surface-0;
   border: 1px solid $color-surface-2;
   border-radius: $radius-md;
@@ -162,28 +164,13 @@ onUnmounted(() => document.removeEventListener('click', onDocClick))
   min-width: 160px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
 
-  // 水平对齐（锚定模式）
-  &--right { right: 0; }
-  &--left  { left: 0;  }
-
-  // 垂直方向（锚定模式）
   &--down {
-    top: calc(100% + 4px);
-    animation: dm-down 0.18s cubic-bezier(0.16, 1, 0.3, 1);
-    transform-origin: top right;
-  }
-  &--up {
-    bottom: calc(100% + 4px);
-    animation: dm-up 0.18s cubic-bezier(0.16, 1, 0.3, 1);
-    transform-origin: bottom right;
-  }
-
-  // 浮动模式：fixed 定位，坐标由 inline style 给定
-  &--float {
-    position: fixed;
-    z-index: 1071;
     animation: dm-down 0.18s cubic-bezier(0.16, 1, 0.3, 1);
     transform-origin: top left;
+  }
+  &--up {
+    animation: dm-up 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+    transform-origin: bottom left;
   }
 }
 
