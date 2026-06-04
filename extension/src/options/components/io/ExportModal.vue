@@ -34,6 +34,20 @@ watch(() => props.visible, (v) => {
 function selectAll()  { selectedIds.value = new Set(getAllIds(props.tree)) }
 function selectNone() { selectedIds.value = new Set() }
 
+const allSelectState = computed<'all' | 'some' | 'none'>(() => {
+  const allIds = getAllIds(props.tree)
+  if (allIds.length === 0) return 'none'
+  const count = allIds.filter(id => selectedIds.value.has(id)).length
+  if (count === 0)             return 'none'
+  if (count === allIds.length) return 'all'
+  return 'some'
+})
+
+function toggleSelectAll() {
+  if (allSelectState.value === 'all') selectNone()
+  else selectAll()
+}
+
 const selectedFlowCount = computed(() => {
   let count = 0
   function walk(nodes: FlowNode[]) {
@@ -58,8 +72,15 @@ const selectedFlowCount = computed(() => {
   >
     <!-- 工具行 -->
     <div class="export-modal__toolbar">
-      <BaseButton size="sm" @click="selectAll">全选</BaseButton>
-      <BaseButton size="sm" @click="selectNone">取消全选</BaseButton>
+      <label class="export-modal__select-all">
+        <BaseCheckbox
+          :model-value="allSelectState === 'all' ? true : allSelectState === 'some' ? 'indeterminate' : false"
+          @update:model-value="toggleSelectAll"
+        />
+        <span class="export-modal__select-label">
+          {{ allSelectState === 'all' ? '取消全选' : '全选' }}
+        </span>
+      </label>
       <span class="export-modal__count">已选 {{ selectedFlowCount }} 个流程</span>
     </div>
 
@@ -93,6 +114,17 @@ const selectedFlowCount = computed(() => {
   padding: 10px 16px;
   border-bottom: 1px solid $color-surface-1;
   flex-shrink: 0;
+}
+.export-modal__select-all {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  user-select: none;
+}
+.export-modal__select-label {
+  font-size: 12px;
+  color: $color-text;
 }
 .export-modal__count {
   margin-left: auto;

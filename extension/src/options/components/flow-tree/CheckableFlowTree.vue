@@ -48,12 +48,9 @@ function handleChange(node: FlowNode, checked: boolean) {
       <!-- ── 文件夹 ── -->
       <template v-if="node.kind === 'folder'">
         <div class="cft-row" :style="{ paddingLeft: `${(depth ?? 0) * 16 + 8}px` }">
-          <input
-            type="checkbox"
-            class="cft-check"
-            :checked="getState(node) === 'all'"
-            :indeterminate="getState(node) === 'some'"
-            @change="handleChange(node, ($event.target as HTMLInputElement).checked)"
+          <BaseCheckbox
+            :model-value="getState(node) === 'all' ? true : getState(node) === 'some' ? 'indeterminate' : false"
+            @update:model-value="handleChange(node, $event)"
           />
           <BaseButton variant="ghost" class="cft-arrow" @click.stop="toggle(node.id)">
             {{ collapsed.has(node.id) ? '▶' : '▼' }}
@@ -77,11 +74,9 @@ function handleChange(node: FlowNode, checked: boolean) {
         class="cft-row"
         :style="{ paddingLeft: `${(depth ?? 0) * 16 + 8}px` }"
       >
-        <input
-          type="checkbox"
-          class="cft-check"
-          :checked="selectedIds.has(node.id)"
-          @change="handleChange(node, ($event.target as HTMLInputElement).checked)"
+        <BaseCheckbox
+          :model-value="selectedIds.has(node.id)"
+          @update:model-value="handleChange(node, $event)"
         />
         <span class="cft-arrow-placeholder" />
         <span class="cft-icon cft-icon--flow">▶</span>
@@ -105,14 +100,6 @@ function handleChange(node: FlowNode, checked: boolean) {
   user-select: none;
 }
 .cft-row:hover { background: #313244; }
-
-.cft-check {
-  flex-shrink: 0;
-  cursor: pointer;
-  accent-color: #89b4fa;
-  width: 14px;
-  height: 14px;
-}
 
 .cft-arrow {
   background: none;
