@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from 'electron'
+import { app, BrowserWindow, screen } from 'electron'
 import { join } from 'path'
 import { cpSync, existsSync, readFileSync, mkdirSync, readdirSync } from 'fs'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
@@ -13,9 +13,11 @@ function createWindow(): BrowserWindow {
     ? join(process.cwd(), 'resources', 'icon.png')
     : join(process.resourcesPath, 'icon.png')
 
+  const { width: sw, height: sh } = screen.getPrimaryDisplay().workAreaSize
+
   const win = new BrowserWindow({
-    width: 1280,
-    height: 800,
+    width: Math.round(sw * 0.85),
+    height: Math.round(sh * 0.85),
     minWidth: 900,
     minHeight: 600,
     show: false,
@@ -30,7 +32,6 @@ function createWindow(): BrowserWindow {
   })
 
   win.on('ready-to-show', () => {
-    win.maximize()
     win.show()
   })
 
