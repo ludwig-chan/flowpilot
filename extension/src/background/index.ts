@@ -112,14 +112,16 @@ const BROADCAST_TO_OPTIONS: Set<string> = new Set([
 ])
 
 function handleSaveScreenshot(msg: any, _s: any, sr: (r: unknown) => void): true {
+  console.log('[SAVE_SCREENSHOT] 开始调用 native host，文件名：', msg.filename)
   chrome.runtime.sendNativeMessage(
     'com.flowpilot.host',
     { type: 'SAVE_SCREENSHOT', dataUrl: msg.dataUrl, filename: msg.filename },
     (response) => {
       if (chrome.runtime.lastError) {
-        // 客户端未运行，返回 error 信号让 content 降级处理
+        console.error('[SAVE_SCREENSHOT] native host 错误：', chrome.runtime.lastError.message)
         sr({ ok: false, error: chrome.runtime.lastError.message })
       } else {
+        console.log('[SAVE_SCREENSHOT] native host 响应：', response)
         sr(response ?? { ok: false, error: 'no response' })
       }
     }
