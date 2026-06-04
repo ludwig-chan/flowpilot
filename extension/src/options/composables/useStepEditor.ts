@@ -82,14 +82,7 @@ export function useStepEditor(
   function cancelActionModal() {
     const wasLoopChild    = es.editingLoopChild !== null
     const wasAddingToLoop = es.addingToLoopChild
-    es.showActionModal    = false
-    es.clearEditState()
-    es.editingStepIdx    = null
-    es.addingToBranch    = null
-    es.editingBranchStep = null
-    es.editingLoopChild   = null
-    es.addingToLoopChild  = false
-    es.addingToLoopBranch = null
+    es.resetAll()
     if (wasLoopChild || wasAddingToLoop) es.returnToLoop()
   }
 

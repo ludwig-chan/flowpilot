@@ -38,9 +38,8 @@ export function useLoopEditor(
 
   /** EditLoopModal 关闭 → 丢弃修改 */
   function onLoopClose() {
-    es.showEditLoopModal     = false
     editingLoopStepIdx.value = null
-    es.editingLoopStep       = null
+    es.resetAll()
   }
 
   /** EditLoopModal 重新选择列表 → 打开 ListBuilderModal */

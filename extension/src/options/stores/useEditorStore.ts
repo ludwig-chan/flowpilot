@@ -76,6 +76,32 @@ export const useEditorStore = defineStore('editor', () => {
     actionModalEl.value             = null
   }
 
+  /** 重置所有编辑状态（不包含 editingFlow） */
+  function resetAll() {
+    // action modal
+    showActionModal.value           = false
+    actionModalEl.value             = null
+    actionModalOverrideSel.value    = undefined
+    actionModalIsRelative.value     = false
+    actionModalContext.value        = 'single'
+    editingStepIdx.value            = null
+    editingInitialType.value        = undefined
+    editingInitialValue.value       = undefined
+    editingInitialWaitTimeout.value = undefined
+    editingInitialFoundDelay.value  = undefined
+    editingInitialLabel.value       = undefined
+    // branch
+    addingToBranch.value            = null
+    editingBranchStep.value         = null
+    addingElementBranch.value       = false
+    // loop modal
+    showEditLoopModal.value         = false
+    editingLoopStep.value           = null
+    editingLoopChild.value          = null
+    addingToLoopChild.value         = false
+    addingToLoopBranch.value        = null
+  }
+
   return {
     // loop
     showEditLoopModal,
@@ -98,6 +124,7 @@ export const useEditorStore = defineStore('editor', () => {
     editingInitialLabel,
     openActionModal,
     clearEditState,
+    resetAll,
     // branch
     addingToBranch,
     editingBranchStep,
