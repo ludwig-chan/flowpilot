@@ -21,7 +21,10 @@ import type {
 import type { SelectorStrategy } from '@shared/types/flow'
 import type { RepeatingCandidate } from '@shared/types/message'
 import { MSG } from '@shared/types/message'
-import { runFlow, stopFlow } from './engine/SemanticRunner'
+import { runFlow } from './engine/SemanticRunner'
+
+// ─── 当前运行中的流程停止函数（null 表示当前无流程在执行）─────────────────
+let _stopCurrentFlow: (() => void) | null = null
 
 // ─── 排除标签（与 ConsolePanel 保持一致） ─────────────────────────────────────
 const EXCLUDE_TAGS = new Set(['SCRIPT', 'STYLE', 'META', 'LINK', 'HEAD',
@@ -84,20 +87,24 @@ export function initOptionsBridge(): void {
     }
     if (msg.type === MSG.RUN_FLOW_IN_TAB) {
       const m = msg as RunFlowInTabMessage
-      runFlow(m.steps, m.variables ?? {}, (text) => {
+      const { done, stop } = runFlow(m.steps, m.variables ?? {}, (text) => {
         chrome.runtime.sendMessage({ type: MSG.FLOW_LOG_FROM_TAB, text }).catch(() => {})
       }, (event) => {
         chrome.runtime.sendMessage({ type: MSG.FLOW_STEP_EVENT_FROM_TAB, event }).catch(() => {})
-      }, m.stepDelayLevel, m.stepDelayRange, m.waitTimeout).then(() => {
+      }, m.stepDelayLevel, m.stepDelayRange, m.waitTimeout)
+      _stopCurrentFlow = stop
+      done.then(() => {
+        _stopCurrentFlow = null
         chrome.runtime.sendMessage({ type: MSG.FLOW_DONE_FROM_TAB }).catch(() => {})
       }).catch((e: unknown) => {
+        _stopCurrentFlow = null
         chrome.runtime.sendMessage({ type: MSG.FLOW_ERROR_FROM_TAB, error: String(e) }).catch(() => {})
       })
       sendResponse({ ok: true })
       return
     }
     if (msg.type === MSG.STOP_FLOW_IN_TAB) {
-      stopFlow()
+      _stopCurrentFlow?.()
       sendResponse({ ok: true })
       return
     }

@@ -1,10 +1,13 @@
 import type { FlowStep, StepDelayLevel, StepEvent } from '@shared/types/flow'
 import { STEP_DELAY_PRESETS } from '@shared/types/flow'
+import { MSG } from '@shared/types/message'
 import { screenshotCanvas }  from './screenshotCanvas'
 import { screenshotElement } from './screenshotElement'
 import { resolveElementByStrategy, waitForElementToDisappear } from './domResolver'
 import { humanDelay, simulateClick, findScrollContainer, sleep } from './eventSimulator'
 import { interpolate, evalCondition } from './conditionEval'
+
+type CachedFlow = { id: string; name: string; steps: FlowStep[] }
 
 // ─── 运行上下文（替代模块级全局变量，支持并发独立控制）──────────────────────────
 interface RunContext {
@@ -17,15 +20,10 @@ interface RunContext {
   depth: number
   context?: Element
   signal: { stopped: boolean }
+  flowCache?: Map<string, CachedFlow>
 }
 
-let _currentSignal: { stopped: boolean } | null = null
-
-export function stopFlow(): void {
-  if (_currentSignal) _currentSignal.stopped = true
-}
-
-export async function runFlow(
+export function runFlow(
   steps: FlowStep[],
   variables: Record<string, string>,
   onLog: (text: string) => void,
@@ -33,32 +31,44 @@ export async function runFlow(
   stepDelayLevel?: StepDelayLevel,
   stepDelayRange?: [number, number],
   waitTimeout?: number,
-): Promise<void> {
+): { done: Promise<void>; stop: () => void } {
   const signal = { stopped: false }
-  _currentSignal = signal
 
-  const ctx: RunContext = {
-    variables,
-    onLog,
-    onStep,
-    waitTimeout: waitTimeout ?? 10000,
-    // undefined 视为 'medium'（与 UI 默认显示一致）
-    delayLevel: stepDelayLevel ?? 'medium',
-    delayRange: stepDelayRange,
-    depth: 0,
-    signal,
-  }
+  const done = (async () => {
+    // 一次性预载所有流程，供 call_flow 使用（避免每步都发消息）
+    let flowCache: Map<string, CachedFlow> | undefined
+    try {
+      const res = await chrome.runtime.sendMessage({ type: MSG.GET_BUILT_FLOWS }) as
+        { ok: boolean; flows: CachedFlow[] } | undefined
+      if (res?.flows) flowCache = new Map(res.flows.map(f => [f.id, f]))
+    } catch { /* 无流程或发消息失败，不影响主流程 */ }
 
-  for (const step of steps) {
-    if (signal.stopped) {
-      onLog('流程已停止')
-      return
+    const ctx: RunContext = {
+      variables,
+      onLog,
+      onStep,
+      waitTimeout: waitTimeout ?? 10000,
+      // undefined 视为 'medium'（与 UI 默认显示一致）
+      delayLevel: stepDelayLevel ?? 'medium',
+      delayRange: stepDelayRange,
+      depth: 0,
+      signal,
+      flowCache,
     }
-    await executeStep(step, ctx)
-    await applyStepDelay(step, ctx)
-  }
 
-  onLog('✅ 流程执行完成')
+    for (const step of steps) {
+      if (signal.stopped) {
+        onLog('流程已停止')
+        return
+      }
+      await executeStep(step, ctx)
+      await applyStepDelay(step, ctx)
+    }
+
+    onLog('✅ 流程执行完成')
+  })()
+
+  return { done, stop: () => { signal.stopped = true } }
 }
 
 async function executeStep(
@@ -435,11 +445,7 @@ async function executeStep(
 
     case 'call_flow': {
       if (!step.flowRef) { onLog('[跳过] call_flow 缺少 flowRef'); break }
-      let subRes: { ok: boolean; flows: Array<{ id: string; name: string; steps: FlowStep[] }> } | undefined
-      try {
-        subRes = await chrome.runtime.sendMessage({ type: 'GET_BUILT_FLOWS' })
-      } catch { /* ignore */ }
-      const subFlow = subRes?.flows?.find(f => f.id === step.flowRef)
+      const subFlow = ctx.flowCache?.get(step.flowRef)
       if (!subFlow) { onLog(`[跳过] 找不到嵌入流程 ${step.flowRef}`); break }
       onLog(`→ 嵌入执行：${subFlow.name}`)
       for (const s of subFlow.steps) {
