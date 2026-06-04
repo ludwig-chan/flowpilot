@@ -79,8 +79,15 @@ withDefaults(defineProps<{
 .btn--icon { padding: 3px 6px; line-height: 1; }
 
 // Adaptive icon/text button
+// 默认只显示文字；当按钮被压缩到 ≤34px 时切换为只显示图标
 .btn--adaptive {
-  .btn__icon { display: inline; }
+  container-type: inline-size;
+  .btn__icon { display: none; }
   .btn__text  { display: inline; }
+}
+
+@container (max-width: 34px) {
+  .btn--adaptive .btn__icon { display: inline; }
+  .btn--adaptive .btn__text  { display: none; }
 }
 </style>
