@@ -273,7 +273,22 @@ function onTestClick(node: SerializedDomNode) {
   }
 
   &__actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
-  &__filter   { width: 130px; font-size: 11px; padding: 3px 7px; }
+  &__filter {
+    width: 130px;
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    background: #181825;
+    transition: width 0.25s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+
+    &:focus {
+      width: 175px;
+      border-color: #89b4fa;
+      box-shadow: 0 0 0 2px rgba(137, 180, 250, 0.15);
+    }
+
+    &::placeholder { color: #6c7086; }
+  }
 
   &__scan-wrap { position: relative; display: inline-flex; align-items: center; }
   &__mutated-dot {
