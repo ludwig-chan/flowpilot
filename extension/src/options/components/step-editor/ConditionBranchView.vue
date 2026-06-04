@@ -1,10 +1,15 @@
 <script setup lang="ts">
 import type { FlowStep } from '@shared/types/flow'
 
-defineProps<{
+withDefaults(defineProps<{
   step:           FlowStep
   stepTypeLabels: Record<string, string>
-}>()
+  ifLabel?:       string
+  elseLabel?:     string
+}>(), {
+  ifLabel:  '✅ 条件成立时 (IF)',
+  elseLabel: '❌ 条件不成立时 (ELSE)',
+})
 
 const emit = defineEmits<{
   (e: 'edit-branch',   condStepId: string, branch: 'if' | 'else', child: FlowStep, ci: number): void
@@ -18,7 +23,7 @@ const emit = defineEmits<{
     <!-- IF 分支 -->
     <div class="cond-branch">
       <div class="cond-branch__header">
-        <span class="cond-branch__label cond-branch__label--if">✅ 条件成立时 (IF)</span>
+        <span class="cond-branch__label cond-branch__label--if">{{ ifLabel }}</span>
       </div>
       <div class="cond-branch__steps">
         <div v-if="!step.children?.length" class="cond-branch__empty">暂无步骤</div>
@@ -43,7 +48,7 @@ const emit = defineEmits<{
     <!-- ELSE 分支 -->
     <div class="cond-branch cond-branch--else">
       <div class="cond-branch__header">
-        <span class="cond-branch__label cond-branch__label--else">❌ 条件不成立时 (ELSE)</span>
+        <span class="cond-branch__label cond-branch__label--else">{{ elseLabel }}</span>
       </div>
       <div class="cond-branch__steps">
         <div v-if="!step.elseChildren?.length" class="cond-branch__empty">暂无步骤</div>

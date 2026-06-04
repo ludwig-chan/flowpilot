@@ -292,6 +292,29 @@ async function executeStep(
       break
     }
 
+    case 'element_branch': {
+      if (!step.selector) { onLog('[跳过] element_branch 缺少 selector'); break }
+      const elemExists = !!document.querySelector(step.selector.cssSelector)
+      onLog(`  元素分支：${step.selector.cssSelector.slice(0, 50)} → ${elemExists ? '存在' : '不存在'}`)
+      const branchSteps = elemExists ? step.children : step.elseChildren
+      if (branchSteps?.length) {
+        onLog(`  执行${elemExists ? '存在' : '不存在'}分支 (${branchSteps.length} 步)...`)
+        for (const child of branchSteps) {
+          if (_stopped) return
+          await executeStep(child, variables, onLog, onStep, undefined, waitTimeout, delayLevel, delayRange, depth + 1)
+          if (child.delay) {
+            await humanDelay(child.delay[0], child.delay[1])
+          } else if (delayLevel && delayLevel !== 'none') {
+            const range = delayLevel === 'custom' ? delayRange : STEP_DELAY_PRESETS[delayLevel]
+            if (range) await humanDelay(range[0], range[1])
+          }
+        }
+      } else {
+        onLog(`  元素${elemExists ? '存在' : '不存在'}，无对应分支，跳过`)
+      }
+      break
+    }
+
     case 'hover': {
       const el = await resolveEl(step.selector!) as HTMLElement
       const rect = el.getBoundingClientRect()

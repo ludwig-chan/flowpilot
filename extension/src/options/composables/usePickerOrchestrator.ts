@@ -7,6 +7,7 @@ import { useBridge } from './useBridge'
 import { useLoopEditor } from './useLoopEditor'
 import { useStepEditor } from './useStepEditor'
 import { useSmartLoop } from './useSmartLoop'
+import { useEditorStore } from '../stores/useEditorStore'
 
 export function usePickerOrchestrator(
   editingFlow: Ref<LocalFlow | null>,
@@ -17,6 +18,7 @@ export function usePickerOrchestrator(
   scanDom: () => void,
 ) {
   const bridge = useBridge()
+  const es = useEditorStore()
   const showPickerModal = ref(false)
 
   // ── useLoopEditor ─────────────────────────────────────────────────
@@ -66,8 +68,23 @@ export function usePickerOrchestrator(
 
   // ── Wrappers ──────────────────────────────────────────────────────
 
-  /** ElementPickerModal 选中元素后 → 打开 ActionPickerModal */
+  /** ElementPickerModal 选中元素后 → 打开 ActionPickerModal（或直接创建 element_branch 步骤） */
   function onElementPicked(el: SerializedElement) {
+    if (es.addingElementBranch) {
+      es.addingElementBranch = false
+      showPickerModal.value = false
+      if (pickMode.value) { pickMode.value = false; bridge.cancelPickElement() }
+      if (!editingFlow.value) return
+      editingFlow.value.steps.push({
+        id:           `step_${Date.now()}`,
+        type:         'element_branch',
+        label:        `元素分支：${el.label || el.selector.cssSelector.slice(0, 30)}`,
+        selector:     el.selector,
+        children:     [],
+        elseChildren: [],
+      })
+      return
+    }
     _onElementPickedBase(el, getLoopChildActionOpts, showPickerModal, pickMode, () => bridge.cancelPickElement())
   }
 
@@ -79,6 +96,17 @@ export function usePickerOrchestrator(
   function openPicker() {
     if (!editingFlow.value) { alert('请先打开一个流程'); return }
     requireTab(() => {
+      pickedCssSelector.value = ''
+      showPickerModal.value = true
+      scanDom()
+    })
+  }
+
+  /** 添加元素分支步骤：打开选择器，选完元素后直接创建 element_branch（不进 ActionPickerModal） */
+  function addElementBranch() {
+    if (!editingFlow.value) { alert('请先打开一个流程'); return }
+    requireTab(() => {
+      es.addingElementBranch = true
       pickedCssSelector.value = ''
       showPickerModal.value = true
       scanDom()
@@ -156,5 +184,7 @@ export function usePickerOrchestrator(
     // 新增：循环内条件 / 延迟 / 分支
     onLoopAddCondition, onLoopAddDelay,
     onLoopAddBranchChild, onLoopAddBranchCallFlow, onLoopAddBranchCondition, onLoopEditBranchChild,
+    // element_branch
+    addElementBranch,
   }
 }

@@ -103,24 +103,10 @@ function onCancelSmartLoop() {
     <ConditionPickerModal
       v-if="showConditionModal"
       :initial-label="conditionModalStep?.label"
-      :initial-mode="conditionModalStep?.selector ? 'elem' : 'expr'"
       :initial-value="conditionModalStep?.value"
-      :initial-selector="conditionModalStep?.selector?.cssSelector"
       :available-vars="conditionAvailableVars"
-      :dom-tree="domTree"
-      :dom-filter="domFilter"
-      :dom-scanning="domScanning"
-      :dom-mutated="domMutated"
-      :dom-tab-title="domTabTitle"
-      :pick-mode="pickMode"
-      :picked-css-selector="pickedCssSelector"
       @close="onCloseConditionModal"
       @confirm="onConditionConfirm"
-      @scan="scanDom"
-      @toggle-pick="togglePickMode"
-      @test-action="onTestAction"
-      @hover="(css: string) => bridge.requestHighlight(css)"
-      @update:dom-filter="domFilter = $event"
     />
 
     <!-- 动作选择模态框 -->

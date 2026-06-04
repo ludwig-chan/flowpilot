@@ -66,6 +66,7 @@ const {
   onLoopAddBranchCallFlow,
   onLoopAddBranchCondition:  _onLoopAddBranchConditionRaw,
   onLoopEditBranchChild,
+  addElementBranch,
 } = usePickerOrchestrator(editingFlow, activeTabId, requireTab, pickedCssSelector, pickMode, scanDom)
 
 const {
@@ -112,6 +113,7 @@ function onLoopAddBranchCondition(condChildId: string, branch: 'if' | 'else', cu
 }
 
 function handleEdit(step: FlowStep, i: number) {
+  if (step.type === 'element_branch') return
   if (step.type === 'condition')  return editConditionStep(step, i)
   if (step.type === 'delay')      return editDelayStep(step)
   if (step.type === 'loop_items') return editLoopStep(step, i)
@@ -211,6 +213,7 @@ provide(STEP_EDITOR_MODALS_KEY, {
         </template>
         <template #default="{ close }">
           <BaseButton variant="ghost" class="dm-item" @click="openPicker(); close()">🖱 选择元素</BaseButton>
+          <BaseButton variant="ghost" class="dm-item" @click="addElementBranch(); close()">🔀 元素分支</BaseButton>
           <BaseButton variant="ghost" class="dm-item" @click="requireTab(openSmartPicker); close()">🔁 依次点击列表项</BaseButton>
           <BaseButton variant="ghost" class="dm-item" @click="addConditionStep(); close()">🔀 条件判断</BaseButton>
           <BaseButton variant="ghost" class="dm-item" @click="addCallFlowStep(); close()">▶ 嵌入流程</BaseButton>

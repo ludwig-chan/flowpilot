@@ -27,6 +27,7 @@ export type ActionType =
   | 'navigate'
   | 'loop_items'
   | 'condition'
+  | 'element_branch'
   | 'delay'
   | 'call_flow'
   | 'save_canvas'

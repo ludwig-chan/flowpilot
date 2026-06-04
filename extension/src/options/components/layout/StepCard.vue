@@ -58,7 +58,7 @@ const emit = defineEmits<{
         title="引用的流程不存在或已被删除"
       >⚠ 流程已丢失</div>
       <BaseButton
-        v-if="step.type === 'condition'"
+        v-if="step.type === 'condition' || step.type === 'element_branch'"
         class="step-card__cond-toggle"
         @click.stop="$emit('toggle-condition-expand', step.id)"
       >
@@ -68,7 +68,7 @@ const emit = defineEmits<{
     </div>
     <div class="step-card__actions">
       <BaseButton
-        v-if="step.type !== 'call_flow' && (step.type === 'condition' || step.type === 'delay' || step.type === 'loop_items' || !!step.selector)"
+        v-if="step.type !== 'call_flow' && step.type !== 'element_branch' && (step.type === 'condition' || step.type === 'delay' || step.type === 'loop_items' || !!step.selector)"
         class="step-card__btn step-card__btn--edit"
         title="编辑步骤"
         @click="$emit('edit', step, index)"
@@ -77,9 +77,11 @@ const emit = defineEmits<{
     </div>
   </div>
   <ConditionBranchView
-    v-if="step.type === 'condition' && expandedConditions.has(step.id)"
+    v-if="(step.type === 'condition' || step.type === 'element_branch') && expandedConditions.has(step.id)"
     :step="step"
     :step-type-labels="stepTypeLabels"
+    :if-label="step.type === 'element_branch' ? '✅ 元素存在时' : undefined"
+    :else-label="step.type === 'element_branch' ? '❌ 元素不存在时' : undefined"
     @edit-branch="(condId, branch, child, ci) => $emit('edit-branch', condId, branch, child, ci)"
     @remove-branch="(condId, branch, ci) => $emit('remove-branch', condId, branch, ci)"
     @open-picker="(condId, branch) => $emit('open-picker', condId, branch)"

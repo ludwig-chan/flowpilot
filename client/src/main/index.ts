@@ -14,10 +14,10 @@ function createWindow(): BrowserWindow {
     : join(process.resourcesPath, 'icon.png')
 
   const win = new BrowserWindow({
-    width: 780,
-    height: 560,
-    minWidth: 680,
-    minHeight: 480,
+    width: 1000,
+    height: 700,
+    minWidth: 780,
+    minHeight: 560,
     show: false,
     autoHideMenuBar: true,
     title: 'FlowPilot Client',

@@ -540,7 +540,7 @@ code {
 
 /* ── 安装教程 Wizard ── */
 .tut-wizard {
-  max-width: 560px;
+  max-width: 100%;
   margin: 0 auto;
 }
 
@@ -612,7 +612,7 @@ code {
   position: relative;
   background: #f0f2f5;
   border-radius: 12px;
-  height: 220px;
+  height: 360px;
   overflow: hidden;
   margin-bottom: 20px;
 }

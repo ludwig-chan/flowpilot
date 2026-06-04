@@ -37,8 +37,9 @@ export const useEditorStore = defineStore('editor', () => {
   const editingInitialLabel       = ref<string | undefined>(undefined)
 
   // ── 分支编辑共享状态 ─────────────────────────────────────────────
-  const addingToBranch    = ref<{ condStepId: string; branch: 'if' | 'else' } | null>(null)
-  const editingBranchStep = ref<{ condStepId: string; branch: 'if' | 'else'; childIdx: number } | null>(null)
+  const addingToBranch        = ref<{ condStepId: string; branch: 'if' | 'else' } | null>(null)
+  const editingBranchStep     = ref<{ condStepId: string; branch: 'if' | 'else'; childIdx: number } | null>(null)
+  const addingElementBranch   = ref(false)
 
   // ── openActionModal（原来需要 proxy 绕圈的函数）────────────────────
   function openActionModal(
@@ -100,6 +101,7 @@ export const useEditorStore = defineStore('editor', () => {
     // branch
     addingToBranch,
     editingBranchStep,
+    addingElementBranch,
     // editing flow
     editingFlow,
     openFlow,
