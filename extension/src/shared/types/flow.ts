@@ -45,6 +45,7 @@ export interface FlowStep {
   flowRef?: string          // call_flow: 引用的已保存流程 ID
   itemDelay?: [number, number] // loop_items: 每项处理完后的随机延迟 [min, max] ms
   loopChildSelector?: string   // loop_items: 主要目标子元素的相对路径（相对于每个列表项）
+  scrollBehavior?: 'none' | 'item' | 'bottom' // loop_items: 每项处理前/后的滚动行为
   relativeSelector?: boolean // 子步骤专用：selector 相对于所在列表项而非整个页面
   elseChildren?: FlowStep[] // condition: else 分支步骤
 }

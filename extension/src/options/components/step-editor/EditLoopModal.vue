@@ -26,9 +26,10 @@ const emit = defineEmits<{
   (e: 'edit-branch-child',    condChildId: string, branch: 'if' | 'else', childIdx: number, currentState: FlowStep): void
 }>()
 
-const label       = ref(props.step.label)
-const itemDelay   = ref<[number | undefined, number | undefined]>([props.step.itemDelay?.[0] ?? 800, props.step.itemDelay?.[1] ?? 2000])
-const childSel    = ref(props.step.loopChildSelector ?? '')
+const label          = ref(props.step.label)
+const itemDelay      = ref<[number | undefined, number | undefined]>([props.step.itemDelay?.[0] ?? 800, props.step.itemDelay?.[1] ?? 2000])
+const childSel       = ref(props.step.loopChildSelector ?? '')
+const scrollBehavior = ref<'none' | 'item' | 'bottom'>(props.step.scrollBehavior ?? 'none')
 const children           = ref<FlowStep[]>(JSON.parse(JSON.stringify(props.step.children ?? [])))
 const showAdvanced       = ref(false)
 const expandedConditions = ref(new Set<string>())
@@ -49,6 +50,7 @@ function currentState(): FlowStep {
     itemDelay:         [Math.max(0, itemDelay.value[0] ?? 0), Math.max(0, itemDelay.value[1] ?? 0)],
     loopChildSelector: childSel.value || undefined,
     children:          children.value,
+    scrollBehavior:    scrollBehavior.value === 'none' ? undefined : scrollBehavior.value,
   }
 }
 
@@ -256,6 +258,21 @@ function onDeleteBranchChild(condChildId: string, branch: 'if' | 'else', childId
             { label: '高', value: STEP_DELAY_PRESETS.high },
           ]"
         />
+        <label class="elm-label" style="margin-top: 10px;">滚动行为</label>
+        <div class="elm-scroll-options">
+          <label class="elm-check-label">
+            <input v-model="scrollBehavior" type="radio" value="none" class="elm-checkbox" />
+            不滚动
+          </label>
+          <label class="elm-check-label">
+            <input v-model="scrollBehavior" type="radio" value="item" class="elm-checkbox" />
+            滚动到当前项（反检测）
+          </label>
+          <label class="elm-check-label">
+            <input v-model="scrollBehavior" type="radio" value="bottom" class="elm-checkbox" />
+            滚动到底部（触发懒加载）
+          </label>
+        </div>
       </div>
 
       <!-- 底部 -->
@@ -400,4 +417,8 @@ function onDeleteBranchChild(condChildId: string, branch: 'if' | 'else', childId
 }
 
 .elm-advanced-body { border-top: none; }
+
+.elm-scroll-options {
+  display: flex; flex-direction: column; gap: 6px;
+}
 </style>

@@ -174,8 +174,13 @@ async function executeStep(
       if (!step.selector) break
       const items = document.querySelectorAll(step.selector.cssSelector)
       onLog(`找到 ${items.length} 个条目，开始循环...`)
+      const scrollBehavior = step.scrollBehavior ?? 'none'
       for (const item of Array.from(items)) {
         if (_stopped) return
+        if (scrollBehavior === 'item') {
+          ;(item as HTMLElement).scrollIntoView({ behavior: 'smooth', block: 'center' })
+          await sleep(400)
+        }
         onLog(`  → 处理：${item.textContent?.trim().slice(0, 50)}`)
         if (step.children?.length) {
           for (const child of step.children) {
@@ -188,6 +193,11 @@ async function executeStep(
               if (range) await humanDelay(range[0], range[1])
             }
           }
+        }
+        if (scrollBehavior === 'bottom') {
+          const container = findScrollContainer(item)
+          container.scrollTop = container.scrollHeight
+          await sleep(300)
         }
         await humanDelay(...(step.itemDelay ?? [800, 2000]))
       }
@@ -584,6 +594,17 @@ function simulateClick(el: HTMLElement): void {
   el.dispatchEvent(new MouseEvent('mousedown',  { ...opts, button: 0, buttons: 1 }))
   el.dispatchEvent(new MouseEvent('mouseup',    { ...opts, button: 0, buttons: 0 }))
   el.dispatchEvent(new MouseEvent('click',      { ...opts, button: 0, buttons: 0 }))
+}
+
+function findScrollContainer(el: Element): HTMLElement {
+  let cur = el.parentElement
+  while (cur && cur !== document.body) {
+    const style = window.getComputedStyle(cur)
+    const oy = style.overflowY
+    if ((oy === 'scroll' || oy === 'auto') && cur.scrollHeight > cur.clientHeight) return cur
+    cur = cur.parentElement
+  }
+  return (document.scrollingElement as HTMLElement | null) ?? document.body
 }
 
 function sleep(ms: number): Promise<void> {
