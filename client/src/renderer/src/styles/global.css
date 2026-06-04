@@ -537,3 +537,124 @@ code {
   font-size: 11px;
   font-family: 'Consolas', monospace;
 }
+
+/* ── 安装教程 Wizard ── */
+.tut-wizard {
+  max-width: 560px;
+  margin: 0 auto;
+}
+
+.tut-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.tut-tab {
+  padding: 5px 16px;
+  border-radius: 999px;
+  border: none;
+  background: var(--bg);
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.tut-tab.active {
+  background: var(--primary);
+  color: #fff;
+  font-weight: 600;
+}
+
+.tut-step-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+.tut-step-desc {
+  font-size: 13px;
+  color: var(--text-muted);
+  text-align: center;
+  line-height: 1.65;
+  margin-bottom: 16px;
+}
+
+.tut-step-desc p {
+  margin-bottom: 6px;
+}
+
+.tut-browser-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.tut-path-row {
+  justify-content: center;
+}
+
+.tut-path-row .path-hint {
+  flex: unset;
+  max-width: 100%;
+}
+
+/* 图片容器：灰底固定高度 + 底部渐变遮罩 */
+.tut-img-wrap {
+  position: relative;
+  background: #f0f2f5;
+  border-radius: 12px;
+  height: 220px;
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+
+.tut-img-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top;
+  display: block;
+}
+
+.tut-img-wrap::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  background: linear-gradient(transparent, #f0f2f5);
+  pointer-events: none;
+}
+
+.tut-next-btn {
+  display: block;
+  width: 100%;
+  padding: 13px;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+}
+
+.tut-next-btn:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+.tut-next-btn:active {
+  transform: translateY(0);
+}
