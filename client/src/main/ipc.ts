@@ -21,7 +21,7 @@ export async function prefetchTessdata(): Promise<void> {
   try {
     const { createWorker } = await import('tesseract.js')
     const worker = await createWorker(TESS_LANGS as unknown as string[], 1, {
-      langPath,
+      cachePath: langPath,
       cacheMethod: 'write',
     })
     await worker.terminate()
@@ -146,7 +146,7 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
     const { createWorker } = await import('tesseract.js')
     const langPath = join(app.getPath('userData'), 'tessdata')
     const worker = await createWorker(TESS_LANGS as unknown as string[], 1, {
-      langPath,
+      cachePath: langPath,
       cacheMethod: 'write',
     })
     try {
