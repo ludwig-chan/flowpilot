@@ -31,6 +31,7 @@ export function useConditionEditor(
 
   function addConditionStep() {
     if (!editingFlow.value) return
+    es.addingToBranch    = null   // 清除可能残留的分支上下文
     conditionModalStep.value = null
     conditionModalIdx.value  = null
     showConditionModal.value = true
@@ -94,6 +95,23 @@ export function useConditionEditor(
 
     // ── 普通流程上下文 ────────────────────────────────────────────────
     if (!editingFlow.value) return
+    // 分支内添加条件判断子步骤
+    if (es.addingToBranch) {
+      const { condStepId, branch } = es.addingToBranch
+      const condStep = editingFlow.value.steps.find(s => s.id === condStepId)
+      if (condStep) {
+        const step: FlowStep = {
+          id: genId('step'), type: 'condition', label: data.label,
+          value: newValue, selector: newSelector, children: [], elseChildren: [],
+        }
+        if (branch === 'if') condStep.children = [...(condStep.children ?? []), step]
+        else condStep.elseChildren = [...(condStep.elseChildren ?? []), step]
+      }
+      es.addingToBranch    = null
+      conditionModalStep.value = null
+      conditionModalIdx.value  = null
+      return
+    }
     if (conditionModalIdx.value !== null) {
       const s = editingFlow.value.steps[conditionModalIdx.value]
       s.label    = data.label

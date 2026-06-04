@@ -11,7 +11,7 @@ import { useDomPicker } from '../../composables/useDomPicker'
 import { usePickerOrchestrator } from '../../composables/usePickerOrchestrator'
 import { useFlowEditor } from '../../composables/useFlowEditor'
 import { useStepActions, stepTypeLabels } from '../../composables/useStepActions'
-import { showConfirm } from '@shared/utils/dialog'
+import { showConfirm, showAlert } from '@shared/utils/dialog'
 import { useConditionEditor } from '../../composables/useConditionEditor'
 import { useStepDrag } from '../../composables/useStepDrag'
 import FlowEditorHeader from './FlowEditorHeader.vue'
@@ -130,6 +130,26 @@ function handleEdit(step: FlowStep, i: number) {
   editStep(step, i)
 }
 
+function handleAddBranchDelay(condStepId: string, branch: 'if' | 'else') {
+  es.addingToBranch     = { condStepId, branch }
+  delayEditTarget.value = null
+  showDelayModal.value  = true
+}
+
+async function handleAddBranchCallFlow(condStepId: string, branch: 'if' | 'else') {
+  const others = flowStore.allFlows().filter(f => f.id !== editingFlow.value?.id)
+  if (others.length === 0) { await showAlert('没有可嵌入的其他流程'); return }
+  es.addingToBranch        = { condStepId, branch }
+  showCallFlowPicker.value = true
+}
+
+function handleAddBranchCondition(condStepId: string, branch: 'if' | 'else') {
+  es.addingToBranch        = { condStepId, branch }
+  conditionModalStep.value = null
+  conditionModalIdx.value  = null
+  showConditionModal.value = true
+}
+
 const mutationHandler = (evt: BridgeEvent) => {
   if (evt.type === 'DOM_MUTATION' && showPickerModal.value && !domScanning.value) domMutated.value = true
 }
@@ -199,6 +219,9 @@ provide(STEP_EDITOR_MODALS_KEY, {
           @edit-branch="editBranchStep"
           @remove-branch="removeBranchStep"
           @open-picker="openBranchPicker"
+          @add-branch-delay="handleAddBranchDelay"
+          @add-branch-call-flow="handleAddBranchCallFlow"
+          @add-branch-condition="handleAddBranchCondition"
           @convert-to-element-branch="handleConvertToElementBranch"
           @revert-element-branch="(step, i) => revertElementBranch(step, i)"
           @branch-dragover="onBranchDragOver"

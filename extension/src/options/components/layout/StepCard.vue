@@ -27,6 +27,9 @@ const emit = defineEmits<{
   (e: 'edit-branch',    condStepId: string, branch: 'if' | 'else', child: FlowStep, ci: number): void
   (e: 'remove-branch',  condStepId: string, branch: 'if' | 'else', ci: number): void
   (e: 'open-picker',    condStepId: string, branch: 'if' | 'else'): void
+  (e: 'add-branch-delay',     condStepId: string, branch: 'if' | 'else'): void
+  (e: 'add-branch-call-flow', condStepId: string, branch: 'if' | 'else'): void
+  (e: 'add-branch-condition', condStepId: string, branch: 'if' | 'else'): void
   (e: 'convert-to-element-branch', step: FlowStep, index: number): void
   (e: 'revert-element-branch',     step: FlowStep, index: number): void
   (e: 'branch-dragover', stepId: string, branch: 'if' | 'else', insertIdx: number): void
@@ -104,6 +107,9 @@ const emit = defineEmits<{
     @edit-branch="(condId, branch, child, ci) => $emit('edit-branch', condId, branch, child, ci)"
     @remove-branch="(condId, branch, ci) => $emit('remove-branch', condId, branch, ci)"
     @open-picker="(condId, branch) => $emit('open-picker', condId, branch)"
+    @add-delay="(condId, branch) => $emit('add-branch-delay', condId, branch)"
+    @add-call-flow="(condId, branch) => $emit('add-branch-call-flow', condId, branch)"
+    @add-condition="(condId, branch) => $emit('add-branch-condition', condId, branch)"
     @branch-dragover="(stepId, branch, idx) => $emit('branch-dragover', stepId, branch, idx)"
     @branch-drop="$emit('branch-drop')"
   />

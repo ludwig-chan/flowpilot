@@ -5,6 +5,7 @@ import type { LocalFlow } from '../stores/useFlowStore'
 import type { FlowStep } from '@shared/types/flow'
 import { showAlert } from '@shared/utils/dialog'
 import { genId } from '@shared/utils/genId'
+import { useEditorStore } from '../stores/useEditorStore'
 
 type FlowStore = ReturnType<typeof useFlowStore>
 
@@ -16,6 +17,7 @@ export const stepTypeLabels: Record<string, string> = {
 }
 
 export function useStepActions(editingFlow: Ref<LocalFlow | null>, flowStore: FlowStore) {
+  const es = useEditorStore()
   function removeStep(index: number) { editingFlow.value?.steps.splice(index, 1) }
 
   const showDelayModal  = ref(false)
@@ -23,6 +25,7 @@ export function useStepActions(editingFlow: Ref<LocalFlow | null>, flowStore: Fl
 
   function addDelayStep() {
     if (!editingFlow.value) return
+    es.addingToBranch     = null   // 清除可能残留的分支上下文
     delayEditTarget.value = null
     showDelayModal.value  = true
   }
@@ -37,6 +40,15 @@ export function useStepActions(editingFlow: Ref<LocalFlow | null>, flowStore: Fl
     if (delayEditTarget.value) {
       delayEditTarget.value.value = String(ms)
       delayEditTarget.value.label = `等待 ${ms} ms`
+    } else if (es.addingToBranch) {
+      const { condStepId, branch } = es.addingToBranch
+      const condStep = editingFlow.value.steps.find(s => s.id === condStepId)
+      if (condStep) {
+        const step: FlowStep = { id: genId('step'), type: 'delay', label: `等待 ${ms} ms`, value: String(ms) }
+        if (branch === 'if') condStep.children = [...(condStep.children ?? []), step]
+        else condStep.elseChildren = [...(condStep.elseChildren ?? []), step]
+      }
+      es.addingToBranch = null
     } else {
       editingFlow.value.steps.push({
         id:    genId('step'),
@@ -69,6 +81,7 @@ export function useStepActions(editingFlow: Ref<LocalFlow | null>, flowStore: Fl
     if (!editingFlow.value) return
     const others = flowStore.allFlows().filter(f => f.id !== editingFlow.value?.id)
     if (others.length === 0) { await showAlert('没有可嵌入的其他流程'); return }
+    es.addingToBranch        = null   // 清除可能残留的分支上下文
     showCallFlowPicker.value = true
   }
 
@@ -76,12 +89,23 @@ export function useStepActions(editingFlow: Ref<LocalFlow | null>, flowStore: Fl
     if (!editingFlow.value || !id) return
     const target = flowStore.allFlows().find(f => f.id === id)
     if (!target) return
-    editingFlow.value.steps.push({
-      id:      genId('step'),
-      type:    'call_flow',
-      label:   `嵌入流程：${target.name}`,
-      flowRef: target.id,
-    })
+    if (es.addingToBranch) {
+      const { condStepId, branch } = es.addingToBranch
+      const condStep = editingFlow.value.steps.find(s => s.id === condStepId)
+      if (condStep) {
+        const step: FlowStep = { id: genId('step'), type: 'call_flow', label: `嵌入流程：${target.name}`, flowRef: target.id }
+        if (branch === 'if') condStep.children = [...(condStep.children ?? []), step]
+        else condStep.elseChildren = [...(condStep.elseChildren ?? []), step]
+      }
+      es.addingToBranch = null
+    } else {
+      editingFlow.value.steps.push({
+        id:      genId('step'),
+        type:    'call_flow',
+        label:   `嵌入流程：${target.name}`,
+        flowRef: target.id,
+      })
+    }
     showCallFlowPicker.value = false
   }
 
