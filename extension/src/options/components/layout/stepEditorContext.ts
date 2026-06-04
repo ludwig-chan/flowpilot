@@ -1,5 +1,5 @@
 import type { InjectionKey, Ref, ComputedRef } from 'vue'
-import type { FlowStep, ActionType, StepDelayLevel } from '@shared/types/flow'
+import type { FlowStep, ActionType, StepDelayLevel, FlowTrigger } from '@shared/types/flow'
 import type { SerializedDomNode, SerializedElement } from '@shared/types/dom'
 import type { RepeatingCandidate } from '@shared/types/message'
 
@@ -50,7 +50,7 @@ export interface StepEditorModalContext {
   onConditionConfirm: (data: { label: string; mode: 'expr' | 'elem'; value?: string; selector?: string }) => void
   // ── useFlowEditor ─────────────────────────────────────────────────
   showSettingsModal: Ref<boolean>
-  onSettingsConfirm: (data: { waitTimeout: number; stepDelayLevel: StepDelayLevel; stepDelayRange: [number, number] | undefined }) => void
+  onSettingsConfirm: (data: { waitTimeout: number; stepDelayLevel: StepDelayLevel; stepDelayRange: [number, number] | undefined; trigger: FlowTrigger | undefined }) => void
   saveToast: Ref<boolean>
   // ── useStepActions ─────────────────────────────────────────────────
   showCallFlowPicker: Ref<boolean>

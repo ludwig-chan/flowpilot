@@ -2,7 +2,7 @@ import { ref } from 'vue'
 import type { Ref } from 'vue'
 import type { useFlowStore } from '../stores/useFlowStore'
 import type { LocalFlow } from '../stores/useFlowStore'
-import type { StepDelayLevel } from '@shared/types/flow'
+import type { StepDelayLevel, FlowTrigger } from '@shared/types/flow'
 import { useFlowEstimate } from './useFlowEstimate'
 import { showConfirm } from '@shared/utils/dialog'
 
@@ -22,11 +22,12 @@ export function useFlowEditor(flowStore: FlowStore, editingFlow: Ref<LocalFlow |
 
   const showSettingsModal = ref(false)
 
-  function onSettingsConfirm(data: { waitTimeout: number; stepDelayLevel: StepDelayLevel; stepDelayRange: [number, number] | undefined }) {
+  function onSettingsConfirm(data: { waitTimeout: number; stepDelayLevel: StepDelayLevel; stepDelayRange: [number, number] | undefined; trigger: FlowTrigger | undefined }) {
     if (!editingFlow.value) return
     editingFlow.value.waitTimeout    = data.waitTimeout
     editingFlow.value.stepDelayLevel = data.stepDelayLevel
     editingFlow.value.stepDelayRange = data.stepDelayRange
+    editingFlow.value.trigger        = data.trigger
     showSettingsModal.value = false
   }
 
