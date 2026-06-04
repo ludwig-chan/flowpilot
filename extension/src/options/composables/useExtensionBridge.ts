@@ -4,7 +4,7 @@
  */
 import { ref, onMounted, onUnmounted } from 'vue'
 import type { SerializedDomNode, SerializedElement } from '@shared/types/dom'
-import type { FlowStep, StepDelayLevel } from '@shared/types/flow'
+import type { FlowStep, StepDelayLevel, StepEvent } from '@shared/types/flow'
 import type { RepeatingCandidate } from '@shared/types/message'
 
 export type BridgeEvent =
@@ -15,6 +15,7 @@ export type BridgeEvent =
   | { type: 'FLOW_ERROR_FROM_TAB'; tabId: number; error: string }
   | { type: 'DOM_MUTATION'; tabId: number }
   | { type: 'SMART_LOOP_ANALYZED'; tabId: number; element: SerializedElement; candidates: RepeatingCandidate[] }
+  | { type: 'FLOW_STEP_EVENT_FROM_TAB'; tabId: number; event: StepEvent }
 
 type BridgeHandler = (e: BridgeEvent) => void
 

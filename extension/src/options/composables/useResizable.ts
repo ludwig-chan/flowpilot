@@ -55,10 +55,38 @@ export function useResizable() {
     document.removeEventListener('mouseup', stopLogResize)
   }
 
+  // ── 进度抽屉高度 ──────────────────────────────────────────────
+  const progressDrawerHeight = ref(180)
+  let _progressResizing = false, _progressStartY = 0, _progressStartH = 0
+
+  function startProgressResize(e: MouseEvent) {
+    _progressResizing = true; _progressStartY = e.clientY; _progressStartH = progressDrawerHeight.value
+    document.body.style.cursor = 'row-resize'
+    document.body.style.userSelect = 'none'
+    document.addEventListener('mousemove', onProgressResizeMove)
+    document.addEventListener('mouseup', stopProgressResize)
+    e.preventDefault()
+  }
+
+  function onProgressResizeMove(e: MouseEvent) {
+    if (!_progressResizing) return
+    progressDrawerHeight.value = Math.max(80, Math.min(500, _progressStartH + _progressStartY - e.clientY))
+  }
+
+  function stopProgressResize() {
+    if (!_progressResizing) return
+    _progressResizing = false
+    document.body.style.cursor = ''
+    document.body.style.userSelect = ''
+    document.removeEventListener('mousemove', onProgressResizeMove)
+    document.removeEventListener('mouseup', stopProgressResize)
+  }
+
   onUnmounted(() => {
     stopResize()
     stopLogResize()
+    stopProgressResize()
   })
 
-  return { sidebarWidth, logDrawerHeight, startResize, startLogResize }
+  return { sidebarWidth, logDrawerHeight, progressDrawerHeight, startResize, startLogResize, startProgressResize }
 }

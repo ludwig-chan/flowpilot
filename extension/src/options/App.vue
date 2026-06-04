@@ -4,10 +4,12 @@ import { storeToRefs } from 'pinia'
 import { useFlowStore } from './stores/useFlowStore'
 import { useExtensionBridge } from './composables/useExtensionBridge'
 import { useFlowRunner } from './composables/useFlowRunner'
+import { useFlowProgress } from './composables/useFlowProgress'
 import { useResizable } from './composables/useResizable'
 import { useEditorStore } from './stores/useEditorStore'
 import { useTabStore } from './stores/useTabStore'
 import LogDrawer from './components/layout/LogDrawer.vue'
+import ProgressDrawer from './components/layout/ProgressDrawer.vue'
 import TabPickerModal from './components/layout/TabPickerModal.vue'
 import FlowSidebar from './components/layout/FlowSidebar.vue'
 import StepList from './components/layout/StepList.vue'
@@ -39,6 +41,12 @@ async function onTabPickerConfirm(tabId: number) {
 const activeTab = computed(() => tabs.value.find(t => t.id === activeTabId.value) ?? null)
 
 const { logs, running, stopping, logDrawerOpen, runCurrentFlow, stopCurrentFlow } = useFlowRunner(editingFlow, flowStore.allFlows, bridge)
+const { progressOpen, entries, formattedElapsed, onRunStart } = useFlowProgress(bridge)
+
+function handleRun() {
+  onRunStart()
+  requireTab(runCurrentFlow)
+}
 
 onMounted(async () => {
   await flowStore.load()
@@ -46,7 +54,7 @@ onMounted(async () => {
   await syncWithFlow(editingFlow.value?.targetTabId)
 })
 
-const { sidebarWidth, logDrawerHeight, startResize, startLogResize } = useResizable()
+const { sidebarWidth, logDrawerHeight, progressDrawerHeight, startResize, startLogResize, startProgressResize } = useResizable()
 
 </script>
 
@@ -75,11 +83,21 @@ const { sidebarWidth, logDrawerHeight, startResize, startLogResize } = useResiza
         <StepList
           :running="running"
           :stopping="stopping"
-          @run="requireTab(runCurrentFlow)"
+          @run="handleRun"
           @stop="stopCurrentFlow()"
         />
       </main>
     </div>
+
+    <!-- 执行进度抽屉（默认展开） -->
+    <ProgressDrawer
+      v-model:open="progressOpen"
+      :entries="entries"
+      :running="running"
+      :formatted-elapsed="formattedElapsed"
+      :progress-drawer-height="progressDrawerHeight"
+      :start-progress-resize="startProgressResize"
+    />
 
     <!-- 底部全局日志抽屉 -->
     <LogDrawer

@@ -117,3 +117,10 @@ export interface FlowErrorFromTabMessage {
   tabId: number
   error: string
 }
+
+/** 流程步骤执行事件（进度追踪用） */
+export interface FlowStepEventFromTabMessage {
+  type:  'FLOW_STEP_EVENT_FROM_TAB'
+  tabId: number
+  event: import('./flow').StepEvent
+}

@@ -115,7 +115,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   /** content script 推送给 Options 的结果（DOM 扫描、元素拾取、日志等） */
   if (['DOM_SCAN_RESULT', 'ELEMENT_PICKED', 'FLOW_LOG_FROM_TAB',
        'FLOW_DONE_FROM_TAB', 'FLOW_ERROR_FROM_TAB', 'DOM_MUTATION',
-       'SMART_LOOP_ANALYZED'].includes(message.type)) {
+       'SMART_LOOP_ANALYZED', 'FLOW_STEP_EVENT_FROM_TAB'].includes(message.type)) {
     // 注入 tabId 便于 Options 页面识别来源
     const enriched = { ...message, tabId: message.tabId ?? sender.tab?.id }
     broadcastToOptions(enriched)

@@ -46,7 +46,6 @@ export function useFlowRunner(
     }
     running.value = true
     logs.value.push(tsLog(`▶ 开始运行流程 "${editingFlow.value.name}"`))
-    logDrawerOpen.value = true
     await bridge.runFlow(
       editingFlow.value.steps, {},
       editingFlow.value.stepDelayLevel,

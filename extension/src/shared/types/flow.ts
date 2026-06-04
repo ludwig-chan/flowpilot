@@ -79,3 +79,9 @@ export const STEP_DELAY_PRESETS: Record<'low' | 'medium' | 'high', [number, numb
   high:   [3000, 8000],
 }
 
+// ─── 步骤执行事件（运行时进度） ─────────────────────────────────────────────────
+export type StepEvent =
+  | { type: 'step_start'; stepId: string; label: string; depth: number }
+  | { type: 'step_done';  stepId: string; depth: number }
+  | { type: 'loop_progress'; stepId: string; index: number; total: number }
+

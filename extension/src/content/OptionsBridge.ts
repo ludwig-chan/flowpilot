@@ -85,6 +85,8 @@ export function initOptionsBridge(): void {
       const m = msg as RunFlowInTabMessage
       runFlow(m.steps, m.variables ?? {}, (text) => {
         chrome.runtime.sendMessage({ type: 'FLOW_LOG_FROM_TAB', text }).catch(() => {})
+      }, (event) => {
+        chrome.runtime.sendMessage({ type: 'FLOW_STEP_EVENT_FROM_TAB', event }).catch(() => {})
       }, m.stepDelayLevel, m.stepDelayRange, m.waitTimeout).then(() => {
         chrome.runtime.sendMessage({ type: 'FLOW_DONE_FROM_TAB' }).catch(() => {})
       }).catch((e: unknown) => {

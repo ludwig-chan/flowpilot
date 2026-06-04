@@ -1,4 +1,4 @@
-import type { FlowStep, StepDelayLevel } from '@shared/types/flow'
+import type { FlowStep, StepDelayLevel, StepEvent } from '@shared/types/flow'
 import { STEP_DELAY_PRESETS } from '@shared/types/flow'
 import { screenshotCanvas }  from './screenshotCanvas'
 import { screenshotElement } from './screenshotElement'
@@ -13,6 +13,7 @@ export async function runFlow(
   steps: FlowStep[],
   variables: Record<string, string>,
   onLog: (text: string) => void,
+  onStep?: (event: StepEvent) => void,
   stepDelayLevel?: StepDelayLevel,
   stepDelayRange?: [number, number],
   waitTimeout?: number,
@@ -28,7 +29,7 @@ export async function runFlow(
       onLog('流程已停止')
       return
     }
-    await executeStep(step, variables, onLog, undefined, defaultWaitTimeout, effectiveDelayLevel, stepDelayRange)
+    await executeStep(step, variables, onLog, onStep, undefined, defaultWaitTimeout, effectiveDelayLevel, stepDelayRange, 0)
 
     // 步骤间延迟：优先使用步骤自身的 delay，否则使用全局档位
     if (step.delay) {
@@ -48,12 +49,15 @@ async function executeStep(
   step: FlowStep,
   variables: Record<string, string>,
   onLog: (text: string) => void,
+  onStep: ((event: StepEvent) => void) | undefined,
   context?: Element,       // loop_items 传入当前列表项，relativeSelector=true 的子步骤在此范围内查找
   waitTimeout = 10000,     // 等待元素出现的超时（流程级默认，可被步骤级覆盖）
   delayLevel?: StepDelayLevel,   // 全局延迟档位，子步骤无自身 delay 时 fallback
   delayRange?: [number, number], // 自定义档位对应的范围
+  depth = 0,
 ): Promise<void> {
   onLog(`执行：${step.label}`)
+  onStep?.({ type: 'step_start', stepId: step.id, label: step.label, depth })
 
   // 有效超时：步骤级 > 流程级默认
   const effectiveTimeout = step.waitTimeout ?? waitTimeout
@@ -172,11 +176,14 @@ async function executeStep(
 
     case 'loop_items': {
       if (!step.selector) break
-      const items = document.querySelectorAll(step.selector.cssSelector)
-      onLog(`找到 ${items.length} 个条目，开始循环...`)
+      const itemsArr = Array.from(document.querySelectorAll(step.selector.cssSelector))
+      const loopTotal = itemsArr.length
+      onLog(`找到 ${loopTotal} 个条目，开始循环...`)
       const scrollBehavior = step.scrollBehavior ?? 'none'
-      for (const item of Array.from(items)) {
+      for (let _li = 0; _li < itemsArr.length; _li++) {
+        const item = itemsArr[_li]
         if (_stopped) return
+        onStep?.({ type: 'loop_progress', stepId: step.id, index: _li + 1, total: loopTotal })
         if (scrollBehavior === 'item') {
           ;(item as HTMLElement).scrollIntoView({ behavior: 'smooth', block: 'center' })
           await sleep(400)
@@ -185,7 +192,7 @@ async function executeStep(
         if (step.children?.length) {
           for (const child of step.children) {
             if (_stopped) return
-            await executeStep(child, variables, onLog, item, waitTimeout, delayLevel, delayRange)
+            await executeStep(child, variables, onLog, onStep, item, waitTimeout, delayLevel, delayRange, depth + 1)
             if (child.delay) {
               await humanDelay(child.delay[0], child.delay[1])
             } else if (delayLevel && delayLevel !== 'none') {
@@ -271,7 +278,7 @@ async function executeStep(
         onLog(`  执行${condMet ? '成立' : '否则'}分支 (${branchSteps.length} 步)...`)
         for (const child of branchSteps) {
           if (_stopped) return
-          await executeStep(child, variables, onLog, undefined, waitTimeout, delayLevel, delayRange)
+          await executeStep(child, variables, onLog, onStep, undefined, waitTimeout, delayLevel, delayRange, depth + 1)
           if (child.delay) {
             await humanDelay(child.delay[0], child.delay[1])
           } else if (delayLevel && delayLevel !== 'none') {
@@ -407,7 +414,7 @@ async function executeStep(
       onLog(`→ 嵌入执行：${subFlow.name}`)
       for (const s of subFlow.steps) {
         if (_stopped) return
-        await executeStep(s, variables, onLog, undefined, waitTimeout, delayLevel, delayRange)
+        await executeStep(s, variables, onLog, onStep, undefined, waitTimeout, delayLevel, delayRange, depth + 1)
         if (s.delay) {
           await humanDelay(s.delay[0], s.delay[1])
         } else if (delayLevel && delayLevel !== 'none') {
@@ -421,6 +428,7 @@ async function executeStep(
     default:
       onLog(`[跳过] 暂未实现的动作类型：${(step as FlowStep).type}`)
   }
+  onStep?.({ type: 'step_done', stepId: step.id, depth })
 }
 
 // ─── 工具函数 ───────────────────────────────────────────────────────────────────
