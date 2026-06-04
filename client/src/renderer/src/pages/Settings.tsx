@@ -130,8 +130,8 @@ export default function Settings({ showToast }: SettingsProps): React.JSX.Elemen
               className="form-input"
               type="text"
               value={config.screenshotDir ?? ''}
-              onChange={(e) => setConfig((prev) => ({ ...prev, screenshotDir: e.target.value }))}
-              placeholder="默认：~/Downloads/FlowPilot"
+              readOnly
+              style={{ cursor: 'default' }}
             />
             <button className="btn btn-secondary" onClick={handleBrowseScreenshot}>
               浏览…
