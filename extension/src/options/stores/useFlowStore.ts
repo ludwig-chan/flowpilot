@@ -31,7 +31,7 @@ export interface FlowFolder {
 export type FlowNode = LocalFlow | FlowFolder
 
 // ── 递归工具函数 ──────────────────────────────────────────────────
-function findNode(nodes: FlowNode[], id: string): FlowNode | null {
+export function findNode(nodes: FlowNode[], id: string): FlowNode | null {
   for (const n of nodes) {
     if (n.id === id) return n
     if (n.kind === 'folder') {
@@ -42,7 +42,7 @@ function findNode(nodes: FlowNode[], id: string): FlowNode | null {
   return null
 }
 
-function findParentList(nodes: FlowNode[], id: string): FlowNode[] | null {
+export function findParentList(nodes: FlowNode[], id: string): FlowNode[] | null {
   for (const n of nodes) {
     if (n.id === id) return nodes
     if (n.kind === 'folder') {

@@ -1,17 +1,11 @@
 import { ref } from 'vue'
 import type { Ref } from 'vue'
+import { findNode as findNodeInTree } from '../stores/useFlowStore'
 import type { useFlowStore } from '../stores/useFlowStore'
 import type { LocalFlow, FlowFolder, FlowNode } from '../stores/useFlowStore'
 import { showConfirm } from '@shared/utils/dialog'
 
 type FlowStore = ReturnType<typeof useFlowStore>
-
-function findNodeInTree(nodes: FlowNode[], id: string): FlowNode | undefined {
-  for (const n of nodes) {
-    if (n.id === id) return n
-    if (n.kind === 'folder') { const r = findNodeInTree(n.children, id); if (r) return r }
-  }
-}
 
 export function useFlowTreeActions(flowStore: FlowStore, editingFlow: Ref<LocalFlow | null>) {
   // ── 新增节点弹窗 ──────────────────────────────────────────────────

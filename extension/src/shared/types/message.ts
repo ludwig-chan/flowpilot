@@ -119,3 +119,46 @@ export type ExtensionMessage =
   | SmartLoopAnalyzedMessage
   | HighlightLoopCandidatesMessage
   | ClearLoopHighlightsMessage
+
+// ─── 消息类型常量（统一所有消息名，避免散落的字符串字面量）─────────────────────────
+export const MSG = {
+  // options → content（经 background 转发）
+  REQUEST_DOM_SCAN:                 'REQUEST_DOM_SCAN',
+  REQUEST_PICK_ELEMENT:             'REQUEST_PICK_ELEMENT',
+  CANCEL_PICK_ELEMENT:              'CANCEL_PICK_ELEMENT',
+  REQUEST_HIGHLIGHT:                'REQUEST_HIGHLIGHT',
+  REQUEST_TEST_CLICK:               'REQUEST_TEST_CLICK',
+  RUN_FLOW_IN_TAB:                  'RUN_FLOW_IN_TAB',
+  STOP_FLOW_IN_TAB:                 'STOP_FLOW_IN_TAB',
+  REQUEST_SMART_LOOP_ANALYZE:       'REQUEST_SMART_LOOP_ANALYZE',
+  REQUEST_SMART_LOOP_FROM_SELECTOR: 'REQUEST_SMART_LOOP_FROM_SELECTOR',
+  HIGHLIGHT_LOOP_CANDIDATES:        'HIGHLIGHT_LOOP_CANDIDATES',
+  CLEAR_LOOP_HIGHLIGHTS:            'CLEAR_LOOP_HIGHLIGHTS',
+  WATCH_ELEMENT_TRIGGER:            'WATCH_ELEMENT_TRIGGER',
+  // content → options（经 background 广播）
+  DOM_SCAN_RESULT:                  'DOM_SCAN_RESULT',
+  ELEMENT_PICKED:                   'ELEMENT_PICKED',
+  FLOW_LOG_FROM_TAB:                'FLOW_LOG_FROM_TAB',
+  FLOW_DONE_FROM_TAB:               'FLOW_DONE_FROM_TAB',
+  FLOW_ERROR_FROM_TAB:              'FLOW_ERROR_FROM_TAB',
+  DOM_MUTATION:                     'DOM_MUTATION',
+  SMART_LOOP_ANALYZED:              'SMART_LOOP_ANALYZED',
+  FLOW_STEP_EVENT_FROM_TAB:         'FLOW_STEP_EVENT_FROM_TAB',
+  // content → background
+  ELEMENT_TRIGGER_FIRED:            'ELEMENT_TRIGGER_FIRED',
+  CAPTURE_CANVAS:                   'CAPTURE_CANVAS',
+  FLOW_LOG:                         'FLOW_LOG',
+  FLOW_DONE:                        'FLOW_DONE',
+  FLOW_ERROR:                       'FLOW_ERROR',
+  // background handlers（options/content → background）
+  GET_LOGS:                         'GET_LOGS',
+  CLEAR_LOGS:                       'CLEAR_LOGS',
+  SAVE_BUILT_FLOW:                  'SAVE_BUILT_FLOW',
+  GET_BUILT_FLOWS:                  'GET_BUILT_FLOWS',
+  DELETE_BUILT_FLOW:                'DELETE_BUILT_FLOW',
+  SYNC_FLOWS:                       'SYNC_FLOWS',
+  OPEN_OPTIONS_PAGE:                'OPEN_OPTIONS_PAGE',
+  SET_ACTIVE_TAB:                   'SET_ACTIVE_TAB',
+  GET_ACTIVE_TAB:                   'GET_ACTIVE_TAB',
+  SAVE_SCREENSHOT:                  'SAVE_SCREENSHOT',
+} as const

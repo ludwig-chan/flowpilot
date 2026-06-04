@@ -1,6 +1,7 @@
 import { ref, onUnmounted } from 'vue'
 import type { Ref } from 'vue'
 import { type BridgeEvent } from './useExtensionBridge'
+import { MSG } from '@shared/types/message'
 import type { Bridge } from './useBridge'
 import type { LocalFlow } from '../stores/useFlowStore'
 import { showAlert, showConfirm } from '@shared/utils/dialog'
@@ -61,9 +62,9 @@ export function useFlowRunner(
   }
 
   const handler = (evt: BridgeEvent) => {
-    if (evt.type === 'FLOW_LOG_FROM_TAB')   logs.value.push(tsLog(evt.text))
-    if (evt.type === 'FLOW_DONE_FROM_TAB')  { running.value = false; stopping.value = false; logs.value.push(tsLog('✅ 流程运行完成')) }
-    if (evt.type === 'FLOW_ERROR_FROM_TAB') { running.value = false; stopping.value = false; logs.value.push(tsLog(`❌ 错误：${evt.error}`)) }
+    if (evt.type === MSG.FLOW_LOG_FROM_TAB)   logs.value.push(tsLog(evt.text))
+    if (evt.type === MSG.FLOW_DONE_FROM_TAB)  { running.value = false; stopping.value = false; logs.value.push(tsLog('\u2705 流程运行完成')) }
+    if (evt.type === MSG.FLOW_ERROR_FROM_TAB) { running.value = false; stopping.value = false; logs.value.push(tsLog(`\u274c 错误：${evt.error}`)) }
   }
   bridge.on(handler)
   onUnmounted(() => bridge.off(handler))

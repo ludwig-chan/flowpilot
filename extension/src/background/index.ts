@@ -4,6 +4,7 @@
 
 import type { UrlMatchMode } from '@shared/types/flow'
 import { genId } from '@shared/utils/genId'
+import { MSG } from '@shared/types/message'
 
 const MAX_LOGS = 500
 const bgLogs: string[] = []
@@ -97,17 +98,17 @@ function handleGetActiveTab(_m: any, _s: any, sr: (r: unknown) => void): true {
 }
 
 // 需要转发给 content script 的消息类型
-const FORWARD_TO_CONTENT = new Set([
-  'REQUEST_DOM_SCAN', 'REQUEST_PICK_ELEMENT', 'CANCEL_PICK_ELEMENT',
-  'REQUEST_HIGHLIGHT', 'REQUEST_TEST_CLICK', 'RUN_FLOW_IN_TAB', 'STOP_FLOW_IN_TAB',
-  'REQUEST_SMART_LOOP_ANALYZE', 'HIGHLIGHT_LOOP_CANDIDATES', 'CLEAR_LOOP_HIGHLIGHTS',
+const FORWARD_TO_CONTENT: Set<string> = new Set([
+  MSG.REQUEST_DOM_SCAN, MSG.REQUEST_PICK_ELEMENT, MSG.CANCEL_PICK_ELEMENT,
+  MSG.REQUEST_HIGHLIGHT, MSG.REQUEST_TEST_CLICK, MSG.RUN_FLOW_IN_TAB, MSG.STOP_FLOW_IN_TAB,
+  MSG.REQUEST_SMART_LOOP_ANALYZE, MSG.HIGHLIGHT_LOOP_CANDIDATES, MSG.CLEAR_LOOP_HIGHLIGHTS,
 ])
 
 // 需要广播给 Options 页面的消息类型
-const BROADCAST_TO_OPTIONS = new Set([
-  'DOM_SCAN_RESULT', 'ELEMENT_PICKED', 'FLOW_LOG_FROM_TAB',
-  'FLOW_DONE_FROM_TAB', 'FLOW_ERROR_FROM_TAB', 'DOM_MUTATION',
-  'SMART_LOOP_ANALYZED', 'FLOW_STEP_EVENT_FROM_TAB',
+const BROADCAST_TO_OPTIONS: Set<string> = new Set([
+  MSG.DOM_SCAN_RESULT, MSG.ELEMENT_PICKED, MSG.FLOW_LOG_FROM_TAB,
+  MSG.FLOW_DONE_FROM_TAB, MSG.FLOW_ERROR_FROM_TAB, MSG.DOM_MUTATION,
+  MSG.SMART_LOOP_ANALYZED, MSG.FLOW_STEP_EVENT_FROM_TAB,
 ])
 
 function handleSaveScreenshot(msg: any, _s: any, sr: (r: unknown) => void): true {
@@ -127,16 +128,16 @@ function handleSaveScreenshot(msg: any, _s: any, sr: (r: unknown) => void): true
 }
 
 const MSG_HANDLERS: Record<string, MsgHandler> = {
-  GET_LOGS:          handleGetLogs,
-  CLEAR_LOGS:        handleClearLogs,
-  SAVE_BUILT_FLOW:   handleSaveBuiltFlow,
-  GET_BUILT_FLOWS:   handleGetBuiltFlows,
-  DELETE_BUILT_FLOW: handleDeleteBuiltFlow,
-  SYNC_FLOWS:        handleSyncFlows,
-  OPEN_OPTIONS_PAGE: handleOpenOptionsPage,
-  SET_ACTIVE_TAB:    handleSetActiveTab,
-  GET_ACTIVE_TAB:    handleGetActiveTab,
-  SAVE_SCREENSHOT:   handleSaveScreenshot,
+  [MSG.GET_LOGS]:          handleGetLogs,
+  [MSG.CLEAR_LOGS]:        handleClearLogs,
+  [MSG.SAVE_BUILT_FLOW]:   handleSaveBuiltFlow,
+  [MSG.GET_BUILT_FLOWS]:   handleGetBuiltFlows,
+  [MSG.DELETE_BUILT_FLOW]: handleDeleteBuiltFlow,
+  [MSG.SYNC_FLOWS]:        handleSyncFlows,
+  [MSG.OPEN_OPTIONS_PAGE]: handleOpenOptionsPage,
+  [MSG.SET_ACTIVE_TAB]:    handleSetActiveTab,
+  [MSG.GET_ACTIVE_TAB]:    handleGetActiveTab,
+  [MSG.SAVE_SCREENSHOT]:   handleSaveScreenshot,
 }
 
 // 中转消息分发
@@ -165,14 +166,14 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true
   }
 
-  if (message.type === 'FLOW_LOG') {
+  if (message.type === MSG.FLOW_LOG) {
     const ts = new Date().toLocaleTimeString('zh-CN', { hour12: false })
     bgLogs.push(`[${ts}] ${message.text ?? ''}`)
     if (bgLogs.length > MAX_LOGS) bgLogs.splice(0, bgLogs.length - MAX_LOGS)
   }
 
   // 元素触发器：content script 上报已找到目标元素，运行对应流程
-  if (message.type === 'ELEMENT_TRIGGER_FIRED') {
+  if (message.type === MSG.ELEMENT_TRIGGER_FIRED) {
     const tabId = sender.tab?.id
     if (tabId) {
       chrome.storage.local.get({ builtFlows: [] }, (data) => {
@@ -180,7 +181,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           .find(f => f.id === message.flowId)
         if (!flow) return
         chrome.tabs.sendMessage(tabId, {
-          type: 'RUN_FLOW_IN_TAB',
+          type: MSG.RUN_FLOW_IN_TAB,
           steps: flow.steps,
           variables: {},
           stepDelayLevel: flow.stepDelayLevel,
@@ -194,7 +195,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 
   // CAPTURE_CANVAS 由下方专用监听器处理，此处不兜底响应
-  if (message.type === 'CAPTURE_CANVAS') return true
+  if (message.type === MSG.CAPTURE_CANVAS) return true
 
   // 将消息广播给所有扩展页面（包括 popup）
   // 注意：popup 关闭时此操作会静默失败，属正常现象
@@ -209,7 +210,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 // ── CAPTURE_CANVAS：截取当前标签页可见区域，原图返回给 content script 裁剪 ───────
 // 裁剪在 content script 侧完成，避免 Service Worker 里 Image / FileReader 不可用的问题
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.type !== 'CAPTURE_CANVAS') return false
+  if (message.type !== MSG.CAPTURE_CANVAS) return false
 
   const windowId = sender.tab?.windowId
   if (!windowId) {
@@ -279,14 +280,14 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
         if (!matchUrl(url, trigger.urlPattern, (trigger.urlMatchMode as UrlMatchMode) ?? 'contains')) continue
         setTimeout(() => {
           chrome.tabs.sendMessage(tabId, {
-            type: 'RUN_FLOW_IN_TAB',
-            steps: flow.steps,
-            variables: {},
-            stepDelayLevel: flow.stepDelayLevel,
-            stepDelayRange: flow.stepDelayRange,
-            waitTimeout: flow.waitTimeout,
-          }).catch(() => {})
-        }, trigger.delay ?? 0)
+          type: MSG.RUN_FLOW_IN_TAB,
+          steps: flow.steps,
+          variables: {},
+          stepDelayLevel: flow.stepDelayLevel,
+          stepDelayRange: flow.stepDelayRange,
+          waitTimeout: flow.waitTimeout,
+        }).catch(() => {})
+      }, trigger.delay ?? 0)
       }
 
       // 类型二：元素出现——通知 content script 建立监听
@@ -295,7 +296,7 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
           matchUrl(url, trigger.urlPattern, (trigger.urlMatchMode as UrlMatchMode) ?? 'contains')
         if (!urlOk) continue
         chrome.tabs.sendMessage(tabId, {
-          type: 'WATCH_ELEMENT_TRIGGER',
+          type: MSG.WATCH_ELEMENT_TRIGGER,
           flowId: flow.id,
           selector: trigger.selector,
           delay: trigger.delay ?? 0,

@@ -20,6 +20,7 @@ import type {
 } from '@shared/types/dom'
 import type { SelectorStrategy } from '@shared/types/flow'
 import type { RepeatingCandidate } from '@shared/types/message'
+import { MSG } from '@shared/types/message'
 import { runFlow, stopFlow } from './engine/SemanticRunner'
 
 // ─── 排除标签（与 ConsolePanel 保持一致） ─────────────────────────────────────
@@ -36,7 +37,7 @@ const loopHighlightEls: HTMLElement[] = []
 function watchElementTrigger(flowId: string, selector: string, delay: number): void {
   try {
     if (document.querySelector(selector)) {
-      setTimeout(() => chrome.runtime.sendMessage({ type: 'ELEMENT_TRIGGER_FIRED', flowId }).catch(() => {}), delay)
+      setTimeout(() => chrome.runtime.sendMessage({ type: MSG.ELEMENT_TRIGGER_FIRED, flowId }).catch(() => {}), delay)
       return
     }
   } catch { return } // 非法选择器，直接忽略
@@ -46,7 +47,7 @@ function watchElementTrigger(flowId: string, selector: string, delay: number): v
       if (!document.querySelector(selector)) return
     } catch { observer.disconnect(); return }
     observer.disconnect()
-    setTimeout(() => chrome.runtime.sendMessage({ type: 'ELEMENT_TRIGGER_FIRED', flowId }).catch(() => {}), delay)
+    setTimeout(() => chrome.runtime.sendMessage({ type: MSG.ELEMENT_TRIGGER_FIRED, flowId }).catch(() => {}), delay)
   })
   try {
     observer.observe(document.body ?? document.documentElement, { childList: true, subtree: true })
@@ -56,67 +57,67 @@ function watchElementTrigger(flowId: string, selector: string, delay: number): v
 // ─── 初始化：注册消息监听 ─────────────────────────────────────────────────────
 export function initOptionsBridge(): void {
   chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
-    if (msg.type === 'REQUEST_DOM_SCAN') {
+    if (msg.type === MSG.REQUEST_DOM_SCAN) {
       handleDomScan()
       sendResponse({ ok: true })
       return
     }
-    if (msg.type === 'REQUEST_PICK_ELEMENT') {
+    if (msg.type === MSG.REQUEST_PICK_ELEMENT) {
       handlePickElement()
       sendResponse({ ok: true })
       return
     }
-    if (msg.type === 'CANCEL_PICK_ELEMENT') {
+    if (msg.type === MSG.CANCEL_PICK_ELEMENT) {
       pickCleanup?.()
       sendResponse({ ok: true })
       return
     }
-    if (msg.type === 'REQUEST_HIGHLIGHT') {
+    if (msg.type === MSG.REQUEST_HIGHLIGHT) {
       handleHighlight((msg as RequestHighlightMessage).cssSelector)
       sendResponse({ ok: true })
       return
     }
-    if (msg.type === 'REQUEST_TEST_CLICK') {
+    if (msg.type === MSG.REQUEST_TEST_CLICK) {
       handleTestClick((msg as RequestTestClickMessage).cssSelector)
       sendResponse({ ok: true })
       return
     }
-    if (msg.type === 'RUN_FLOW_IN_TAB') {
+    if (msg.type === MSG.RUN_FLOW_IN_TAB) {
       const m = msg as RunFlowInTabMessage
       runFlow(m.steps, m.variables ?? {}, (text) => {
-        chrome.runtime.sendMessage({ type: 'FLOW_LOG_FROM_TAB', text }).catch(() => {})
+        chrome.runtime.sendMessage({ type: MSG.FLOW_LOG_FROM_TAB, text }).catch(() => {})
       }, (event) => {
-        chrome.runtime.sendMessage({ type: 'FLOW_STEP_EVENT_FROM_TAB', event }).catch(() => {})
+        chrome.runtime.sendMessage({ type: MSG.FLOW_STEP_EVENT_FROM_TAB, event }).catch(() => {})
       }, m.stepDelayLevel, m.stepDelayRange, m.waitTimeout).then(() => {
-        chrome.runtime.sendMessage({ type: 'FLOW_DONE_FROM_TAB' }).catch(() => {})
+        chrome.runtime.sendMessage({ type: MSG.FLOW_DONE_FROM_TAB }).catch(() => {})
       }).catch((e: unknown) => {
-        chrome.runtime.sendMessage({ type: 'FLOW_ERROR_FROM_TAB', error: String(e) }).catch(() => {})
+        chrome.runtime.sendMessage({ type: MSG.FLOW_ERROR_FROM_TAB, error: String(e) }).catch(() => {})
       })
       sendResponse({ ok: true })
       return
     }
-    if (msg.type === 'STOP_FLOW_IN_TAB') {
+    if (msg.type === MSG.STOP_FLOW_IN_TAB) {
       stopFlow()
       sendResponse({ ok: true })
       return
     }
-    if (msg.type === 'WATCH_ELEMENT_TRIGGER') {
+    if (msg.type === MSG.WATCH_ELEMENT_TRIGGER) {
       const { flowId, selector, delay = 0 } = msg as { type: string; flowId: string; selector: string; delay: number }
       watchElementTrigger(flowId, selector, delay)
       sendResponse({ ok: true })
       return
     }
-    if (msg.type === 'REQUEST_SMART_LOOP_FROM_SELECTOR') {
+    if (msg.type === MSG.REQUEST_SMART_LOOP_FROM_SELECTOR) {
       handleSmartLoopFromSelector((msg as { type: string; cssSelector: string }).cssSelector)
       sendResponse({ ok: true })
       return
     }
-    if (msg.type === 'HIGHLIGHT_LOOP_CANDIDATES') {
+    if (msg.type === MSG.HIGHLIGHT_LOOP_CANDIDATES) {
       handleHighlightCandidates((msg as { type: string; selector: string }).selector)
       sendResponse({ ok: true })
       return
     }
-    if (msg.type === 'CLEAR_LOOP_HIGHLIGHTS') {
+    if (msg.type === MSG.CLEAR_LOOP_HIGHLIGHTS) {
       clearLoopHighlights()
       sendResponse({ ok: true })
       return
@@ -146,7 +147,7 @@ function ensureDomObserver(): void {
     if (!hasStructuralChange) return
     if (_mutationTimer) clearTimeout(_mutationTimer)
     _mutationTimer = setTimeout(() => {
-      chrome.runtime.sendMessage({ type: 'DOM_MUTATION' }).catch(() => {})
+      chrome.runtime.sendMessage({ type: MSG.DOM_MUTATION }).catch(() => {})
     }, 1200)
   })
   if (document.body) {
@@ -159,7 +160,7 @@ function handleDomScan(): void {
   ensureDomObserver()
   const tree = buildSerializedTree()
   chrome.runtime.sendMessage({
-    type:     'DOM_SCAN_RESULT',
+    type:     MSG.DOM_SCAN_RESULT,
     tabTitle: document.title,
     tabUrl:   location.href,
     tree,
@@ -539,7 +540,7 @@ function handlePickElement(): void {
     const cssSelector = serialized?.selector.cssSelector ?? buildSelector(cur, curIframe)?.cssSelector ?? ''
     cleanup()
     if (serialized) {
-      chrome.runtime.sendMessage({ type: 'ELEMENT_PICKED', element: serialized, cssSelector }).catch(() => {})
+      chrome.runtime.sendMessage({ type: MSG.ELEMENT_PICKED, element: serialized, cssSelector }).catch(() => {})
     }
   }
 
@@ -603,13 +604,13 @@ function handleSmartLoopFromSelector(cssSelector: string): void {
   let el: Element | null
   try { el = document.querySelector(cssSelector) } catch { el = null }
   if (!el) {
-    chrome.runtime.sendMessage({ type: 'SMART_LOOP_ANALYZED', element: null, candidates: [] }).catch(() => {})
+    chrome.runtime.sendMessage({ type: MSG.SMART_LOOP_ANALYZED, element: null, candidates: [] }).catch(() => {})
     return
   }
   const serialized = serializeElement(el, null)
   const candidates = analyzeRepeatingAncestors(el)
   if (serialized) {
-    chrome.runtime.sendMessage({ type: 'SMART_LOOP_ANALYZED', element: serialized, candidates }).catch(() => {})
+    chrome.runtime.sendMessage({ type: MSG.SMART_LOOP_ANALYZED, element: serialized, candidates }).catch(() => {})
   }
 }
 

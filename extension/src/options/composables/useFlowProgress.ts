@@ -1,5 +1,6 @@
 import { ref, computed, onUnmounted } from 'vue'
 import type { BridgeEvent } from './useExtensionBridge'
+import { MSG } from '@shared/types/message'
 import type { Bridge } from './useBridge'
 import type { StepEvent } from '@shared/types/flow'
 
@@ -62,21 +63,21 @@ export function useFlowProgress(bridge: Bridge) {
   }
 
   const handler = (evt: BridgeEvent) => {
-    if (evt.type === 'FLOW_STEP_EVENT_FROM_TAB') {
+    if (evt.type === MSG.FLOW_STEP_EVENT_FROM_TAB) {
       handleStepEvent(evt.event)
     }
-    if (evt.type === 'FLOW_DONE_FROM_TAB') {
+    if (evt.type === MSG.FLOW_DONE_FROM_TAB) {
       entries.value.forEach(e => { if (e.status === 'running') { e.status = 'done'; e.currentChild = undefined } })
       stopTimer()
     }
-    if (evt.type === 'FLOW_ERROR_FROM_TAB') {
+    if (evt.type === MSG.FLOW_ERROR_FROM_TAB) {
       entries.value.forEach(e => { if (e.status === 'running') { e.status = 'error'; e.currentChild = undefined } })
       stopTimer()
     }
   }
 
   bridge.on(handler)
-  onUnmounted(() => bridge.off(handler))
+  onUnmounted(() => { bridge.off(handler); if (timer) clearInterval(timer) })
 
   function onRunStart() {
     reset()

@@ -6,6 +6,7 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import type { SerializedDomNode, SerializedElement } from '@shared/types/dom'
 import type { FlowStep, StepDelayLevel, StepEvent } from '@shared/types/flow'
 import type { RepeatingCandidate } from '@shared/types/message'
+import { MSG } from '@shared/types/message'
 
 export type BridgeEvent =
   | { type: 'DOM_SCAN_RESULT'; tabId: number; tabTitle: string; tabUrl: string; tree: SerializedDomNode[] }
@@ -71,39 +72,39 @@ export function useExtensionBridge() {
   }
 
   async function setActiveTab(tabId: number) {
-    return send({ type: 'SET_ACTIVE_TAB', tabId })
+    return send({ type: MSG.SET_ACTIVE_TAB, tabId })
   }
 
   async function requestDomScan() {
-    return send({ type: 'REQUEST_DOM_SCAN' })
+    return send({ type: MSG.REQUEST_DOM_SCAN })
   }
 
   async function requestPickElement() {
-    return send({ type: 'REQUEST_PICK_ELEMENT' })
+    return send({ type: MSG.REQUEST_PICK_ELEMENT })
   }
 
   async function cancelPickElement() {
-    return send({ type: 'CANCEL_PICK_ELEMENT' })
+    return send({ type: MSG.CANCEL_PICK_ELEMENT })
   }
 
   async function requestSmartLoopFromSelector(cssSelector: string) {
-    return send({ type: 'REQUEST_SMART_LOOP_FROM_SELECTOR', cssSelector })
+    return send({ type: MSG.REQUEST_SMART_LOOP_FROM_SELECTOR, cssSelector })
   }
 
   async function highlightLoopCandidates(selector: string) {
-    return send({ type: 'HIGHLIGHT_LOOP_CANDIDATES', selector })
+    return send({ type: MSG.HIGHLIGHT_LOOP_CANDIDATES, selector })
   }
 
   async function clearLoopHighlights() {
-    return send({ type: 'CLEAR_LOOP_HIGHLIGHTS' })
+    return send({ type: MSG.CLEAR_LOOP_HIGHLIGHTS })
   }
 
   async function requestHighlight(cssSelector: string) {
-    return send({ type: 'REQUEST_HIGHLIGHT', cssSelector })
+    return send({ type: MSG.REQUEST_HIGHLIGHT, cssSelector })
   }
 
   async function testClick(cssSelector: string) {
-    return send({ type: 'REQUEST_TEST_CLICK', cssSelector })
+    return send({ type: MSG.REQUEST_TEST_CLICK, cssSelector })
   }
 
   async function runFlow(
@@ -113,11 +114,11 @@ export function useExtensionBridge() {
     stepDelayRange?: [number, number],
     waitTimeout?: number,
   ) {
-    return send({ type: 'RUN_FLOW_IN_TAB', steps, variables, stepDelayLevel, stepDelayRange, waitTimeout })
+    return send({ type: MSG.RUN_FLOW_IN_TAB, steps, variables, stepDelayLevel, stepDelayRange, waitTimeout })
   }
 
   async function stopFlow() {
-    return send({ type: 'STOP_FLOW_IN_TAB' })
+    return send({ type: MSG.STOP_FLOW_IN_TAB })
   }
 
   async function getTabs(): Promise<chrome.tabs.Tab[]> {

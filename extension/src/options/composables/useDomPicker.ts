@@ -1,6 +1,7 @@
 import { ref, onUnmounted } from 'vue'
 import type { Ref } from 'vue'
 import { type BridgeEvent } from './useExtensionBridge'
+import { MSG } from '@shared/types/message'
 import { useBridge } from './useBridge'
 import type { SerializedDomNode } from '@shared/types/dom'
 import { showAlert } from '@shared/utils/dialog'
@@ -57,13 +58,13 @@ export function useDomPicker(
   }
 
   const handler = (evt: BridgeEvent) => {
-    if (evt.type === 'DOM_SCAN_RESULT') {
+    if (evt.type === MSG.DOM_SCAN_RESULT) {
       clearScanTimer()
       domScanning.value = false
       domTree.value     = evt.tree
       domTabTitle.value = evt.tabTitle
     }
-    if (evt.type === 'ELEMENT_PICKED') {
+    if (evt.type === MSG.ELEMENT_PICKED) {
       pickMode.value          = false
       pickedCssSelector.value = evt.cssSelector ?? ''
     }
