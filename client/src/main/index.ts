@@ -3,7 +3,7 @@ import { join } from 'path'
 import { cpSync, existsSync, readFileSync, mkdirSync, readdirSync } from 'fs'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { createTray } from './tray'
-import { registerIpcHandlers } from './ipc'
+import { registerIpcHandlers, prefetchTessdata } from './ipc'
 import { loadConfig, saveConfig } from './config'
 
 let mainWindow: BrowserWindow | null = null
@@ -110,6 +110,9 @@ app.whenReady().then(() => {
 
   // 首次运行：将内置插件复制到用户目录
   initBundledExtension()
+
+  // 后台静默预下载 OCR 语言包（已缓存则跳过）
+  prefetchTessdata()
 
   mainWindow = createWindow()
   registerIpcHandlers(mainWindow)

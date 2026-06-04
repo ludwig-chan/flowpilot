@@ -1,7 +1,35 @@
 import { app, ipcMain, BrowserWindow, shell, dialog } from 'electron'
 import { spawn } from 'child_process'
-import { existsSync } from 'fs'
+import { existsSync, mkdirSync } from 'fs'
+import { join } from 'path'
 import { loadConfig, saveConfig, AppConfig } from './config'
+
+const TESS_LANGS = ['chi_sim', 'eng'] as const
+
+/**
+ * 应用启动时在后台静默预下载 Tesseract 语言包。
+ * 若语言包已全部缓存则立即跳过，不产生任何网络请求。
+ */
+export async function prefetchTessdata(): Promise<void> {
+  const langPath = join(app.getPath('userData'), 'tessdata')
+  const allCached = TESS_LANGS.every((lang) =>
+    existsSync(join(langPath, `${lang}.traineddata`))
+  )
+  if (allCached) return
+
+  mkdirSync(langPath, { recursive: true })
+  try {
+    const { createWorker } = await import('tesseract.js')
+    const worker = await createWorker(TESS_LANGS as unknown as string[], 1, {
+      langPath,
+      cacheMethod: 'write',
+    })
+    await worker.terminate()
+    console.log('[OCR] 语言包预下载完成')
+  } catch (err) {
+    console.warn('[OCR] 语言包预下载失败，将在首次使用时重试：', (err as Error).message)
+  }
+}
 
 const BROWSER_CONFIGS: Record<string, { name: string; paths: string[]; extPage: string }> = {
   chrome: {
@@ -96,6 +124,24 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
       return { success: true }
     } catch (err) {
       return { success: false, error: (err as Error).message }
+    }
+  })
+
+  // OCR 识别：接收 PNG/JPEG data URL，返回识别文字（中英文）
+  ipcMain.handle('ocr-image', async (_event, dataUrl: string) => {
+    const { createWorker } = await import('tesseract.js')
+    const langPath = join(app.getPath('userData'), 'tessdata')
+    const worker = await createWorker(TESS_LANGS as unknown as string[], 1, {
+      langPath,
+      cacheMethod: 'write',
+    })
+    try {
+      const { data: { text } } = await worker.recognize(dataUrl)
+      return { success: true, text: text.trim() }
+    } catch (err) {
+      return { success: false, error: (err as Error).message }
+    } finally {
+      await worker.terminate()
     }
   })
 }

@@ -21,6 +21,7 @@ interface FlowPilotAPI {
   detectBrowsers: () => Promise<BrowserInfo[]>
   openBrowserExtPage: (browserId: string) => Promise<{ success: boolean; error?: string }>
   loadExtensionAuto: (browserId: string) => Promise<{ success: boolean; error?: string }>
+  ocrImage: (dataUrl: string) => Promise<{ success: boolean; text?: string; error?: string }>
 }
 
 declare global {

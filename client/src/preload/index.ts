@@ -8,7 +8,8 @@ const api = {
   openInExplorer: (dirPath: string) => ipcRenderer.invoke('open-in-explorer', dirPath),
   detectBrowsers: () => ipcRenderer.invoke('detect-browsers'),
   openBrowserExtPage: (browserId: string) => ipcRenderer.invoke('open-browser-ext-page', browserId),
-  loadExtensionAuto: (browserId: string) => ipcRenderer.invoke('load-extension-auto', browserId)
+  loadExtensionAuto: (browserId: string) => ipcRenderer.invoke('load-extension-auto', browserId),
+  ocrImage: (dataUrl: string) => ipcRenderer.invoke('ocr-image', dataUrl)
 }
 
 if (process.contextIsolated) {
