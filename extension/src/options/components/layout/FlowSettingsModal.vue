@@ -61,11 +61,11 @@ function onConfirm() {
       <!-- 元素超时 -->
       <div class="fs-modal__row">
         <span class="fs-modal__label">元素超时：</span>
-        <input
-          class="fs-modal__num-input"
-          type="number" min="1000" step="1000"
-          :value="waitTimeout"
-          @change="waitTimeout = Number(($event.target as HTMLInputElement).value) || 10000"
+        <BaseNumberInput
+          min="1000" step="1000"
+          style="width: 90px"
+          :modelValue="waitTimeout"
+          @update:modelValue="waitTimeout = $event || 10000"
         />
         <span class="fs-modal__unit">ms</span>
         <span class="fs-modal__hint">（等待元素出现的最长时间，超过则停止流程）</span>
@@ -125,11 +125,6 @@ function onConfirm() {
 }
 .fs-modal__label {
   font-size: 12px; color: #a6adc8; white-space: nowrap; min-width: 72px; flex-shrink: 0;
-}
-.fs-modal__num-input {
-  width: 80px; background: $color-surface-1; border: 1px solid $color-surface-2; border-radius: $radius;
-  color: $color-text; padding: 4px 6px; font-size: 12px; text-align: right;
-  &:focus { outline: none; border-color: $color-blue; }
 }
 .fs-modal__unit { font-size: 12px; color: #a6adc8; }
 .fs-modal__hint { font-size: 12px; color: #6c7086; flex: 1; }

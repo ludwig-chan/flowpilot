@@ -188,12 +188,12 @@ function tryAction() {
           <div v-show="showAdvanced" class="action-modal__adv-body">
             <div class="action-modal__adv-row">
               <span class="action-modal__adv-label">超时</span>
-              <input
-                type="number" min="0" step="1000"
-                class="action-modal__adv-input"
+              <BaseNumberInput
+                min="0" step="1000"
                 placeholder="使用流程默认"
-                :value="stepWaitTimeout ?? ''"
-                @change="stepWaitTimeout = Number(($event.target as HTMLInputElement).value) || undefined"
+                style="width: 120px"
+                :modelValue="stepWaitTimeout"
+                @update:modelValue="stepWaitTimeout = $event || undefined"
               />
               <span class="action-modal__adv-unit">ms</span>
               <span class="action-modal__adv-hint">超过此时间未找到元素则报错</span>
@@ -279,11 +279,6 @@ function tryAction() {
     display: flex; align-items: center; flex-wrap: wrap; gap: 5px;
   }
   &__adv-label { font-size: 11px; color: $color-text-muted; flex-shrink: 0; width: 66px; }
-  &__adv-input {
-    width: 80px; background: $color-surface-1; border: 1px solid $color-surface-2; border-radius: $radius-sm;
-    color: $color-text-secondary; padding: 3px 5px; font-size: 11px; text-align: right;
-    &:focus { outline: none; border-color: $color-blue; }
-  }
   &__adv-unit   { font-size: 11px; color: $color-text-muted; flex-shrink: 0; }
   &__adv-hint   { font-size: 10px; color: $color-text-muted; font-style: italic; flex-shrink: 0; }
 }

@@ -21,12 +21,13 @@ function confirm() {
 <template>
   <BaseModal title="⏱ 等待时长" width="300px" :z-index="1200" @close="emit('cancel')">
     <div class="edm-body">
-      <BaseInput
-        v-model.number="ms"
-        type="number"
+      <BaseNumberInput
         min="0"
         step="100"
+        style="width: 120px"
         autofocus
+        :modelValue="ms"
+        @update:modelValue="ms = $event ?? ms"
         @keyup.enter="confirm"
       />
       <span class="edm-unit">ms</span>

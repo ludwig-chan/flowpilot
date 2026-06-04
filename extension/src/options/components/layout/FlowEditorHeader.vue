@@ -100,11 +100,11 @@ function toggleTrigger() {
           />
         </template>
         <span class="editor__delay-unit">延迟</span>
-        <input
-          type="number" min="0" step="500"
-          class="editor__delay-custom-input"
-          :value="flow.trigger.delay ?? 0"
-          @change="flow.trigger!.delay = Number(($event.target as HTMLInputElement).value)"
+        <BaseNumberInput
+          min="0" step="500"
+          style="width: 72px"
+          :modelValue="flow.trigger.delay ?? 0"
+          @update:modelValue="flow.trigger!.delay = $event ?? 0"
         />
         <span class="editor__delay-unit">ms 后运行</span>
       </template>
@@ -122,11 +122,6 @@ function toggleTrigger() {
 .editor__delay-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .editor__delay-label { font-size: 12px; color: #a6adc8; white-space: nowrap; }
 .editor__delay-unit { font-size: 12px; color: #a6adc8; }
-.editor__delay-custom-input {
-  width: 72px; background: #313244; border: 1px solid #45475a; border-radius: 4px;
-  color: #cdd6f4; padding: 3px 6px; font-size: 12px; text-align: right;
-  &:focus { outline: none; border-color: #89b4fa; }
-}
 .editor__trigger-row { margin-top: 2px; padding-top: 6px; border-top: 1px solid #313244; }
 .trigger-toggle {
   display: flex; align-items: center; gap: 5px; cursor: pointer; font-size: 12px; color: #cdd6f4; white-space: nowrap;
