@@ -3,6 +3,7 @@ import type { Ref } from 'vue'
 import { type BridgeEvent } from './useExtensionBridge'
 import { useBridge } from './useBridge'
 import type { SerializedDomNode } from '@shared/types/dom'
+import { showAlert } from '@shared/utils/dialog'
 
 const SCAN_TIMEOUT_MS = 10_000
 
@@ -25,7 +26,7 @@ export function useDomPicker(
   }
 
   async function scanDom() {
-    if (!activeTabId.value) { alert('请先选择一个目标 Tab'); return }
+    if (!activeTabId.value) { await showAlert('请先选择一个目标 Tab'); return }
     domScanning.value = true
     domMutated.value  = false
     domTree.value     = []
@@ -33,7 +34,7 @@ export function useDomPicker(
     scanTimer = setTimeout(() => {
       if (domScanning.value) {
         domScanning.value = false
-        alert('扫描超时，请确认页面已加载完成后重试')
+        showAlert('扫描超时，请确认页面已加载完成后重试')
       }
     }, SCAN_TIMEOUT_MS)
     try {
@@ -45,7 +46,7 @@ export function useDomPicker(
   }
 
   async function togglePickMode() {
-    if (!activeTabId.value) { alert('请先选择一个目标 Tab'); return }
+    if (!activeTabId.value) { await showAlert('请先选择一个目标 Tab'); return }
     if (pickMode.value) {
       pickMode.value = false
       await bridge.cancelPickElement()

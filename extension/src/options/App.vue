@@ -117,6 +117,9 @@ const { sidebarWidth, logDrawerHeight, progressDrawerHeight, startResize, startL
       @cancel="cancelTabPicker"
     />
 
+    <!-- 全局命令式对话框 -->
+    <BaseDialog />
+
   </div>
 
 </template>

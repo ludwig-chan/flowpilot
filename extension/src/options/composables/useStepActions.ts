@@ -3,6 +3,7 @@ import type { Ref } from 'vue'
 import type { useFlowStore } from '../stores/useFlowStore'
 import type { LocalFlow } from '../stores/useFlowStore'
 import type { FlowStep } from '@shared/types/flow'
+import { showAlert } from '@shared/utils/dialog'
 
 type FlowStore = ReturnType<typeof useFlowStore>
 
@@ -63,10 +64,10 @@ export function useStepActions(editingFlow: Ref<LocalFlow | null>, flowStore: Fl
 
   const showCallFlowPicker = ref(false)
 
-  function addCallFlowStep() {
+  async function addCallFlowStep() {
     if (!editingFlow.value) return
     const others = flowStore.allFlows().filter(f => f.id !== editingFlow.value?.id)
-    if (others.length === 0) { alert('没有可嵌入的其他流程'); return }
+    if (others.length === 0) { await showAlert('没有可嵌入的其他流程'); return }
     showCallFlowPicker.value = true
   }
 

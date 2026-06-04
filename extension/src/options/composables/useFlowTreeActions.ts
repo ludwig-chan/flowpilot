@@ -2,6 +2,7 @@ import { ref } from 'vue'
 import type { Ref } from 'vue'
 import type { useFlowStore } from '../stores/useFlowStore'
 import type { LocalFlow, FlowFolder, FlowNode } from '../stores/useFlowStore'
+import { showConfirm } from '@shared/utils/dialog'
 
 type FlowStore = ReturnType<typeof useFlowStore>
 
@@ -41,7 +42,7 @@ export function useFlowTreeActions(flowStore: FlowStore, editingFlow: Ref<LocalF
     const msg = node.kind === 'folder' && childCount > 0
       ? `确定删除分组「${node.name}」及其中所有内容（${childCount} 项）？`
       : `确定删除「${node.name}」？`
-    if (!confirm(msg)) return
+    if (!await showConfirm(msg)) return
     await flowStore.remove(id)
     if (editingFlow.value?.id === id) editingFlow.value = null
   }

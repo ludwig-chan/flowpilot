@@ -4,6 +4,7 @@ import type { LocalFlow } from '../stores/useFlowStore'
 import type { FlowStep, ActionType } from '@shared/types/flow'
 import type { SerializedElement } from '@shared/types/dom'
 import { useBridge } from './useBridge'
+import { showAlert } from '@shared/utils/dialog'
 import { useLoopEditor } from './useLoopEditor'
 import { useStepEditor } from './useStepEditor'
 import { useSmartLoop } from './useSmartLoop'
@@ -93,8 +94,8 @@ export function usePickerOrchestrator(
     _onActionRePickBase(type, value, showPickerModal, pickedCssSelector)
   }
 
-  function openPicker() {
-    if (!editingFlow.value) { alert('请先打开一个流程'); return }
+  async function openPicker() {
+    if (!editingFlow.value) { await showAlert('请先打开一个流程'); return }
     requireTab(() => {
       pickedCssSelector.value = ''
       showPickerModal.value = true
@@ -103,8 +104,8 @@ export function usePickerOrchestrator(
   }
 
   /** 添加元素分支步骤：打开选择器，选完元素后直接创建 element_branch（不进 ActionPickerModal） */
-  function addElementBranch() {
-    if (!editingFlow.value) { alert('请先打开一个流程'); return }
+  async function addElementBranch() {
+    if (!editingFlow.value) { await showAlert('请先打开一个流程'); return }
     requireTab(() => {
       es.addingElementBranch = true
       pickedCssSelector.value = ''

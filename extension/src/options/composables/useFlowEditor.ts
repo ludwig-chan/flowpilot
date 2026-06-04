@@ -4,6 +4,7 @@ import type { useFlowStore } from '../stores/useFlowStore'
 import type { LocalFlow } from '../stores/useFlowStore'
 import type { StepDelayLevel } from '@shared/types/flow'
 import { useFlowEstimate } from './useFlowEstimate'
+import { showConfirm } from '@shared/utils/dialog'
 
 type FlowStore = ReturnType<typeof useFlowStore>
 
@@ -11,10 +12,10 @@ export function useFlowEditor(flowStore: FlowStore, editingFlow: Ref<LocalFlow |
   const saveToast = ref(false)
   let _toastTimer: ReturnType<typeof setTimeout> | null = null
 
-  function selectDelayLevel(level: StepDelayLevel) {
+  async function selectDelayLevel(level: StepDelayLevel) {
     if (!editingFlow.value) return
     if (level === 'none') {
-      if (!confirm('不设置步骤间隔会导致操作极速触发，容易被网站风控识别和封号，确定要关闭间隔吗？')) return
+      if (!await showConfirm('不设置步骤间隔会导致操作极速触发，容易被网站风控识别和封号，确定要关闭间隔吗？')) return
     }
     editingFlow.value.stepDelayLevel = level
   }

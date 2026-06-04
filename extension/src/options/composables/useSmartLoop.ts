@@ -6,6 +6,7 @@ import type { RepeatingCandidate } from '@shared/types/message'
 import type { SerializedElement } from '@shared/types/dom'
 import { type BridgeEvent } from './useExtensionBridge'
 import { useBridge } from './useBridge'
+import { showAlert } from '@shared/utils/dialog'
 
 export function useSmartLoop(
   editingFlow: Ref<LocalFlow | null>,
@@ -18,7 +19,7 @@ export function useSmartLoop(
   const smartLoopPickingMode = ref(false)
 
   async function openSmartPicker() {
-    if (!editingFlow.value) { alert('请先打开一个流程'); return }
+    if (!editingFlow.value) { await showAlert('请先打开一个流程'); return }
     smartLoopPickingMode.value = true
     await bridge.requestSmartLoopAnalyze()
   }

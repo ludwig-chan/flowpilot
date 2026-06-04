@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { showConfirm } from '@shared/utils/dialog'
 import type { LocalFlow } from '../stores/useFlowStore'
 import type { StepDelayLevel } from '@shared/types/flow'
 import { STEP_DELAY_PRESETS } from '@shared/types/flow'
@@ -26,9 +27,9 @@ const stepDelayRange = ref<[number, number]>(
 
 const enabled = computed(() => stepDelayLevel.value !== 'none')
 
-function toggleEnabled(val: boolean) {
+async function toggleEnabled(val: boolean) {
   if (!val) {
-    if (!confirm('不设置步骤间隔会导致操作极速触发，容易被网站风控识别和封号，确定要关闭间隔吗？')) return
+    if (!await showConfirm('不设置步骤间隔会导致操作极速触发，容易被网站风控识别和封号，确定要关闭间隔吗？')) return
     stepDelayLevel.value = 'none'
   } else {
     stepDelayLevel.value = 'medium'

@@ -3,6 +3,7 @@ import type { Ref } from 'vue'
 import { type BridgeEvent } from './useExtensionBridge'
 import type { Bridge } from './useBridge'
 import type { LocalFlow } from '../stores/useFlowStore'
+import { showAlert, showConfirm } from '@shared/utils/dialog'
 
 export function useFlowRunner(
   editingFlow: Ref<LocalFlow | null>,
@@ -24,7 +25,7 @@ export function useFlowRunner(
   }
 
   async function runCurrentFlow() {
-    if (!editingFlow.value) { alert('请先打开一个流程'); return }
+    if (!editingFlow.value) { await showAlert('请先打开一个流程'); return }
     // 运行前检查断裂引用
     const validIds = new Set(allFlows().map(f => f.id))
     function collectBrokenRefs(steps: LocalFlow['steps']): string[] {
@@ -39,7 +40,7 @@ export function useFlowRunner(
     }
     const broken = collectBrokenRefs(editingFlow.value.steps)
     if (broken.length > 0) {
-      const ok = confirm(
+      const ok = await showConfirm(
         `以下嵌入流程已丢失，运行时将被跳过：\n${broken.map(n => `• ${n}`).join('\n')}\n\n是否继续执行？`
       )
       if (!ok) return

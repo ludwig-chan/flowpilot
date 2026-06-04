@@ -1,5 +1,6 @@
 import { ref } from 'vue'
 import type { useFlowStore } from '../stores/useFlowStore'
+import { showAlert } from '@shared/utils/dialog'
 import { filterNodesByIds } from '../stores/useFlowStore'
 import type { ExportPayload } from '../stores/useFlowStore'
 import { BUILTIN_PRESETS } from '@/presets/index'
@@ -29,7 +30,7 @@ export function useFlowIO(flowStore: FlowStore) {
   async function handleImportConfirm(payload: ExportPayload, selectedIds: Set<string>, targetId?: string) {
     const filtered = { ...payload, nodes: filterNodesByIds(payload.nodes, selectedIds) }
     const count = await flowStore.importInto(filtered, targetId)
-    alert(`成功导入 ${count} 个项目`)
+    await showAlert(`成功导入 ${count} 个项目`)
     showImportModal.value = false
   }
 
