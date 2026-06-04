@@ -73,24 +73,29 @@ function selectPreset(p: RangePreset) {
 <template>
   <div class="ri">
     <div class="ri__box">
-      <input
-        class="ri__num"
-        type="number" min="0" :step="displayStep"
-        :style="{ width: inputWidth }"
-        :value="toDisplay(modelValue[0])"
-        :placeholder="placeholderMin"
-        @change="onMinChange"
-      />
+      <div class="ri__field">
+        <input
+          class="ri__num"
+          type="number" min="0" :step="displayStep"
+          :style="{ width: inputWidth }"
+          :value="toDisplay(modelValue[0])"
+          :placeholder="placeholderMin"
+          @change="onMinChange"
+        />
+        <span v-if="suffix" class="ri__suffix">{{ suffix }}</span>
+      </div>
       <span class="ri__sep">~</span>
-      <input
-        class="ri__num"
-        type="number" min="0" :step="displayStep"
-        :style="{ width: inputWidth }"
-        :value="toDisplay(modelValue[1])"
-        :placeholder="placeholderMax"
-        @change="onMaxChange"
-      />
-      <span v-if="suffix" class="ri__suffix">{{ suffix }}</span>
+      <div class="ri__field">
+        <input
+          class="ri__num"
+          type="number" min="0" :step="displayStep"
+          :style="{ width: inputWidth }"
+          :value="toDisplay(modelValue[1])"
+          :placeholder="placeholderMax"
+          @change="onMaxChange"
+        />
+        <span v-if="suffix" class="ri__suffix">{{ suffix }}</span>
+      </div>
     </div>
     <span class="ri__unit">{{ unit }}</span>
     <div v-if="presets?.length" class="ri__presets">
@@ -129,6 +134,7 @@ function selectPreset(p: RangePreset) {
     -moz-appearance: textfield;
   }
 
+  &__field  { display: flex; align-items: center; }
   &__sep    { font-size: 12px; color: $color-text-muted; flex-shrink: 0; padding: 0 2px; }
   &__suffix { font-size: 12px; color: $color-text-muted; flex-shrink: 0; }
   &__unit   { font-size: 12px; color: $color-text-muted; flex-shrink: 0; }
