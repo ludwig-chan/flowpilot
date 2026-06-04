@@ -207,19 +207,28 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   return true
 })
 
-// ── CAPTURE_CANVAS：截取当前标签页可见区域，原图返回给 content script 裁剪 ───────
+// ── CAPTURE_CANVAS：截取指定标签页可见区域，原图返回给 content script 裁剪 ───────
+// 使用 captureTab(tabId) 而非 captureVisibleTab(windowId)：
+// captureVisibleTab 截的是窗口当前活跃 tab（Options 页面），而非流程运行的目标 tab。
+// captureTab 需要 Chrome 116+（2023-08-15），旧版通过特性检测返回 BROWSER_TOO_OLD。
 // 裁剪在 content script 侧完成，避免 Service Worker 里 Image / FileReader 不可用的问题
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type !== MSG.CAPTURE_CANVAS) return false
 
-  const windowId = sender.tab?.windowId
-  if (!windowId) {
-    sendResponse({ ok: false, error: '无法获取窗口 ID' })
+  const tabId = sender.tab?.id
+  if (!tabId) {
+    sendResponse({ ok: false, error: '无法获取 tab ID' })
     return true
   }
 
-  console.log('[CAPTURE_CANVAS] 截取标签页可见区域，windowId=', windowId)
-  chrome.tabs.captureVisibleTab(windowId, { format: 'png' }, (screenshotDataUrl) => {
+  // 特性检测：Chrome < 116 没有 captureTab
+  if (typeof chrome.tabs.captureTab !== 'function') {
+    sendResponse({ ok: false, error: 'BROWSER_TOO_OLD' })
+    return true
+  }
+
+  console.log('[CAPTURE_CANVAS] 截取 tabId=', tabId)
+  chrome.tabs.captureTab(tabId, { format: 'png' }, (screenshotDataUrl) => {
     if (chrome.runtime.lastError || !screenshotDataUrl) {
       const err = chrome.runtime.lastError?.message ?? '截图失败（无数据）'
       console.error('[CAPTURE_CANVAS]', err)
