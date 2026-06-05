@@ -38,13 +38,12 @@ const {
       <BaseButton
         v-if="BUILTIN_PRESETS.length > 0"
         size="sm"
-        icon="📦"
         title="浏览内置预设库"
         @click="showPresetsModal = true"
       >预设</BaseButton>
-      <BaseButton size="sm" icon="📥" title="导入流程" @click="showImportModal = true">导入</BaseButton>
-      <BaseButton size="sm" icon="📤" title="导出流程" @click="showExportModal = true">导出</BaseButton>
-      <BaseButton size="sm" variant="primary" icon="＋" @click="openCreateModal()">新增</BaseButton>
+      <BaseButton size="sm" title="导入流程" @click="showImportModal = true">导入</BaseButton>
+      <BaseButton size="sm" title="导出流程" @click="showExportModal = true">导出</BaseButton>
+      <BaseButton size="sm" variant="primary" @click="openCreateModal()">新增</BaseButton>
     </div>
 
     <div class="flow-list">
@@ -58,7 +57,7 @@ const {
         @edit="handleEdit"
         @pin="(id: string) => flowStore.togglePin(id)"
       />
-      <div v-if="flowStore.tree.length === 0 && !showCreateModal" class="empty-hint">暂无流程，点击"＋ 新增"创建</div>
+      <div v-if="flowStore.tree.length === 0 && !showCreateModal" class="empty-hint">暂无流程，点击"新增"创建</div>
     </div>
   </div>
 
