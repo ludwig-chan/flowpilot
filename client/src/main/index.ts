@@ -2,7 +2,7 @@ import { app, BrowserWindow, screen } from 'electron'
 import { join } from 'path'
 import * as os from 'os'
 import { execSync } from 'child_process'
-import { appendFileSync, cpSync, existsSync, readFileSync, mkdirSync, readdirSync, writeFileSync } from 'fs'
+import { appendFileSync, cpSync, existsSync, readFileSync, mkdirSync, readdirSync, rmSync, renameSync, writeFileSync } from 'fs'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { createTray } from './tray'
 import { registerIpcHandlers, prefetchTessdata } from './ipc'
@@ -88,16 +88,27 @@ function initBundledExtension(): void {
       : null
 
     // 判断是否需要更新
-    const dirMissing  = !existsSync(extensionDir)
-    const dirEmpty    = !dirMissing && readdirSync(extensionDir).length === 0
-    const hashChanged = bundledManifest.hash !== installedManifest?.hash
+    const dirMissing   = !existsSync(extensionDir)
+    const dirEmpty     = !dirMissing && readdirSync(extensionDir).length === 0
+    const hashChanged  = bundledManifest.hash !== installedManifest?.hash
     const filesMissing = bundledManifest.files.some(
       (f) => !existsSync(join(extensionDir, f))
     )
 
     if (dirMissing || dirEmpty || hashChanged || filesMissing) {
-      mkdirSync(extensionDir, { recursive: true })
-      cpSync(bundledPath, extensionDir, { recursive: true })
+      // 原子性更新：先复制到临时目录，再替换旧目录，避免残留文件
+      const parentDir = join(extensionDir, '..')
+      const tempDir   = join(parentDir, `extension_tmp_${Date.now()}`)
+
+      mkdirSync(parentDir, { recursive: true })
+      cpSync(bundledPath, tempDir, { recursive: true })
+
+      // 临时目录就绪后，删除旧目录并重命名临时目录
+      if (existsSync(extensionDir)) {
+        rmSync(extensionDir, { recursive: true, force: true })
+      }
+      renameSync(tempDir, extensionDir)
+
       config.extensionHash = bundledManifest.hash
       config.lastUpdatedAt = new Date().toISOString()
       saveConfig(config)
@@ -152,7 +163,10 @@ function registerNativeHost(): void {
 }
 
 if (isNativeHost) {
-  // ── Native Messaging Host 模式：读 stdin → 处理消息 → 写 stdout → 退出 ────────
+  // ── Native Messaging Host 模式 ─────────────────────────────────────────────
+  // 支持两种协议：
+  //   旧协议（向后兼容）：单条 SAVE_SCREENSHOT 消息，dataUrl 内联
+  //   新协议（分块传输）：SAVE_SCREENSHOT_START → SAVE_SCREENSHOT_CHUNK ×N → SAVE_SCREENSHOT_END
   // 注意：stdout 只能输出协议格式（4字节头+JSON），任何额外输出会破坏通信
   // 所以诊断日志必须写文件，不能 console.log/write 到 stdout
   const logFile = join(os.homedir(), 'AppData', 'Local', 'FlowPilot', 'native-host-debug.log')
@@ -170,59 +184,141 @@ if (isNativeHost) {
     process.stdout.write(buf)
   }
 
-  const chunks: Buffer[] = []
-  process.stdin.on('data', (chunk: Buffer) => chunks.push(chunk))
-  process.stdin.on('end', () => {
-    const buf = Buffer.concat(chunks)
-    log(`stdin 接收完毕，总长度=${buf.length} 字节`)
-    if (buf.length < 4) { log('数据太短 (<4字节)，退出'); process.exit(0); return }
-    const msgLen = buf.readUInt32LE(0)
-    log(`消息头长度=${msgLen}, 实际数据=${buf.length - 4} 字节`)
-    if (buf.length < 4 + msgLen) { log('数据不完整，退出'); process.exit(0); return }
-    let msg: Record<string, unknown>
-    try {
-      msg = JSON.parse(buf.slice(4, 4 + msgLen).toString('utf-8'))
-      log(`消息解析成功，type=${msg.type}`)
-    } catch (err) {
-      log(`JSON 解析失败: ${(err as Error).message}`)
-      process.exit(1); return
-    }
-
-    if (msg.type === 'SAVE_SCREENSHOT') {
+  /** 从 buffer 中解析所有完整的 Native Messaging 消息（4字节长度头 + JSON body） */
+  function parseMessages(buffer: Buffer): { messages: Record<string, unknown>[]; remaining: Buffer } {
+    const messages: Record<string, unknown>[] = []
+    let offset = 0
+    while (offset + 4 <= buffer.length) {
+      const msgLen = buffer.readUInt32LE(offset)
+      if (offset + 4 + msgLen > buffer.length) break // 不完整，等待更多数据
       try {
-        log(`开始保存截图，filename=${msg.filename}`)
-        // native host 模式下 app.getPath 不可用，用环境变量定位配置文件
-        const appData = process.env['APPDATA'] || join(os.homedir(), 'AppData', 'Roaming')
-        const configFile = join(appData, 'FlowPilot Client', 'flowpilot', 'config.json')
-        log(`配置文件路径: ${configFile}, 存在=${existsSync(configFile)}`)
-        let screenshotDir = join(os.homedir(), 'Downloads', 'FlowPilot')
-        if (existsSync(configFile)) {
-          try {
-            const cfg = JSON.parse(readFileSync(configFile, 'utf-8')) as Record<string, unknown>
-            log(`配置读取成功, screenshotDir=${cfg.screenshotDir ?? '(未设置)'}`)
-            if (cfg.screenshotDir) screenshotDir = cfg.screenshotDir as string
-          } catch (err) {
-            log(`配置读取失败: ${(err as Error).message}, 使用默认目录`)
-          }
-        }
-        mkdirSync(screenshotDir, { recursive: true })
-        const base64 = (msg.dataUrl as string).replace(/^data:image\/png;base64,/, '')
-        log(`base64 数据长度=${base64.length}, 目标目录=${screenshotDir}`)
-        const filePath = join(screenshotDir, msg.filename as string)
-        writeFileSync(filePath, Buffer.from(base64, 'base64'))
+        const msg = JSON.parse(buffer.slice(offset + 4, offset + 4 + msgLen).toString('utf-8'))
+        messages.push(msg)
+      } catch (err) {
+        log(`JSON 解析失败 (offset=${offset}): ${(err as Error).message}`)
+      }
+      offset += 4 + msgLen
+    }
+    return { messages, remaining: buffer.slice(offset) }
+  }
+
+  /** 读取配置文件，返回截图保存目录 */
+  function resolveScreenshotDir(): string {
+    const appData = process.env['APPDATA'] || join(os.homedir(), 'AppData', 'Roaming')
+    const configFile = join(appData, 'FlowPilot Client', 'flowpilot', 'config.json')
+    log(`配置文件路径: ${configFile}, 存在=${existsSync(configFile)}`)
+    let dir = join(os.homedir(), 'Downloads', 'FlowPilot')
+    if (existsSync(configFile)) {
+      try {
+        const cfg = JSON.parse(readFileSync(configFile, 'utf-8')) as Record<string, unknown>
+        log(`配置读取成功, screenshotDir=${cfg.screenshotDir ?? '(未设置)'}`)
+        if (cfg.screenshotDir) dir = cfg.screenshotDir as string
+      } catch (err) {
+        log(`配置读取失败: ${(err as Error).message}, 使用默认目录`)
+      }
+    }
+    return dir
+  }
+
+  /** 将 base64 data URL 写入文件，返回文件路径 */
+  function saveScreenshotFile(dataUrl: string, filename: string): string {
+    const screenshotDir = resolveScreenshotDir()
+    mkdirSync(screenshotDir, { recursive: true })
+    const base64 = dataUrl.replace(/^data:image\/png;base64,/, '')
+    log(`base64 数据长度=${base64.length}, 目标目录=${screenshotDir}`)
+    const filePath = join(screenshotDir, filename)
+    writeFileSync(filePath, Buffer.from(base64, 'base64'))
+    return filePath
+  }
+
+  // ── 分块传输状态 ──
+  let chunkFilename = ''
+  let chunkTotal = 0
+  let chunkBuffer = ''
+  let chunkReceived = 0
+
+  // ── 流式消息处理 ──
+  let stdinBuffer: Buffer = Buffer.alloc(0)
+
+  function handleMessage(msg: Record<string, unknown>): void {
+    log(`收到消息 type=${msg.type}`)
+
+    if (msg.type === 'SAVE_SCREENSHOT_START') {
+      chunkFilename = msg.filename as string
+      chunkTotal = msg.totalChunks as number
+      chunkBuffer = ''
+      chunkReceived = 0
+      log(`[分块] 开始接收截图，filename=${chunkFilename}, totalChunks=${chunkTotal}`)
+    } else if (msg.type === 'SAVE_SCREENSHOT_CHUNK') {
+      chunkBuffer += msg.data as string
+      chunkReceived++
+      log(`[分块] 收到 chunk ${msg.index}/${chunkTotal}，累计数据长度=${chunkBuffer.length}`)
+    } else if (msg.type === 'SAVE_SCREENSHOT_END') {
+      log(`[分块] 接收完毕，共 ${chunkReceived} 块，总数据长度=${chunkBuffer.length}`)
+      try {
+        const filePath = saveScreenshotFile(chunkBuffer, chunkFilename)
         log(`截图保存成功: ${filePath}`)
         sendNativeResponse({ ok: true, path: filePath })
       } catch (err) {
         log(`截图保存失败: ${(err as Error).message}`)
         sendNativeResponse({ ok: false, error: (err as Error).message })
       }
+      log('处理完毕，退出')
+      process.exit(0)
+    } else if (msg.type === 'SAVE_SCREENSHOT') {
+      // ── 旧协议向后兼容：单条消息包含完整 dataUrl ──
+      log(`[旧协议] 开始保存截图，filename=${msg.filename}`)
+      try {
+        const filePath = saveScreenshotFile(msg.dataUrl as string, msg.filename as string)
+        log(`截图保存成功: ${filePath}`)
+        sendNativeResponse({ ok: true, path: filePath })
+      } catch (err) {
+        log(`截图保存失败: ${(err as Error).message}`)
+        sendNativeResponse({ ok: false, error: (err as Error).message })
+      }
+      log('处理完毕，退出')
+      process.exit(0)
     } else {
       log(`未知消息类型: ${msg.type}`)
       sendNativeResponse({ ok: false, error: 'unknown message type' })
     }
-    log('处理完毕，退出')
+  }
+
+  // 超时保护：30 秒无活动则退出
+  let activityTimer = setTimeout(() => {
+    log('超时（30秒无活动），退出')
+    process.exit(1)
+  }, 30_000)
+
+  process.stdin.on('data', (chunk: Buffer) => {
+    // 重置超时计时器
+    clearTimeout(activityTimer)
+    activityTimer = setTimeout(() => {
+      log('超时（30秒无活动），退出')
+      process.exit(1)
+    }, 30_000)
+
+    stdinBuffer = Buffer.concat([stdinBuffer, chunk])
+    log(`stdin 收到 ${chunk.length} 字节，缓冲区总长度=${stdinBuffer.length}`)
+    const { messages, remaining } = parseMessages(stdinBuffer)
+    stdinBuffer = remaining
+    for (const msg of messages) {
+      handleMessage(msg)
+    }
+  })
+
+  process.stdin.on('end', () => {
+    log(`stdin 关闭，剩余缓冲区=${stdinBuffer.length} 字节`)
+    // 处理可能残留的最后一条消息
+    if (stdinBuffer.length >= 4) {
+      const { messages } = parseMessages(stdinBuffer)
+      for (const msg of messages) {
+        handleMessage(msg)
+      }
+    }
     process.exit(0)
   })
+
   process.stdin.resume()
 } else {
   app.whenReady().then(() => {

@@ -26,7 +26,7 @@ const emit = defineEmits<{ (e: 'close'): void }>()
     >
       <div class="bm-modal__header">
         <span class="bm-modal__title">{{ title }}</span>
-        <BaseButton variant="ghost" size="icon" @click="emit('close')">✖</BaseButton>
+        <BaseButton size="icon" @click="emit('close')">✖</BaseButton>
       </div>
       <slot />
       <div v-if="$slots.footer" class="bm-modal__footer">

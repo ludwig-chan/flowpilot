@@ -156,7 +156,6 @@ function onDeleteBranchChild(condChildId: string, branch: 'if' | 'else', childId
           <div class="elm-child-row">
             <BaseButton
               v-if="child.type === 'condition'"
-              variant="ghost"
               class="elm-cond-toggle"
               :title="expandedConditions.has(child.id) ? '折叠分支' : '展开分支'"
               @click="toggleCondExpand(child.id)"
@@ -166,13 +165,12 @@ function onDeleteBranchChild(condChildId: string, branch: 'if' | 'else', childId
             <div class="elm-child-actions">
               <BaseButton
                 v-if="child.selector || child.type === 'call_flow' || child.type === 'condition'"
-                variant="ghost"
                 size="icon"
                 class="elm-child-btn"
                 title="编辑"
                 @click="onEditChild(ci)"
               >✎</BaseButton>
-              <BaseButton variant="ghost" size="icon" class="elm-child-btn elm-child-btn--del" title="删除" @click="onDeleteChild(ci)">✖</BaseButton>
+              <BaseButton size="icon" class="elm-child-btn elm-child-btn--del" title="删除" @click="onDeleteChild(ci)">✖</BaseButton>
             </div>
           </div>
 
@@ -191,8 +189,8 @@ function onDeleteBranchChild(condChildId: string, branch: 'if' | 'else', childId
                     <span class="elm-cond-child-card__label">{{ bc.label }}</span>
                   </div>
                   <div class="elm-cond-child-card__actions">
-                    <BaseButton v-if="bc.selector || bc.type === 'call_flow'" variant="ghost" size="icon" class="elm-child-btn" title="编辑" @click="onEditBranchChild(child.id, 'if', bci)">✎</BaseButton>
-                    <BaseButton variant="ghost" size="icon" class="elm-child-btn elm-child-btn--del" title="删除" @click="onDeleteBranchChild(child.id, 'if', bci)">✖</BaseButton>
+                    <BaseButton v-if="bc.selector || bc.type === 'call_flow'" size="icon" class="elm-child-btn" title="编辑" @click="onEditBranchChild(child.id, 'if', bci)">✎</BaseButton>
+                    <BaseButton size="icon" class="elm-child-btn elm-child-btn--del" title="删除" @click="onDeleteBranchChild(child.id, 'if', bci)">✖</BaseButton>
                   </div>
                 </div>
               </div>
@@ -217,8 +215,8 @@ function onDeleteBranchChild(condChildId: string, branch: 'if' | 'else', childId
                     <span class="elm-cond-child-card__label">{{ bc.label }}</span>
                   </div>
                   <div class="elm-cond-child-card__actions">
-                    <BaseButton v-if="bc.selector || bc.type === 'call_flow'" variant="ghost" size="icon" class="elm-child-btn" title="编辑" @click="onEditBranchChild(child.id, 'else', bci)">✎</BaseButton>
-                    <BaseButton variant="ghost" size="icon" class="elm-child-btn elm-child-btn--del" title="删除" @click="onDeleteBranchChild(child.id, 'else', bci)">✖</BaseButton>
+                    <BaseButton v-if="bc.selector || bc.type === 'call_flow'" size="icon" class="elm-child-btn" title="编辑" @click="onEditBranchChild(child.id, 'else', bci)">✎</BaseButton>
+                    <BaseButton size="icon" class="elm-child-btn elm-child-btn--del" title="删除" @click="onDeleteBranchChild(child.id, 'else', bci)">✖</BaseButton>
                   </div>
                 </div>
               </div>

@@ -146,7 +146,6 @@ function tryAction() {
         <code class="action-modal__sel-code" :title="displaySel">{{ displaySel }}</code>
         <span v-if="isRelative" class="action-modal__rel-badge">相对路径</span>
         <BaseButton
-          variant="ghost"
           class="action-modal__repick-btn"
           title="重新选择元素"
           @click="emit('re-pick', selectedType, inputValue.trim() || undefined)"

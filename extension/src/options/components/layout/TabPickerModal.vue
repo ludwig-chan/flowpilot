@@ -21,7 +21,7 @@ const emit = defineEmits<{
       />
     </div>
     <template #footer>
-      <BaseButton variant="ghost" size="sm" @click="emit('cancel')">取消</BaseButton>
+      <BaseButton size="sm" @click="emit('cancel')">取消</BaseButton>
     </template>
   </BaseModal>
 </template>

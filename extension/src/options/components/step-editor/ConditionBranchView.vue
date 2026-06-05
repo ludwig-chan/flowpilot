@@ -74,10 +74,10 @@ const emit = defineEmits<{
           <BaseButton size="sm" class="cond-branch__add-btn" @click="toggle">＋ 添加步骤 {{ isOpen ? '▴' : '▾' }}</BaseButton>
         </template>
         <template #default="{ close }">
-          <BaseButton variant="ghost" class="cbv-item" @click="emit('open-picker', step.id, 'if'); close()">🖱 选择元素</BaseButton>
-          <BaseButton variant="ghost" class="cbv-item" @click="emit('add-condition', step.id, 'if'); close()">🔀 条件判断</BaseButton>
-          <BaseButton variant="ghost" class="cbv-item" @click="emit('add-call-flow', step.id, 'if'); close()">▶ 嵌入流程</BaseButton>
-          <BaseButton variant="ghost" class="cbv-item" @click="emit('add-delay', step.id, 'if'); close()">⏱ 等待</BaseButton>
+          <BaseButton @click="emit('open-picker', step.id, 'if'); close()">选择元素</BaseButton>
+          <BaseButton @click="emit('add-condition', step.id, 'if'); close()">条件判断</BaseButton>
+          <BaseButton @click="emit('add-call-flow', step.id, 'if'); close()">嵌入流程</BaseButton>
+          <BaseButton @click="emit('add-delay', step.id, 'if'); close()">等待</BaseButton>
         </template>
       </DropdownMenu>
     </div>
@@ -126,10 +126,10 @@ const emit = defineEmits<{
           <BaseButton size="sm" class="cond-branch__add-btn" @click="toggle">＋ 添加步骤 {{ isOpen ? '▴' : '▾' }}</BaseButton>
         </template>
         <template #default="{ close }">
-          <BaseButton variant="ghost" class="cbv-item" @click="emit('open-picker', step.id, 'else'); close()">🖱 选择元素</BaseButton>
-          <BaseButton variant="ghost" class="cbv-item" @click="emit('add-condition', step.id, 'else'); close()">🔀 条件判断</BaseButton>
-          <BaseButton variant="ghost" class="cbv-item" @click="emit('add-call-flow', step.id, 'else'); close()">▶ 嵌入流程</BaseButton>
-          <BaseButton variant="ghost" class="cbv-item" @click="emit('add-delay', step.id, 'else'); close()">⏱ 等待</BaseButton>
+          <BaseButton @click="emit('open-picker', step.id, 'else'); close()">选择元素</BaseButton>
+          <BaseButton @click="emit('add-condition', step.id, 'else'); close()">条件判断</BaseButton>
+          <BaseButton @click="emit('add-call-flow', step.id, 'else'); close()">嵌入流程</BaseButton>
+          <BaseButton @click="emit('add-delay', step.id, 'else'); close()">等待</BaseButton>
         </template>
       </DropdownMenu>
     </div>
@@ -156,12 +156,6 @@ const emit = defineEmits<{
     &--drop-active { color: #89b4fa; background: rgba(137, 180, 250, 0.1); border-radius: 3px; padding: 4px 8px; }
   }
   &__add-btn { align-self: flex-start; }
-}
-.cbv-item {
-  background: none; border: none; color: $color-text; cursor: pointer;
-  padding: 6px 10px; border-radius: $radius; text-align: left;
-  font-size: 12px; white-space: nowrap; width: 100%;
-  &:hover { background: $color-surface-2; }
 }
 .branch-insert-line {
   height: 2px; background: transparent; border-radius: 1px; transition: background 0.15s;

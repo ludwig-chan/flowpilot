@@ -130,7 +130,7 @@ function onTestClick(node: SerializedDomNode) {
       <!-- ── 标题栏 ── -->
       <div class="epd-panel__header">
         <span class="epd-panel__title">{{ title }}</span>
-        <BaseButton variant="ghost" size="icon" @click="emit('close')">✖</BaseButton>      </div>
+        <BaseButton size="icon" @click="emit('close')">✖</BaseButton>      </div>
 
       <!-- ── 可选：标题栏下方内容（如 3 步卡片面板） ── -->
       <slot />

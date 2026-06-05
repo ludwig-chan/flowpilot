@@ -52,7 +52,7 @@ function handleChange(node: FlowNode, checked: boolean) {
             :model-value="getState(node) === 'all' ? true : getState(node) === 'some' ? 'indeterminate' : false"
             @update:model-value="handleChange(node, $event)"
           />
-          <BaseButton variant="ghost" class="cft-arrow" @click.stop="toggle(node.id)">
+          <BaseButton class="cft-arrow" @click.stop="toggle(node.id)">
             {{ collapsed.has(node.id) ? '▶' : '▼' }}
           </BaseButton>
           <span class="cft-icon">📁</span>
@@ -101,19 +101,6 @@ function handleChange(node: FlowNode, checked: boolean) {
 }
 .cft-row:hover { background: #313244; }
 
-.cft-arrow {
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 9px;
-  color: #6c7086;
-  width: 12px;
-  flex-shrink: 0;
-  padding: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
 .cft-arrow-placeholder { width: 12px; flex-shrink: 0; }
 
 .cft-icon         { font-size: 13px; flex-shrink: 0; }

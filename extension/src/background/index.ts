@@ -112,21 +112,64 @@ const BROADCAST_TO_OPTIONS: Set<string> = new Set([
 ])
 
 function handleSaveScreenshot(msg: any, _s: any, sr: (r: unknown) => void): true {
-  console.log('[SAVE_SCREENSHOT] 开始调用 native host，文件名：', msg.filename, 'dataUrl长度：', msg.dataUrl?.length ?? 0)
-  chrome.runtime.sendNativeMessage(
-    'com.flowpilot.host',
-    { type: 'SAVE_SCREENSHOT', dataUrl: msg.dataUrl, filename: msg.filename },
-    (response) => {
-      if (chrome.runtime.lastError) {
-        console.error('[SAVE_SCREENSHOT] native host 错误：', chrome.runtime.lastError.message)
-        console.error('[SAVE_SCREENSHOT] 请检查 %LOCALAPPDATA%/FlowPilot/native-host-debug.log')
-        sr({ ok: false, error: chrome.runtime.lastError.message })
-      } else {
-        console.log('[SAVE_SCREENSHOT] native host 响应：', response)
-        sr(response ?? { ok: false, error: 'no response' })
-      }
+  const dataUrl: string = msg.dataUrl ?? ''
+  const filename: string = msg.filename ?? 'screenshot.png'
+  console.log('[SAVE_SCREENSHOT] 开始调用 native host（分块传输），文件名：', filename, 'dataUrl长度：', dataUrl.length)
+
+  const CHUNK_SIZE = 900_000 // < 1MB，留余量给 JSON 包装
+  const totalChunks = Math.ceil(dataUrl.length / CHUNK_SIZE)
+
+  let responded = false
+  const respond = (r: unknown): void => {
+    if (!responded) { responded = true; sr(r) }
+  }
+
+  // 超时保护：30 秒无响应则断开
+  const timeout = setTimeout(() => {
+    console.error('[SAVE_SCREENSHOT] 超时（30秒无响应）')
+    try { port.disconnect() } catch { /* ignore */ }
+    respond({ ok: false, error: 'native host 超时（30秒）' })
+  }, 30_000)
+
+  let port: chrome.runtime.Port
+  try {
+    port = chrome.runtime.connectNative('com.flowpilot.host')
+  } catch (err) {
+    console.error('[SAVE_SCREENSHOT] connectNative 失败：', err)
+    respond({ ok: false, error: String(err) })
+    return true
+  }
+
+  port.onMessage.addListener((response: any) => {
+    clearTimeout(timeout)
+    console.log('[SAVE_SCREENSHOT] native host 响应：', response)
+    respond(response ?? { ok: false, error: 'no response' })
+  })
+
+  port.onDisconnect.addListener(() => {
+    clearTimeout(timeout)
+    if (!responded) {
+      const errMsg = chrome.runtime.lastError?.message ?? '连接断开'
+      console.error('[SAVE_SCREENSHOT] native host 连接断开：', errMsg)
+      console.error('[SAVE_SCREENSHOT] 请检查 %LOCALAPPDATA%/FlowPilot/native-host-debug.log')
+      respond({ ok: false, error: errMsg })
     }
-  )
+  })
+
+  // 发送消息序列：START → CHUNK ×N → END
+  port.postMessage({ type: 'SAVE_SCREENSHOT_START', filename, totalChunks })
+
+  for (let i = 0; i < totalChunks; i++) {
+    port.postMessage({
+      type: 'SAVE_SCREENSHOT_CHUNK',
+      index: i,
+      data: dataUrl.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE),
+    })
+  }
+
+  port.postMessage({ type: 'SAVE_SCREENSHOT_END' })
+  console.log(`[SAVE_SCREENSHOT] 已发送 ${totalChunks} 个分块，等待响应...`)
+
   return true
 }
 

@@ -249,12 +249,12 @@ provide(STEP_EDITOR_MODALS_KEY, {
           <BaseButton size="sm" variant="primary" @click="toggle">＋ 添加步骤 {{ isOpen ? '▴' : '▾' }}</BaseButton>
         </template>
         <template #default="{ close }">
-          <BaseButton variant="ghost" class="dm-item" @click="openPicker(); close()">🖱 选择元素</BaseButton>
-          <BaseButton variant="ghost" class="dm-item" @click="addElementBranch(); close()">🔀 元素分支</BaseButton>
-          <BaseButton variant="ghost" class="dm-item" @click="openSmartLoopPicker(); close()">🔁 依次点击列表项</BaseButton>
-          <BaseButton variant="ghost" class="dm-item" @click="addConditionStep(); close()">🔀 条件判断</BaseButton>
-          <BaseButton variant="ghost" class="dm-item" @click="addCallFlowStep(); close()">▶ 嵌入流程</BaseButton>
-          <BaseButton variant="ghost" class="dm-item" @click="addDelayStep(); close()">⏱ 等待</BaseButton>
+          <BaseButton @click="openPicker(); close()">选择元素</BaseButton>
+          <BaseButton @click="addElementBranch(); close()">元素分支</BaseButton>
+          <BaseButton @click="openSmartLoopPicker(); close()">逐项点击</BaseButton>
+          <BaseButton @click="addConditionStep(); close()">条件判断</BaseButton>
+          <BaseButton @click="addCallFlowStep(); close()">嵌入流程</BaseButton>
+          <BaseButton @click="addDelayStep(); close()">等待</BaseButton>
         </template>
       </DropdownMenu>
     </div>
@@ -295,20 +295,6 @@ provide(STEP_EDITOR_MODALS_KEY, {
   justify-content: flex-end;
 }
 .step-add-btn { flex: 1; min-width: 90px; justify-content: center; }
-
-.dm-item {
-  background: none;
-  border: none;
-  color: #cdd6f4;
-  cursor: pointer;
-  padding: 6px 10px;
-  border-radius: 4px;
-  text-align: left;
-  font-size: 12px;
-  white-space: nowrap;
-  width: 100%;
-  &:hover { background: #313244; }
-}
 
 
 </style>
