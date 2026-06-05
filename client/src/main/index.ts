@@ -113,16 +113,36 @@ function registerNativeHost(): void {
   try {
     const configDir = join(app.getPath('userData'), 'flowpilot')
     mkdirSync(configDir, { recursive: true })
+
+    let exePath = process.execPath
+
+    // ── 便携版检测 ──────────────────────────────────────────────
+    // 便携版通过 NSIS 启动器解压到临时目录运行，process.execPath 指向临时路径。
+    // NSIS 启动器不会转发 stdin/stdout，所以不能直接注册便携版 exe。
+    // 解决方案：将解压后的完整应用复制到稳定位置，注册内部 exe。
+    const portableExe = process.env['PORTABLE_EXECUTABLE_FILE']
+    const isTempPath = exePath.toLowerCase().includes('\\temp\\') ||
+                       exePath.toLowerCase().includes('\\tmp\\')
+
+    if (portableExe || isTempPath) {
+      const stableDir = join(os.homedir(), 'AppData', 'Local', 'FlowPilot', 'bin')
+      const sourceDir = join(exePath, '..')
+      mkdirSync(stableDir, { recursive: true })
+      cpSync(sourceDir, stableDir, { recursive: true })
+      exePath = join(stableDir, 'FlowPilotClient.exe')
+      console.log('[registerNativeHost] 便携版：已复制到稳定位置', stableDir)
+    }
+
     const manifestPath = join(configDir, 'native-host.json')
     writeFileSync(manifestPath, JSON.stringify({
       name: NATIVE_HOST_NAME,
       description: 'FlowPilot Native Messaging Host',
-      path: process.execPath,
+      path: exePath,
       type: 'stdio',
       allowed_origins: [`chrome-extension://${EXTENSION_ID}/`]
     }, null, 2), 'utf-8')
     console.log('[registerNativeHost] manifest 路径：', manifestPath)
-    console.log('[registerNativeHost] EXE 路径：', process.execPath)
+    console.log('[registerNativeHost] EXE 路径：', exePath)
     execSync(`reg add "HKCU\\Software\\Google\\Chrome\\NativeMessagingHosts\\${NATIVE_HOST_NAME}" /ve /t REG_SZ /d "${manifestPath}" /f`, { stdio: 'ignore' })
     execSync(`reg add "HKCU\\Software\\Microsoft\\Edge\\NativeMessagingHosts\\${NATIVE_HOST_NAME}" /ve /t REG_SZ /d "${manifestPath}" /f`, { stdio: 'ignore' })
     console.log('[registerNativeHost] 注册表写入成功')
