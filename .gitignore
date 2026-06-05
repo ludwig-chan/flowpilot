@@ -4,6 +4,7 @@ node_modules/
 client/dist/
 client/out/
 client/node_modules/
+client/resources/extension/
 extension/dist/
 extension/node_modules/
 
