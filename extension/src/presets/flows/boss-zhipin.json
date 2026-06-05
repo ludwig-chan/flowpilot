@@ -1,0 +1,57 @@
+{
+  "name": "BOSS直聘 - 查看简历截图",
+  "description": "自动打开在线简历、截图保存、关闭弹窗",
+  "tags": ["招聘", "BOSS直聘", "简历"],
+  "version": 1,
+  "exportedAt": "2026-06-05T09:13:53.726Z",
+  "nodes": [
+    {
+      "id": "fd_1780650458249_nq8zy",
+      "kind": "folder",
+      "name": "BOSS直聘",
+      "children": [
+        {
+          "kind": "flow",
+          "id": "bf_1780635596137_sll6d",
+          "name": "查看详情",
+          "steps": [
+            {
+              "id": "step_1780650518593_2nh",
+              "type": "click",
+              "label": "打开简历",
+              "selector": {
+                "cssSelector": "div#container > div:nth-child(1) > div > div:nth-child(2) > div:nth-child(2) > div:nth-child(2) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:nth-child(2) > a",
+                "text": "在线简历"
+              }
+            },
+            {
+              "id": "step_1780635619254_wu1",
+              "label": "截图",
+              "selector": {
+                "cssSelector": "canvas#resume",
+                "iframeSelector": "body > div:nth-child(18) > div:nth-child(1) > div > div > div > div > div:nth-child(1) > div:nth-child(1) > iframe"
+              },
+              "type": "save_canvas"
+            },
+            {
+              "id": "step_1780650539280_v9e",
+              "type": "click",
+              "label": "关闭简历",
+              "selector": {
+                "cssSelector": "body > div:nth-child(18) > div:nth-child(1) > div > div > div > div > div:nth-child(1) > div:nth-child(2) > div > button",
+                "text": "继续沟通"
+              }
+            }
+          ],
+          "pinnedInMenu": true
+        },
+        {
+          "id": "bf_1780650562538_qeap8",
+          "kind": "flow",
+          "name": "依次点击",
+          "steps": []
+        }
+      ]
+    }
+  ]
+}
