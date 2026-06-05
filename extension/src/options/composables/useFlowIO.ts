@@ -3,8 +3,6 @@ import type { useFlowStore } from '../stores/useFlowStore'
 import { showAlert } from '@shared/utils/dialog'
 import { filterNodesByIds } from '../stores/useFlowStore'
 import type { ExportPayload } from '../stores/useFlowStore'
-import { BUILTIN_PRESETS } from '@/presets/index'
-import type { BuiltinPreset } from '@/presets/index'
 
 type FlowStore = ReturnType<typeof useFlowStore>
 
@@ -34,17 +32,8 @@ export function useFlowIO(flowStore: FlowStore) {
     showImportModal.value = false
   }
 
-  // ── 预设库 ────────────────────────────────────────────────────────
-  const showPresetsModal = ref(false)
-
-  async function onInstallPreset(preset: BuiltinPreset) {
-    await flowStore.importInto(preset.payload as Parameters<typeof flowStore.importInto>[0], undefined)
-  }
-
   return {
     showExportModal, handleExportSelected,
     showImportModal, handleImportConfirm,
-    showPresetsModal, onInstallPreset,
-    BUILTIN_PRESETS,
   }
 }

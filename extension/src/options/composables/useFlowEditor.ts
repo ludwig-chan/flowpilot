@@ -33,7 +33,16 @@ export function useFlowEditor(flowStore: FlowStore, editingFlow: Ref<LocalFlow |
 
   async function saveFlow() {
     if (!editingFlow.value) return
-    await flowStore.update(editingFlow.value.id, {
+    // 如果是内置预设，先 fork 到用户区
+    let flowId = editingFlow.value.id
+    if (!flowStore.tree.find(n => n.id === flowId || (n.kind === 'folder' && n.children.some(c => c.id === flowId)))) {
+      const forked = await flowStore.forkPresetNode(flowId)
+      if (forked && forked.kind === 'flow') {
+        flowId = forked.id
+        editingFlow.value.id = flowId
+      }
+    }
+    await flowStore.update(flowId, {
       name:           editingFlow.value.name,
       steps:          editingFlow.value.steps,
       stepDelayLevel: editingFlow.value.stepDelayLevel,

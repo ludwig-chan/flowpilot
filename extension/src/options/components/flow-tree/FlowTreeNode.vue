@@ -36,17 +36,20 @@ function toggle(id: string) {
       <!-- ── 分组 ── -->
       <template v-if="node.kind === 'folder'">
         <div
-          class="tree-row tree-folder"
+          :class="['tree-row', 'tree-folder', node.builtin && 'tree-row--builtin']"
           :style="{ paddingLeft: `${(depth ?? 0) * 14 + 8}px` }"
           @click="toggle(node.id)"
         >
           <span class="tree-arrow">{{ collapsed.has(node.id) ? '▶' : '▼' }}</span>
-          <span class="tree-icon">📁</span>
+          <span class="tree-icon">{{ node.builtin ? '📦' : '📁' }}</span>
           <span class="tree-name">{{ node.name }}</span>
+          <span v-if="node.builtin" class="tree-badge tree-badge--preset">预设</span>
           <span class="tree-count">{{ (node as FlowFolder).children.length }}</span>
-          <BaseButton variant="ghost" class="tree-btn" @click.stop="emit('edit', node.id)" title="编辑">✏️</BaseButton>
-          <BaseButton variant="ghost" class="tree-btn" @click.stop="emit('createIn', node.id)" title="在此分组内新建">＋</BaseButton>
-          <BaseButton variant="ghost" class="tree-btn tree-btn--del" @click.stop="emit('delete', node.id)" title="删除分组">🗑</BaseButton>
+          <template v-if="!node.builtin">
+            <BaseButton variant="ghost" class="tree-btn" @click.stop="emit('edit', node.id)" title="编辑">✏️</BaseButton>
+            <BaseButton variant="ghost" class="tree-btn" @click.stop="emit('createIn', node.id)" title="在此分组内新建">＋</BaseButton>
+            <BaseButton variant="ghost" class="tree-btn tree-btn--del" @click.stop="emit('delete', node.id)" title="删除分组">🗑</BaseButton>
+          </template>
         </div>
         <!-- 递归子节点 -->
         <FlowTreeNode
@@ -66,26 +69,29 @@ function toggle(id: string) {
       <!-- ── 流程 ── -->
       <div
         v-else
-        :class="['tree-row', 'tree-flow', activeFlowId === node.id && 'tree-flow--active']"
+        :class="['tree-row', 'tree-flow', activeFlowId === node.id && 'tree-flow--active', node.builtin && 'tree-row--builtin']"
         :style="{ paddingLeft: `${(depth ?? 0) * 14 + 8}px` }"
         @click="emit('open', node as LocalFlow)"
       >
         <span class="tree-icon tree-icon--flow">▶</span>
         <span class="tree-name">{{ node.name }}</span>
+        <span v-if="node.builtin" class="tree-badge tree-badge--preset">预设</span>
         <span
           v-if="brokenFlowIds?.has(node.id)"
           class="tree-warn"
           title="此流程包含失效的嵌入步骤"
         >⚠</span>
         <span class="tree-count">{{ (node as LocalFlow).steps.length }} 步</span>
-        <BaseButton
-          variant="ghost"
-          :class="['tree-btn', 'tree-btn--pin', (node as LocalFlow).pinnedInMenu && 'tree-btn--pin--active']"
-          :title="(node as LocalFlow).pinnedInMenu ? '取消钉选（从悬浮菜单移除）' : '钉选到悬浮菜单'"
-          @click.stop="emit('pin', node.id)"
-        >{{ (node as LocalFlow).pinnedInMenu ? '📌' : '📍' }}</BaseButton>
-        <BaseButton variant="ghost" class="tree-btn" @click.stop="emit('edit', node.id)" title="编辑">✏️</BaseButton>
-        <BaseButton variant="ghost" class="tree-btn tree-btn--del" @click.stop="emit('delete', node.id)" title="删除流程">🗑</BaseButton>
+        <template v-if="!node.builtin">
+          <BaseButton
+            variant="ghost"
+            :class="['tree-btn', 'tree-btn--pin', (node as LocalFlow).pinnedInMenu && 'tree-btn--pin--active']"
+            :title="(node as LocalFlow).pinnedInMenu ? '取消钉选（从悬浮菜单移除）' : '钉选到悬浮菜单'"
+            @click.stop="emit('pin', node.id)"
+          >{{ (node as LocalFlow).pinnedInMenu ? '📌' : '📍' }}</BaseButton>
+          <BaseButton variant="ghost" class="tree-btn" @click.stop="emit('edit', node.id)" title="编辑">✏️</BaseButton>
+          <BaseButton variant="ghost" class="tree-btn tree-btn--del" @click.stop="emit('delete', node.id)" title="删除流程">🗑</BaseButton>
+        </template>
       </div>
 
     </template>
@@ -100,12 +106,16 @@ function toggle(id: string) {
 }
 .tree-row:hover { background: #313244; }
 .tree-flow--active { background: #1a3a5f !important; }
+.tree-row--builtin { opacity: 0.7; }
+.tree-row--builtin:hover { background: #2a2b3a; }
 
 .tree-arrow { font-size: 9px; color: #6c7086; width: 10px; flex-shrink: 0; }
 .tree-icon  { font-size: 13px; flex-shrink: 0; }
 .tree-icon--flow { font-size: 10px; color: #a6e3a1; }
 .tree-name  { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
 .tree-count { font-size: 11px; color: #6c7086; flex-shrink: 0; }
+.tree-badge { font-size: 10px; padding: 1px 5px; border-radius: 3px; flex-shrink: 0; }
+.tree-badge--preset { background: #45475a; color: #bac2de; }
 
 .tree-btn {
   background: none; border: none; cursor: pointer; font-size: 12px;

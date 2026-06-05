@@ -32,6 +32,8 @@ export function useFlowTreeActions(flowStore: FlowStore, editingFlow: Ref<LocalF
   async function deleteFlowOrFolder(id: string) {
     const node = findNodeInTree(flowStore.tree, id)
     if (!node) return
+    // 内置预设不可删除
+    if (node.builtin) return
     const childCount = node.kind === 'folder' ? (node as FlowFolder).children.length : 0
     const msg = node.kind === 'folder' && childCount > 0
       ? `确定删除分组「${node.name}」及其中所有内容（${childCount} 项）？`
@@ -49,8 +51,24 @@ export function useFlowTreeActions(flowStore: FlowStore, editingFlow: Ref<LocalF
   const editingNodeParentId = ref<string | undefined>(undefined)
 
   function handleEdit(id: string) {
-    const node = findNodeInTree(flowStore.tree, id)
-    if (!node) return
+    let node = findNodeInTree(flowStore.tree, id)
+    // 如果是内置预设节点，先 fork 到用户区
+    if (!node) {
+      const displayNode = findNodeInTree(flowStore.displayTree, id)
+      if (displayNode?.builtin) {
+        // 异步 fork，然后编辑 fork 后的节点
+        flowStore.forkPresetNode(id).then(forked => {
+          if (!forked) return
+          editingNodeId.value       = forked.id
+          editingNodeName.value     = forked.name
+          editingNodeKind.value     = forked.kind
+          editingNodeParentId.value = flowStore.getParentFolderId(forked.id)
+          showEditModal.value       = true
+        })
+        return
+      }
+      return
+    }
     editingNodeId.value       = id
     editingNodeName.value     = node.name
     editingNodeKind.value     = node.kind

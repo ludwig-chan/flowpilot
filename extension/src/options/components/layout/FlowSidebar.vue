@@ -7,7 +7,6 @@ import { useFlowIO } from '../../composables/useFlowIO'
 import FlowTreeNode from '../flow-tree/FlowTreeNode.vue'
 import CreateNodeModal from '../step-editor/CreateNodeModal.vue'
 import EditNodeModal from '../step-editor/EditNodeModal.vue'
-import PresetsModal from '../io/PresetsModal.vue'
 import ExportModal from '../io/ExportModal.vue'
 import ImportModal from '../io/ImportModal.vue'
 
@@ -26,8 +25,6 @@ const {
 const {
   showExportModal, handleExportSelected,
   showImportModal, handleImportConfirm,
-  showPresetsModal, onInstallPreset,
-  BUILTIN_PRESETS,
 } = useFlowIO(flowStore)
 </script>
 
@@ -35,12 +32,6 @@ const {
   <div class="panel">
     <div class="panel__toolbar">
       <span class="panel__title">已保存流程</span>
-      <BaseButton
-        v-if="BUILTIN_PRESETS.length > 0"
-        size="sm"
-        title="浏览内置预设库"
-        @click="showPresetsModal = true"
-      >预设</BaseButton>
       <BaseButton size="sm" title="导入流程" @click="showImportModal = true">导入</BaseButton>
       <BaseButton size="sm" title="导出流程" @click="showExportModal = true">导出</BaseButton>
       <BaseButton size="sm" variant="primary" @click="openCreateModal()">新增</BaseButton>
@@ -48,7 +39,7 @@ const {
 
     <div class="flow-list">
       <FlowTreeNode
-        :nodes="flowStore.tree"
+        :nodes="flowStore.displayTree"
         :active-flow-id="editingFlow?.id"
         :broken-flow-ids="flowStore.brokenFlowIds"
         @open="es.openFlow"
@@ -57,7 +48,7 @@ const {
         @edit="handleEdit"
         @pin="(id: string) => flowStore.togglePin(id)"
       />
-      <div v-if="flowStore.tree.length === 0 && !showCreateModal" class="empty-hint">暂无流程，点击"新增"创建</div>
+      <div v-if="flowStore.displayTree.length === 0 && !showCreateModal" class="empty-hint">暂无流程，点击"新增"创建</div>
     </div>
   </div>
 
@@ -81,13 +72,6 @@ const {
       :tree="flowStore.tree"
       @confirm="onConfirmEdit"
       @cancel="showEditModal = false"
-    />
-
-    <!-- 预设库弹窗 -->
-    <PresetsModal
-      v-if="showPresetsModal"
-      @install="onInstallPreset"
-      @close="showPresetsModal = false"
     />
 
     <!-- 导出弹窗 -->

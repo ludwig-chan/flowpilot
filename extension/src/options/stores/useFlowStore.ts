@@ -7,6 +7,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { FlowStep, StepDelayLevel, FlowTrigger } from '@shared/types/flow'
 import { genId } from '@shared/utils/genId'
+import { BUILTIN_PRESETS } from '@/presets/index'
 
 export interface LocalFlow {
   id:               string
@@ -19,6 +20,7 @@ export interface LocalFlow {
   pinnedInMenu?:    boolean               // 是否钉选到悬浮按钮菜单
   trigger?:         FlowTrigger           // 自动触发配置
   targetTabId?:     number                // 上次运行绑定的目标 Tab ID
+  builtin?:         boolean               // 内置预设标记（只读）
 }
 
 export interface FlowFolder {
@@ -26,6 +28,7 @@ export interface FlowFolder {
   kind:     'folder'
   name:     string
   children: FlowNode[]
+  builtin?: boolean                       // 内置预设标记（只读）
 }
 
 export type FlowNode = LocalFlow | FlowFolder
@@ -267,6 +270,36 @@ export const useFlowStore = defineStore('flows', () => {
     return broken
   })
 
-  return { tree, loading, load, saveFlow, saveFolder, update, remove, togglePin, moveNode, getParentFolderId, allFlows, allFolders, exportNode, exportSelected, importInto, renameNode, brokenFlowIds }
+  // ── 内置预设合并显示 ──────────────────────────────────────────────
+  /** 递归标记节点树为 builtin */
+  function markBuiltin(nodes: FlowNode[]): FlowNode[] {
+    return nodes.map(n => {
+      if (n.kind === 'folder') {
+        return { ...n, builtin: true, children: markBuiltin(n.children) } as FlowFolder
+      }
+      return { ...n, builtin: true } as LocalFlow
+    })
+  }
+
+  /** 合并用户流程 + 内置预设的展示树 */
+  const displayTree = computed<FlowNode[]>(() => {
+    const presetNodes: FlowNode[] = BUILTIN_PRESETS.flatMap(p =>
+      markBuiltin(JSON.parse(JSON.stringify(p.payload.nodes)) as FlowNode[])
+    )
+    return [...tree.value, ...presetNodes]
+  })
+
+  /** 将内置预设节点 fork 到用户区（深拷贝 + 新 ID），返回新节点 */
+  async function forkPresetNode(presetId: string): Promise<FlowNode | null> {
+    const presetNode = findNode(displayTree.value, presetId)
+    if (!presetNode || !presetNode.builtin) return null
+
+    const cloned = cloneWithNewIds([presetNode])[0]
+    tree.value.push(cloned)
+    await persist()
+    return cloned
+  }
+
+  return { tree, loading, load, saveFlow, saveFolder, update, remove, togglePin, moveNode, getParentFolderId, allFlows, allFolders, exportNode, exportSelected, importInto, renameNode, brokenFlowIds, displayTree, forkPresetNode }
 })
 
