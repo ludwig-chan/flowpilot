@@ -135,6 +135,6 @@ console.log(`   输出目录：client/dist/`)
 // ── 自动启动 ──────────────────────────────────────────────────────────────────
 
 const { spawn } = await import('child_process')
-const exePath = join(clientDir, 'dist', `flowpilot-client-${finalVersion}-portable.exe`)
+const exePath = join(clientDir, 'dist', 'FlowPilotClient-portable.exe')
 console.log(`\n🚀 启动：${exePath}`)
 spawn(exePath, [], { detached: true, stdio: 'ignore' }).unref()
