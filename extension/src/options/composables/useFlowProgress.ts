@@ -9,7 +9,7 @@ export interface ProgressEntry {
   label:         string
   status:        'running' | 'done' | 'error'
   loopProgress?: { index: number; total: number }
-  currentChild?: string
+  childStack?:   Record<number, string>
 }
 
 export function useFlowProgress(bridge: Bridge) {
@@ -44,17 +44,26 @@ export function useFlowProgress(bridge: Bridge) {
       if (event.depth === 0) {
         entries.value.push({ stepId: event.stepId, label: event.label, status: 'running' })
       } else {
-        // 子步骤：更新最近一个 running 顶层条目的 currentChild
+        // 子步骤：按 depth 写入最近一个 running 顶层条目的 childStack
         const parent = [...entries.value].reverse().find(e => e.status === 'running')
-        if (parent) parent.currentChild = event.label
+        if (parent) {
+          parent.childStack = { ...parent.childStack, [event.depth]: event.label }
+        }
       }
     } else if (event.type === 'step_done') {
       if (event.depth === 0) {
         const entry = [...entries.value].reverse().find(e => e.stepId === event.stepId && e.status === 'running')
-        if (entry) { entry.status = 'done'; entry.currentChild = undefined }
+        if (entry) { entry.status = 'done'; entry.childStack = undefined }
       } else {
+        // 清除 >= 当前 depth 的所有层级（该层及其子层已完成）
         const parent = [...entries.value].reverse().find(e => e.status === 'running')
-        if (parent) parent.currentChild = undefined
+        if (parent?.childStack) {
+          const next: Record<number, string> = {}
+          for (const [k, v] of Object.entries(parent.childStack)) {
+            if (Number(k) < event.depth) next[Number(k)] = v
+          }
+          parent.childStack = Object.keys(next).length > 0 ? next : undefined
+        }
       }
     } else if (event.type === 'loop_progress') {
       const entry = [...entries.value].reverse().find(e => e.stepId === event.stepId && e.status === 'running')
@@ -67,11 +76,11 @@ export function useFlowProgress(bridge: Bridge) {
       handleStepEvent(evt.event)
     }
     if (evt.type === MSG.FLOW_DONE_FROM_TAB) {
-      entries.value.forEach(e => { if (e.status === 'running') { e.status = 'done'; e.currentChild = undefined } })
+      entries.value.forEach(e => { if (e.status === 'running') { e.status = 'done'; e.childStack = undefined } })
       stopTimer()
     }
-    if (evt.type === MSG.FLOW_ERROR_FROM_TAB) {
-      entries.value.forEach(e => { if (e.status === 'running') { e.status = 'error'; e.currentChild = undefined } })
+    if (evt.type === 'FLOW_ERROR_FROM_TAB') {
+      entries.value.forEach(e => { if (e.status === 'running') { e.status = 'error'; e.childStack = undefined } })
       stopTimer()
     }
   }

@@ -22,8 +22,8 @@ function createWindow(): BrowserWindow {
   const { width: sw, height: sh } = screen.getPrimaryDisplay().workAreaSize
 
   const win = new BrowserWindow({
-    width: Math.round(sw * 0.85),
-    height: Math.round(sh * 0.85),
+    width: Math.round(sw * 0.5),
+    height: Math.round(sh * 0.5),
     minWidth: 900,
     minHeight: 600,
     show: false,
@@ -121,9 +121,14 @@ function registerNativeHost(): void {
       type: 'stdio',
       allowed_origins: [`chrome-extension://${EXTENSION_ID}/`]
     }, null, 2), 'utf-8')
+    console.log('[registerNativeHost] manifest 路径：', manifestPath)
+    console.log('[registerNativeHost] EXE 路径：', process.execPath)
     execSync(`reg add "HKCU\\Software\\Google\\Chrome\\NativeMessagingHosts\\${NATIVE_HOST_NAME}" /ve /t REG_SZ /d "${manifestPath}" /f`, { stdio: 'ignore' })
     execSync(`reg add "HKCU\\Software\\Microsoft\\Edge\\NativeMessagingHosts\\${NATIVE_HOST_NAME}" /ve /t REG_SZ /d "${manifestPath}" /f`, { stdio: 'ignore' })
-  } catch { /* 静默忽略 */ }
+    console.log('[registerNativeHost] 注册表写入成功')
+  } catch (err) {
+    console.error('[registerNativeHost] 注册失败：', err)
+  }
 }
 
 if (isNativeHost) {

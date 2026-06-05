@@ -112,14 +112,16 @@ const BROADCAST_TO_OPTIONS: Set<string> = new Set([
 ])
 
 function handleSaveScreenshot(msg: any, _s: any, sr: (r: unknown) => void): true {
+  console.log('[SAVE_SCREENSHOT] 开始调用 native host，文件名：', msg.filename)
   chrome.runtime.sendNativeMessage(
     'com.flowpilot.host',
     { type: 'SAVE_SCREENSHOT', dataUrl: msg.dataUrl, filename: msg.filename },
     (response) => {
       if (chrome.runtime.lastError) {
-        // 客户端未运行，返回 error 信号让 content 降级处理
+        console.error('[SAVE_SCREENSHOT] native host 错误：', chrome.runtime.lastError.message)
         sr({ ok: false, error: chrome.runtime.lastError.message })
       } else {
+        console.log('[SAVE_SCREENSHOT] native host 响应：', response)
         sr(response ?? { ok: false, error: 'no response' })
       }
     }
@@ -212,6 +214,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 // captureVisibleTab 截的是窗口当前活跃 tab，若 Options 页面是活跃 tab 则会截错。
 // 解决方案：截图前临时激活目标 tab，截完后恢复原活跃 tab。
 // 裁剪在 content script 侧完成，避免 Service Worker 里 Image / FileReader 不可用的问题
+//
+// 注意：后台 tab（非活跃）的合成器是节流的，window.scrollTo 后不会立即生成新帧，
+// captureTab 会拿到旧帧（看起来"不会滚动"）。解决方法：截图前临时激活目标 tab，
+// 截完后恢复原活跃 tab，确保 Chromium 合成器为该 tab 生成最新帧。
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type !== MSG.CAPTURE_CANVAS) return false
 
