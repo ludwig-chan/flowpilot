@@ -17,6 +17,13 @@ watch(() => props.entries.length, async () => {
   await nextTick()
   if (bodyEl.value) bodyEl.value.scrollTop = bodyEl.value.scrollHeight
 })
+
+function getChildRows(entry: ProgressEntry): [number, string][] {
+  if (!entry.childStack) return []
+  return Object.entries(entry.childStack)
+    .map(([d, lbl]) => [Number(d), lbl] as [number, string])
+    .sort((a, b) => a[0] - b[0])
+}
 </script>
 
 <template>
@@ -39,23 +46,30 @@ watch(() => props.entries.length, async () => {
       <div
         v-for="entry in entries"
         :key="entry.stepId + entry.status"
-        class="progress-entry"
-        :class="`progress-entry--${entry.status}`"
+        class="progress-entry-group"
       >
-        <span class="progress-entry__icon">
-          <span v-if="entry.status === 'running'" class="progress-entry__spin">▶</span>
-          <span v-else-if="entry.status === 'done'">✅</span>
-          <span v-else-if="entry.status === 'error'">❌</span>
-        </span>
-        <span class="progress-entry__label">
-          {{ entry.label }}
-          <span v-if="entry.loopProgress" class="progress-entry__loop">
-            ({{ entry.loopProgress.index }}/{{ entry.loopProgress.total }})
+        <div class="progress-entry" :class="`progress-entry--${entry.status}`">
+          <span class="progress-entry__icon">
+            <span v-if="entry.status === 'running'" class="progress-entry__spin">▶</span>
+            <span v-else-if="entry.status === 'done'">✅</span>
+            <span v-else-if="entry.status === 'error'">❌</span>
           </span>
-          <span v-if="entry.status === 'running' && entry.currentChild" class="progress-entry__child">
-            → {{ entry.currentChild }}
+          <span class="progress-entry__label">
+            {{ entry.label }}
+            <span v-if="entry.loopProgress" class="progress-entry__loop">
+              ({{ entry.loopProgress.index }}/{{ entry.loopProgress.total }})
+            </span>
           </span>
-        </span>
+        </div>
+        <div
+          v-for="[d, lbl] in getChildRows(entry)"
+          :key="d"
+          class="progress-child"
+          :style="{ paddingLeft: (d * 14) + 'px' }"
+        >
+          <span class="progress-child__arrow">↳</span>
+          <span class="progress-child__label">{{ lbl }}</span>
+        </div>
       </div>
     </div>
   </div>
@@ -115,7 +129,18 @@ watch(() => props.entries.length, async () => {
 .progress-entry__spin  { display: inline-block; animation: pulse 0.8s infinite; }
 .progress-entry__label { flex: 1; }
 .progress-entry__loop  { color: #fab387; margin-left: 4px; font-size: 11px; }
-.progress-entry__child { color: #a6e3a1; margin-left: 4px; font-size: 11px; }
+
+.progress-child {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  font-size: 11px;
+  color: #a6e3a1;
+  padding: 1px 0;
+  line-height: 1.6;
+}
+.progress-child__arrow { color: #585b70; flex-shrink: 0; }
+.progress-child__label { flex: 1; }
 
 @keyframes pulse { 0%, 100% { opacity: 1 } 50% { opacity: 0.4 } }
 </style>
