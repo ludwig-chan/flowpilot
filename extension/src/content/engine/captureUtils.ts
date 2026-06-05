@@ -9,8 +9,6 @@ export async function captureVisibleTabAsImage(): Promise<HTMLImageElement> {
     const r = await chrome.runtime.sendMessage({ type: 'CAPTURE_CANVAS' }) as
       { ok: boolean; screenshotDataUrl?: string; error?: string } | undefined
     if (!r?.ok || !r.screenshotDataUrl) {
-      if (r?.error === 'BROWSER_TOO_OLD')
-        throw new Error('截图功能需要 Chrome 116 及以上版本（2023年8月发布），请升级浏览器后重试。')
       throw new Error(r?.error ?? '截图失败（无数据）')
     }
     return new Promise<HTMLImageElement>((res, rej) => {

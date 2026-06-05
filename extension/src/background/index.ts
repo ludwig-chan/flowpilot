@@ -208,36 +208,51 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 })
 
 // ── CAPTURE_CANVAS：截取指定标签页可见区域，原图返回给 content script 裁剪 ───────
-// 使用 captureTab(tabId) 而非 captureVisibleTab(windowId)：
-// captureVisibleTab 截的是窗口当前活跃 tab（Options 页面），而非流程运行的目标 tab。
-// captureTab 需要 Chrome 116+（2023-08-15），旧版通过特性检测返回 BROWSER_TOO_OLD。
+// chrome.tabs.captureTab 并不存在于 Chrome 扩展 API，只能用 captureVisibleTab。
+// captureVisibleTab 截的是窗口当前活跃 tab，若 Options 页面是活跃 tab 则会截错。
+// 解决方案：截图前临时激活目标 tab，截完后恢复原活跃 tab。
 // 裁剪在 content script 侧完成，避免 Service Worker 里 Image / FileReader 不可用的问题
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type !== MSG.CAPTURE_CANVAS) return false
 
   const tabId = sender.tab?.id
-  if (!tabId) {
+  const winId = sender.tab?.windowId
+  if (!tabId || !winId) {
     sendResponse({ ok: false, error: '无法获取 tab ID' })
     return true
   }
 
-  // 特性检测：Chrome < 116 没有 captureTab
-  if (typeof chrome.tabs.captureTab !== 'function') {
-    sendResponse({ ok: false, error: 'BROWSER_TOO_OLD' })
-    return true
-  }
+  ;(async () => {
+    // 若目标 tab 不是当前活跃 tab，临时激活它（确保 captureVisibleTab 截到正确 tab）
+    let prevActiveTabId: number | null = null
+    try {
+      const [activeTab] = await chrome.tabs.query({ active: true, windowId: winId })
+      if (activeTab?.id !== undefined && activeTab.id !== tabId) {
+        prevActiveTabId = activeTab.id
+        await chrome.tabs.update(tabId, { active: true })
+        // 等一帧让渲染器输出最新画面
+        await new Promise<void>(rs => setTimeout(rs, 50))
+      }
+    } catch { /* 激活失败则继续，captureVisibleTab 仍可能成功 */ }
 
-  console.log('[CAPTURE_CANVAS] 截取 tabId=', tabId)
-  chrome.tabs.captureTab(tabId, { format: 'png' }, (screenshotDataUrl) => {
-    if (chrome.runtime.lastError || !screenshotDataUrl) {
-      const err = chrome.runtime.lastError?.message ?? '截图失败（无数据）'
-      console.error('[CAPTURE_CANVAS]', err)
-      sendResponse({ ok: false, error: err })
-      return
-    }
-    console.log('[CAPTURE_CANVAS] 截图成功，大小：', Math.round(screenshotDataUrl.length / 1024), 'KB')
-    sendResponse({ ok: true, screenshotDataUrl })
-  })
+    console.log('[CAPTURE_CANVAS] 截取 winId=', winId, 'tabId=', tabId)
+    chrome.tabs.captureVisibleTab(winId, { format: 'png' }, async (screenshotDataUrl) => {
+      // 截完后恢复原活跃 tab
+      if (prevActiveTabId !== null) {
+        try { await chrome.tabs.update(prevActiveTabId, { active: true }) } catch { /* ignore */ }
+      }
+
+      if (chrome.runtime.lastError || !screenshotDataUrl) {
+        const err = chrome.runtime.lastError?.message ?? '截图失败（无数据）'
+        console.error('[CAPTURE_CANVAS]', err)
+        sendResponse({ ok: false, error: err })
+        return
+      }
+      console.log('[CAPTURE_CANVAS] 截图成功，大小：', Math.round(screenshotDataUrl.length / 1024), 'KB')
+      sendResponse({ ok: true, screenshotDataUrl })
+    })
+  })()
+
   return true // 保持 sendResponse 通道开启
 })
 
