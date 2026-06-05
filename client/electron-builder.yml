@@ -21,11 +21,20 @@ win:
   executableName: FlowPilotClient
   icon: build/icon.ico
   target:
+    - target: nsis
+      arch:
+        - x64
     - target: portable
       arch:
         - x64
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  artifactName: ${name}-${version}-setup.${ext}
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
 portable:
-  artifactName: ${name}-portable.${ext}
+  artifactName: FlowPilotClient-portable.${ext}
 mac:
   entitlementsInherit: build/entitlements.mac.plist
   extendInfo:
