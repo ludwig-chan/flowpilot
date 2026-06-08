@@ -82,12 +82,12 @@ function toggle(id: string) {
           title="此流程包含失效的嵌入步骤"
         >⚠</span>
         <span class="tree-count">{{ (node as LocalFlow).steps.length }} 步</span>
+        <BaseButton
+          :class="['tree-btn', 'tree-btn--pin', (node as LocalFlow).pinnedInMenu && 'tree-btn--pin--active']"
+          :title="(node as LocalFlow).pinnedInMenu ? '取消钉选（从悬浮菜单移除）' : '钉选到悬浮菜单'"
+          @click.stop="emit('pin', node.id)"
+        >{{ (node as LocalFlow).pinnedInMenu ? '📌' : '📍' }}</BaseButton>
         <template v-if="!node.builtin">
-          <BaseButton
-            :class="['tree-btn', 'tree-btn--pin', (node as LocalFlow).pinnedInMenu && 'tree-btn--pin--active']"
-            :title="(node as LocalFlow).pinnedInMenu ? '取消钉选（从悬浮菜单移除）' : '钉选到悬浮菜单'"
-            @click.stop="emit('pin', node.id)"
-          >{{ (node as LocalFlow).pinnedInMenu ? '📌' : '📍' }}</BaseButton>
           <BaseButton class="tree-btn" @click.stop="emit('edit', node.id)" title="编辑">✏️</BaseButton>
           <BaseButton class="tree-btn tree-btn--del" @click.stop="emit('delete', node.id)" title="删除流程">🗑</BaseButton>
         </template>

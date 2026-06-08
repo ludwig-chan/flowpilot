@@ -5,6 +5,7 @@
 import type { UrlMatchMode } from '@shared/types/flow'
 import { genId } from '@shared/utils/genId'
 import { MSG } from '@shared/types/message'
+import { BUILTIN_PRESETS } from '@/presets/index'
 
 const MAX_LOGS = 500
 const bgLogs: string[] = []
@@ -61,8 +62,11 @@ function handleSaveBuiltFlow(msg: any, _s: any, sr: (r: unknown) => void): true 
 }
 
 function handleGetBuiltFlows(_m: any, _s: any, sr: (r: unknown) => void): true {
-  chrome.storage.local.get({ builtFlows: [] }, (data) => {
-    sr({ ok: true, flows: flattenFlows(Array.isArray(data.builtFlows) ? data.builtFlows as RawFlow[] : []) })
+  chrome.storage.local.get({ builtFlows: [], builtinPresetPinOverrides: {} }, (data) => {
+    const overrides = getBuiltinPresetPinOverrides(data.builtinPresetPinOverrides)
+    const userFlows = flattenFlows(Array.isArray(data.builtFlows) ? data.builtFlows as RawFlow[] : [])
+    const presetFlows = flattenFlows(getBuiltinPresetNodes(overrides))
+    sr({ ok: true, flows: [...userFlows, ...presetFlows] })
   })
   return true
 }
@@ -322,7 +326,7 @@ function matchUrl(url: string, pattern: string, mode: UrlMatchMode = 'contains')
 // 展平嵌套树形流程结构
 type RawTrigger = { enabled: boolean; type: string; urlPattern?: string; urlMatchMode?: string; selector?: string; delay?: number }
 type RawFlow   = {
-  id: string; kind?: string; steps: unknown[];
+  id: string; kind?: string; name?: string; steps: unknown[]; pinnedInMenu?: boolean;
   stepDelayLevel?: string; stepDelayRange?: [number, number]; waitTimeout?: number;
   trigger?: RawTrigger; children?: RawFlow[]
 }
@@ -334,6 +338,28 @@ function flattenFlows(nodes: RawFlow[]): RawFlow[] {
     if (n.kind === 'folder' && n.children) result.push(...flattenFlows(n.children))
   }
   return result
+}
+
+function getBuiltinPresetPinOverrides(value: unknown): Record<string, boolean> {
+  if (!value || typeof value !== 'object') return {}
+  return value as Record<string, boolean>
+}
+
+function getBuiltinPresetNodes(overrides: Record<string, boolean>): RawFlow[] {
+  const nodes = BUILTIN_PRESETS.flatMap(p =>
+    JSON.parse(JSON.stringify(p.payload.nodes)) as RawFlow[]
+  )
+
+  function applyOverrides(items: RawFlow[]): RawFlow[] {
+    return items.map(item => {
+      if (item.kind === 'folder' && item.children) {
+        return { ...item, children: applyOverrides(item.children) }
+      }
+      return { ...item, pinnedInMenu: overrides[item.id] ?? item.pinnedInMenu }
+    })
+  }
+
+  return applyOverrides(nodes)
 }
 
 // ── 自动触发器：监听标签页导航事件 ───────────────────────────────────────────────────

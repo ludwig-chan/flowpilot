@@ -111,17 +111,27 @@ function migrate(raw: unknown[]): FlowNode[] {
 export const useFlowStore = defineStore('flows', () => {
   const tree    = ref<FlowNode[]>([])
   const loading = ref(false)
+  const builtinPresetPinOverrides = ref<Record<string, boolean>>({})
 
   async function load() {
     loading.value = true
-    const data = await chrome.storage.local.get({ builtFlows: [] })
+    const data = await chrome.storage.local.get({ builtFlows: [], builtinPresetPinOverrides: {} })
     const raw = data.builtFlows
     tree.value = migrate(Array.isArray(raw) ? raw : [])
+    builtinPresetPinOverrides.value = typeof data.builtinPresetPinOverrides === 'object' && data.builtinPresetPinOverrides
+      ? data.builtinPresetPinOverrides as Record<string, boolean>
+      : {}
     loading.value = false
   }
 
   async function persist() {
     await chrome.storage.local.set({ builtFlows: JSON.parse(JSON.stringify(tree.value)) })
+  }
+
+  async function persistBuiltinPresetPinOverrides() {
+    await chrome.storage.local.set({
+      builtinPresetPinOverrides: JSON.parse(JSON.stringify(builtinPresetPinOverrides.value)),
+    })
   }
 
   function getContainer(parentId?: string): FlowNode[] {
@@ -154,9 +164,16 @@ export const useFlowStore = defineStore('flows', () => {
 
   async function togglePin(id: string) {
     const node = findNode(tree.value, id)
-    if (!node || node.kind !== 'flow') return
-    ;(node as LocalFlow).pinnedInMenu = !(node as LocalFlow).pinnedInMenu
-    await persist()
+    if (node?.kind === 'flow') {
+      ;(node as LocalFlow).pinnedInMenu = !(node as LocalFlow).pinnedInMenu
+      await persist()
+      return
+    }
+
+    const presetNode = findNode(displayTree.value, id)
+    if (!presetNode?.builtin || presetNode.kind !== 'flow') return
+    builtinPresetPinOverrides.value[id] = !(presetNode as LocalFlow).pinnedInMenu
+    await persistBuiltinPresetPinOverrides()
   }
 
   async function remove(id: string) {
@@ -277,7 +294,12 @@ export const useFlowStore = defineStore('flows', () => {
       if (n.kind === 'folder') {
         return { ...n, builtin: true, children: markBuiltin(n.children) } as FlowFolder
       }
-      return { ...n, builtin: true } as LocalFlow
+      const override = builtinPresetPinOverrides.value[n.id]
+      return {
+        ...n,
+        builtin: true,
+        pinnedInMenu: override ?? (n as LocalFlow).pinnedInMenu,
+      } as LocalFlow
     })
   }
 
