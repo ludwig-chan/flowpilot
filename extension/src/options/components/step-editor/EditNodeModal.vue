@@ -70,7 +70,7 @@ function confirm() {
       <!-- 操作按钮 -->
       <template #footer>
         <BaseButton @click="emit('cancel')">取消</BaseButton>
-        <BaseButton variant="primary" :disabled="!name.trim()" @click="confirm">保存</BaseButton>
+        <BaseButton kind="primary" :disabled="!name.trim()" @click="confirm">保存</BaseButton>
       </template>
 
   </BaseModal>

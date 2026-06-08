@@ -34,7 +34,7 @@ const {
       <span class="panel__title">已保存流程</span>
       <BaseButton size="sm" title="导入流程" @click="showImportModal = true">导入</BaseButton>
       <BaseButton size="sm" title="导出流程" @click="showExportModal = true">导出</BaseButton>
-      <BaseButton size="sm" variant="primary" @click="openCreateModal()">新增</BaseButton>
+      <BaseButton size="sm" kind="primary" @click="openCreateModal()">新增</BaseButton>
     </div>
 
     <div class="flow-list">

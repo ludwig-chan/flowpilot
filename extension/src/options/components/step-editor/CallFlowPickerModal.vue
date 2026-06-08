@@ -26,7 +26,7 @@ const selectedId = ref(props.flows[0]?.id ?? '')
     </div>
     <template #footer>
       <BaseButton @click="emit('cancel')">取消</BaseButton>
-      <BaseButton variant="primary" :disabled="!selectedId" @click="emit('confirm', selectedId)">确认嵌入</BaseButton>
+      <BaseButton kind="primary" :disabled="!selectedId" @click="emit('confirm', selectedId)">确认嵌入</BaseButton>
     </template>
   </BaseModal>
 </template>

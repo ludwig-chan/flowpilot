@@ -32,7 +32,7 @@ function onCancel() {
               v-if="_dialogState.options?.type === 'confirm'"
               @click="onCancel"
             >取消</BaseButton>
-            <BaseButton variant="primary" @click="onConfirm">确定</BaseButton>
+            <BaseButton kind="primary" @click="onConfirm">确定</BaseButton>
           </div>
         </div>
       </div>

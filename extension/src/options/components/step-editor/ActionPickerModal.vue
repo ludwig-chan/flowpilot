@@ -220,7 +220,7 @@ function tryAction() {
         >
           {{ tryState === 'running' ? '⏳ 执行中…' : tryState === 'done' ? '✓ 已执行' : '▷ 试一下' }}
         </BaseButton>
-        <BaseButton variant="primary" @click="confirm">确定</BaseButton>
+        <BaseButton kind="primary" @click="confirm">确定</BaseButton>
       </template>
 
   </BaseModal>

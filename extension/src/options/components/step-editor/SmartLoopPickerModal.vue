@@ -92,7 +92,7 @@ function tagIcon(tagName: string): string {
       <template #footer>
         <BaseButton @click="emit('cancel')">取消</BaseButton>
         <BaseButton
-          variant="primary"
+          kind="primary"
           :disabled="candidates.length === 0"
           @click="onConfirm"
         >确认，循环此结构</BaseButton>

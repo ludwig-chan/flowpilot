@@ -1,6 +1,6 @@
 <script setup lang="ts">
 withDefaults(defineProps<{
-  variant?:  'primary' | 'danger'
+  kind?:     'primary' | 'danger'
   size?:     'sm' | 'icon'
   icon?:     string
   iconOnly?: boolean
@@ -18,7 +18,7 @@ withDefaults(defineProps<{
     :disabled="loading"
     :class="[
       'btn',
-      variant && `btn--${variant}`,
+      kind    && `btn--${kind}`,
       size    && `btn--${size}`,
       { 'btn--active': active },
       { 'btn--loading': loading },
@@ -72,6 +72,6 @@ withDefaults(defineProps<{
   &:hover:not(:disabled) { background: $color-danger-bg-hover; }
 }
 
-.btn--primary { padding: 3px 8px; font-size: 11px; }
+.btn--sm { padding: 3px 8px; font-size: 11px; }
 .btn--icon { padding: 3px 6px; line-height: 1; }
 </style>

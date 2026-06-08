@@ -32,7 +32,6 @@ function toggle(id: string) {
         @click="emit('select', node.id)"
       >
         <BaseButton
-          variant="ghost"
           class="fpn-toggle"
           @click.stop="toggle(node.id)"
         >

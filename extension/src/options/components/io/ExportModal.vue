@@ -98,7 +98,7 @@ const selectedFlowCount = computed(() => {
     <template #footer>
       <BaseButton @click="emit('close')">取消</BaseButton>
       <BaseButton
-        variant="primary"
+        kind="primary"
         :disabled="selectedIds.size === 0"
         @click="emit('export', selectedIds)"
       >导出 {{ selectedIds.size }} 项</BaseButton>

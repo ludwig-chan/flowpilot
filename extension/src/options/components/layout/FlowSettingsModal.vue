@@ -166,7 +166,7 @@ function onConfirm() {
 
     <template #footer>
       <BaseButton @click="emit('close')">取消</BaseButton>
-      <BaseButton variant="primary" @click="onConfirm">确认</BaseButton>
+      <BaseButton kind="primary" @click="onConfirm">确认</BaseButton>
     </template>
 
   </BaseModal>

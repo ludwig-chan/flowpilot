@@ -151,11 +151,11 @@ function confirm() {
     <template #footer>
       <BaseButton @click="emit('cancel')">取消</BaseButton>
       <template v-if="phase === 'pick'">
-        <BaseButton variant="primary" @click="openFilePicker">选择文件</BaseButton>
+        <BaseButton kind="primary" @click="openFilePicker">选择文件</BaseButton>
       </template>
       <template v-else>
         <BaseButton
-          variant="primary"
+          kind="primary"
           :disabled="parsedSelected.size === 0"
           @click="confirm"
         >确认导入 {{ selectedFlowCount }} 个流程</BaseButton>

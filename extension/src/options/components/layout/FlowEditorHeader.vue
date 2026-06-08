@@ -23,10 +23,10 @@ const emit = defineEmits<{
       <span class="editor__name-display">{{ flow.name }}</span>
       <span v-if="estimatedTime" class="editor__est-time">⏱ {{ estimatedTime }}</span>
       <BaseButton title="设置" @click="emit('open-settings')">设置</BaseButton>
-      <BaseButton title="保存" variant="primary" @click="emit('save')">保存</BaseButton>
+      <BaseButton title="保存" kind="primary" @click="emit('save')">保存</BaseButton>
       <BaseButton
         :title="stopping ? '停止中' : running ? '停止' : '运行'"
-        :variant="running ? 'danger' : 'primary'"
+        :kind="running ? 'danger' : 'primary'"
         :loading="stopping"
         @click="running && !stopping ? emit('stop') : !running ? emit('run') : undefined"
       >{{ stopping ? '停止中' : running ? '停止' : '运行' }}</BaseButton>

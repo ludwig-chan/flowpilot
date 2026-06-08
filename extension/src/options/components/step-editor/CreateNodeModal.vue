@@ -98,7 +98,7 @@ const hasFolders = (nodes: FlowNode[]): boolean =>
       <!-- 操作按钮 -->
       <template #footer>
         <BaseButton @click="emit('cancel')">取消</BaseButton>
-        <BaseButton variant="primary" :disabled="!name.trim()" @click="confirm">
+        <BaseButton kind="primary" :disabled="!name.trim()" @click="confirm">
           确认创建
         </BaseButton>
       </template>

@@ -240,13 +240,13 @@ provide(STEP_EDITOR_MODALS_KEY, {
     <div class="step-add-toolbar">
       <BaseButton
         v-if="selectedStepIds.length > 0"
-        variant="danger"
+        kind="danger"
         size="sm"
         @click="deleteSelected"
       >🗑 删除已选 ({{ selectedStepIds.length }})</BaseButton>
       <DropdownMenu>
         <template #trigger="{ toggle, isOpen }">
-          <BaseButton size="sm" variant="primary" @click="toggle">＋ 添加步骤 {{ isOpen ? '▴' : '▾' }}</BaseButton>
+          <BaseButton size="sm" kind="primary" @click="toggle">＋ 添加步骤 {{ isOpen ? '▴' : '▾' }}</BaseButton>
         </template>
         <template #default="{ close }">
           <BaseButton @click="openPicker(); close()">选择元素</BaseButton>

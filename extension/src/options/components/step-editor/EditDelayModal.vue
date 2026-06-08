@@ -34,7 +34,7 @@ function confirm() {
     </div>
     <template #footer>
       <BaseButton @click="emit('cancel')">取消</BaseButton>
-      <BaseButton variant="primary" @click="confirm">确认</BaseButton>
+      <BaseButton kind="primary" @click="confirm">确认</BaseButton>
     </template>
   </BaseModal>
 </template>

@@ -277,7 +277,7 @@ function onDeleteBranchChild(condChildId: string, branch: 'if' | 'else', childId
       <!-- 底部 -->
       <template #footer>
         <BaseButton @click="emit('close')">取消</BaseButton>
-        <BaseButton variant="primary" @click="onSave">保存</BaseButton>
+        <BaseButton kind="primary" @click="onSave">保存</BaseButton>
       </template>
 
   </BaseModal>

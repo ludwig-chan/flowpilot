@@ -122,7 +122,7 @@ function confirm() {
       <!-- 底部按钮 -->
       <template #footer>
         <BaseButton @click="emit('close')">取消</BaseButton>
-        <BaseButton variant="primary" :disabled="!canConfirm" @click="confirm">确认</BaseButton>
+        <BaseButton kind="primary" :disabled="!canConfirm" @click="confirm">确认</BaseButton>
       </template>
 
   </BaseModal>
