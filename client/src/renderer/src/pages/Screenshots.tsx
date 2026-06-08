@@ -29,6 +29,8 @@ interface ScreenshotItem {
   run?: ScreenshotRun
   tags: ScreenshotTag[]
   thumbnailDataUrl: string
+  ocrText?: string
+  ocrAt?: string
 }
 
 interface ScreenshotListResult {
@@ -75,6 +77,9 @@ export default function Screenshots({ showToast }: ScreenshotsProps): React.JSX.
   const [tagFilter, setTagFilter] = useState('all')
   const [newTagById, setNewTagById] = useState<Record<string, string>>({})
   const [preview, setPreview] = useState<ScreenshotImageResult | null>(null)
+  const [ocrLoading, setOcrLoading] = useState<Record<string, boolean>>({})
+  const [batchOcrLoading, setBatchOcrLoading] = useState(false)
+  const [batchOcrProgress, setBatchOcrProgress] = useState('')
 
   const loadData = async (): Promise<void> => {
     setLoading(true)
@@ -157,6 +162,52 @@ export default function Screenshots({ showToast }: ScreenshotsProps): React.JSX.
     await loadData()
   }
 
+  const runOcr = async (item: ScreenshotItem): Promise<void> => {
+    setOcrLoading((prev) => ({ ...prev, [item.id]: true }))
+    try {
+      const result = await window.api.ocrScreenshot(item.id)
+      if (result.success) {
+        showToast(result.text ? 'OCR 识别完成' : 'OCR 识别完成（未识别到文字）', 'success')
+      } else {
+        showToast(`OCR 失败：${result.error}`, 'error')
+      }
+      await loadData()
+    } catch (err) {
+      showToast(`OCR 异常：${(err as Error).message}`, 'error')
+    } finally {
+      setOcrLoading((prev) => ({ ...prev, [item.id]: false }))
+    }
+  }
+
+  const runBatchOcr = async (): Promise<void> => {
+    const unprocessed = data.screenshots.filter((s) => s.status === 'active' && !s.ocrText)
+    if (unprocessed.length === 0) {
+      showToast('没有需要识别的截图', 'info')
+      return
+    }
+
+    setBatchOcrLoading(true)
+    setBatchOcrProgress(`正在识别 0/${unprocessed.length}...`)
+    try {
+      const ids = unprocessed.map((s) => s.id)
+      const result = await window.api.ocrScreenshotsBatch(ids)
+      if (result.success) {
+        const ok = result.results.filter((r) => r.text).length
+        const fail = result.results.filter((r) => r.error).length
+        showToast(`批量 OCR 完成：${ok} 张成功${fail > 0 ? `，${fail} 张失败` : ''}`, 'success')
+      } else {
+        showToast(`批量 OCR 失败：${result.error}`, 'error')
+      }
+      setBatchOcrProgress('')
+      await loadData()
+    } catch (err) {
+      showToast(`批量 OCR 异常：${(err as Error).message}`, 'error')
+    } finally {
+      setBatchOcrLoading(false)
+      setBatchOcrProgress('')
+    }
+  }
+
   return (
     <>
       <div className="page-title">截图</div>
@@ -193,6 +244,16 @@ export default function Screenshots({ showToast }: ScreenshotsProps): React.JSX.
         <button className="btn btn-secondary" onClick={loadData} disabled={loading}>
           刷新
         </button>
+
+        {viewMode === 'active' && (
+          <button
+            className="btn btn-primary"
+            onClick={runBatchOcr}
+            disabled={batchOcrLoading}
+          >
+            {batchOcrLoading ? (batchOcrProgress || '识别中...') : '批量 OCR'}
+          </button>
+        )}
       </div>
 
       <div className="path-hint screenshot-path">
@@ -225,6 +286,19 @@ export default function Screenshots({ showToast }: ScreenshotsProps): React.JSX.
                   </div>
                 )}
               </div>
+
+              {item.ocrText ? (
+                <div className="ocr-text" title={item.ocrText}>
+                  <span className="ocr-label">OCR：</span>
+                  {item.ocrText.length > 80
+                    ? `${item.ocrText.slice(0, 80)}...`
+                    : item.ocrText}
+                </div>
+              ) : (
+                item.status === 'active' && (
+                  <div className="ocr-text ocr-empty">未识别</div>
+                )
+              )}
 
               <div className="tag-row">
                 {item.tags.length === 0 && <span className="tag-empty">无标签</span>}
@@ -278,6 +352,15 @@ export default function Screenshots({ showToast }: ScreenshotsProps): React.JSX.
                 <button className="btn btn-secondary btn-sm" onClick={() => window.api.openScreenshotInExplorer(item.id)}>
                   位置
                 </button>
+                {viewMode === 'active' && (
+                  <button
+                    className="btn btn-primary btn-sm"
+                    onClick={() => runOcr(item)}
+                    disabled={ocrLoading[item.id]}
+                  >
+                    {ocrLoading[item.id] ? '识别中...' : 'OCR'}
+                  </button>
+                )}
                 {viewMode === 'active' ? (
                   <button className="btn btn-danger btn-sm" onClick={() => moveToTrash(item)}>
                     删除

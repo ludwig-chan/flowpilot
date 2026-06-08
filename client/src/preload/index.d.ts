@@ -72,6 +72,12 @@ interface FlowPilotAPI {
   openBrowserExtPage: (browserId: string) => Promise<{ success: boolean; error?: string }>
   loadExtensionAuto: (browserId: string) => Promise<{ success: boolean; error?: string }>
   ocrImage: (dataUrl: string) => Promise<{ success: boolean; text?: string; error?: string }>
+  ocrScreenshot: (id: string) => Promise<{ success: boolean; text?: string; error?: string }>
+  ocrScreenshotsBatch: (ids?: string[]) => Promise<{
+    success: boolean
+    error?: string
+    results: Array<{ id: string; text?: string; error?: string; filename: string }>
+  }>
   getLaunchAtStartup: () => Promise<boolean>
   setLaunchAtStartup: (enabled: boolean) => Promise<boolean>
   getAutoClickerStatus: () => Promise<AutoClickerStatus>

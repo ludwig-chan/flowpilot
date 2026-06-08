@@ -41,6 +41,8 @@ export interface ScreenshotItem {
   size: number
   tagIds: string[]
   deletedAt?: string
+  ocrText?: string
+  ocrAt?: string
 }
 
 export interface ScreenshotLibrary {
@@ -360,6 +362,17 @@ export function updateScreenshotTags(id: string, tagIds: string[]): ScreenshotIt
 
   const validIds = new Set(library.tags.map((tag) => tag.id))
   item.tagIds = [...new Set(tagIds.filter((tagId) => validIds.has(tagId)))]
+  saveLibrary(library)
+  return item
+}
+
+export function updateScreenshotOcr(id: string, text: string): ScreenshotItem {
+  const library = syncLibrary()
+  const item = library.screenshots.find((screenshot) => screenshot.id === id)
+  if (!item) throw new Error('Screenshot not found')
+
+  item.ocrText = text
+  item.ocrAt = nowIso()
   saveLibrary(library)
   return item
 }

@@ -12,6 +12,7 @@ import {
   openScreenshotInExplorer,
   restoreScreenshot,
   trashScreenshot,
+  updateScreenshotOcr,
   updateScreenshotTags
 } from './screenshotLibrary'
 
@@ -220,6 +221,65 @@ export function registerIpcHandlers(
       return { success: true, text: text.trim() }
     } catch (err) {
       return { success: false, error: (err as Error).message }
+    } finally {
+      await worker.terminate()
+    }
+  })
+
+  // OCR 单张截图：识别并保存结果
+  ipcMain.handle('ocr-screenshot', async (_event, screenshotId: string) => {
+    const image = getScreenshotImage(screenshotId)
+    if (!image) return { success: false, error: '截图文件不存在' }
+
+    const { createWorker } = await import('tesseract.js')
+    const langPath = join(app.getPath('userData'), 'tessdata')
+    const worker = await createWorker(TESS_LANGS as unknown as string[], 1, {
+      cachePath: langPath,
+      cacheMethod: 'write',
+    })
+    try {
+      const { data: { text } } = await worker.recognize(image.dataUrl)
+      const trimmed = text.trim()
+      updateScreenshotOcr(screenshotId, trimmed)
+      return { success: true, text: trimmed }
+    } catch (err) {
+      return { success: false, error: (err as Error).message }
+    } finally {
+      await worker.terminate()
+    }
+  })
+
+  // OCR 批量截图：识别所有未识别的截图
+  ipcMain.handle('ocr-screenshots-batch', async (_event, screenshotIds?: string[]) => {
+    const all = listScreenshots()
+    const targets = screenshotIds
+      ? all.screenshots.filter((s) => screenshotIds.includes(s.id))
+      : all.screenshots.filter((s) => s.status === 'active' && !s.ocrText)
+
+    if (targets.length === 0) return { success: true, results: [] }
+
+    const { createWorker } = await import('tesseract.js')
+    const langPath = join(app.getPath('userData'), 'tessdata')
+    const worker = await createWorker(TESS_LANGS as unknown as string[], 1, {
+      cachePath: langPath,
+      cacheMethod: 'write',
+    })
+
+    const results: Array<{ id: string; text?: string; error?: string; filename: string }> = []
+    try {
+      for (const item of targets) {
+        try {
+          const { data: { text } } = await worker.recognize(item.thumbnailDataUrl)
+          const trimmed = text.trim()
+          updateScreenshotOcr(item.id, trimmed)
+          results.push({ id: item.id, text: trimmed, filename: item.filename })
+        } catch (err) {
+          results.push({ id: item.id, error: (err as Error).message, filename: item.filename })
+        }
+      }
+      return { success: true, results }
+    } catch (err) {
+      return { success: false, error: (err as Error).message, results }
     } finally {
       await worker.terminate()
     }
