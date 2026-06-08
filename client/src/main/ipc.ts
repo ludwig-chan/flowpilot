@@ -2,8 +2,7 @@ import { app, ipcMain, BrowserWindow, shell, dialog } from 'electron'
 import { spawn } from 'child_process'
 import { existsSync, mkdirSync } from 'fs'
 import { join } from 'path'
-import os from 'os'
-import { loadConfig, saveConfig, AppConfig } from './config'
+import { getEffectiveScreenshotDir, loadConfig, saveConfig, AppConfig } from './config'
 import type { AutoClickerService, AutoClickerStatus } from './autoClicker'
 
 const TESS_LANGS = ['chi_sim', 'eng'] as const
@@ -66,9 +65,7 @@ export function registerIpcHandlers(
   ipcMain.handle('get-config', () => {
     const config = loadConfig()
     config.currentVersion = `v${app.getVersion()}`
-    if (!config.screenshotDir) {
-      config.screenshotDir = join(os.homedir(), 'Downloads', 'FlowPilot')
-    }
+    config.screenshotDir = getEffectiveScreenshotDir(config.screenshotDir)
     return config
   })
 

@@ -1,7 +1,0 @@
-{
-  "Codegeex.RepoIndex": true,
-  "files.watcherExclude": {
-    "**/client/dist/**": true,
-    "**/client/node_modules/**": true
-  }
-}

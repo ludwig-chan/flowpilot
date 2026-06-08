@@ -1,5 +1,6 @@
 import { app } from 'electron'
 import * as fs from 'fs'
+import * as os from 'os'
 import * as path from 'path'
 
 export interface AppConfig {
@@ -20,6 +21,30 @@ const DEFAULT_CONFIG: AppConfig = {
   extensionHash: '',
   lastUpdatedAt: '',
   autoClickerEnabled: false
+}
+
+export function getDefaultScreenshotDir(): string {
+  return path.join(app.getPath('userData'), 'data', 'screenshots')
+}
+
+function getLegacyDefaultScreenshotDir(): string {
+  return path.join(os.homedir(), 'Downloads', 'FlowPilot')
+}
+
+function normalizePathForCompare(dirPath: string): string {
+  const resolved = path.resolve(dirPath)
+  return process.platform === 'win32' ? resolved.toLowerCase() : resolved
+}
+
+export function getEffectiveScreenshotDir(screenshotDir?: string): string {
+  const dir = screenshotDir?.trim()
+  if (!dir) return getDefaultScreenshotDir()
+
+  if (normalizePathForCompare(dir) === normalizePathForCompare(getLegacyDefaultScreenshotDir())) {
+    return getDefaultScreenshotDir()
+  }
+
+  return dir
 }
 
 export function loadConfig(): AppConfig {

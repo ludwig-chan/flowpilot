@@ -1,14 +1,13 @@
 import { app, BrowserWindow, screen } from 'electron'
 import { join } from 'path'
 import { basename } from 'path'
-import * as os from 'os'
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'http'
 import { cpSync, existsSync, readFileSync, mkdirSync, readdirSync, rmSync, renameSync, writeFileSync } from 'fs'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { createTray } from './tray'
 import { setTrayAutoClickerStatus } from './tray'
 import { registerIpcHandlers, prefetchTessdata } from './ipc'
-import { loadConfig, saveConfig } from './config'
+import { getEffectiveScreenshotDir, loadConfig, saveConfig } from './config'
 import { AutoClickerService } from './autoClicker'
 
 const EXTENSION_ID = 'gehkoeflghpbmmljaoggjddmgjjimnbf'
@@ -127,7 +126,7 @@ function initBundledExtension(): void {
 /** 读取配置文件，返回截图保存目录 */
 function resolveScreenshotDir(): string {
   const config = loadConfig()
-  return config.screenshotDir || join(os.homedir(), 'Downloads', 'FlowPilot')
+  return getEffectiveScreenshotDir(config.screenshotDir)
 }
 
 /** 将 PNG data URL 写入文件，返回文件路径 */
