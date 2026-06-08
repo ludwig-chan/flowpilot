@@ -8,6 +8,7 @@ const props = defineProps<{
   formattedElapsed:     string
   progressDrawerHeight: number
   startProgressResize:  (e: MouseEvent) => void
+  screenshotCount:      number
 }>()
 
 const open = defineModel<boolean>('open', { default: true })
@@ -43,6 +44,12 @@ function getChildRows(entry: ProgressEntry): [number, string][] {
     </div>
     <div v-if="open" class="progress-drawer__body" :style="{ height: progressDrawerHeight + 'px' }" ref="bodyEl">
       <div v-if="entries.length === 0" class="progress-drawer__empty">点击「运行」开始执行流程</div>
+      <div
+        v-if="!running && entries.length > 0 && screenshotCount > 0"
+        class="progress-drawer__screenshot-hint"
+      >
+        📸 本流程共保存 {{ screenshotCount }} 张截图，请在 <strong>FlowPilot 客户端</strong>中查看
+      </div>
       <div
         v-for="entry in entries"
         :key="entry.stepId + entry.status"
@@ -137,6 +144,17 @@ function getChildRows(entry: ProgressEntry): [number, string][] {
   font-size: 11px;
   color: #a6e3a1;
   padding: 1px 0;
+
+.progress-drawer__screenshot-hint {
+  margin-top: 8px;
+  padding: 6px 10px;
+  background: #1e1e2e;
+  border: 1px solid #f9e2af;
+  border-radius: 4px;
+  color: #f9e2af;
+  font-size: 12px;
+  line-height: 1.6;
+}
   line-height: 1.6;
 }
 .progress-child__arrow { color: #585b70; flex-shrink: 0; }

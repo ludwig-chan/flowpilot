@@ -12,7 +12,7 @@ export type BridgeEvent =
   | { type: 'DOM_SCAN_RESULT'; tabId: number; tabTitle: string; tabUrl: string; tree: SerializedDomNode[] }
   | { type: 'ELEMENT_PICKED';  tabId: number; element: SerializedElement; cssSelector: string }
   | { type: 'FLOW_LOG_FROM_TAB'; tabId: number; text: string }
-  | { type: 'FLOW_DONE_FROM_TAB'; tabId: number }
+  | { type: 'FLOW_DONE_FROM_TAB'; tabId: number; screenshotCount?: number }
   | { type: 'FLOW_ERROR_FROM_TAB'; tabId: number; error: string }
   | { type: 'DOM_MUTATION'; tabId: number }
   | { type: 'SMART_LOOP_ANALYZED'; tabId: number; element: SerializedElement | null; candidates: RepeatingCandidate[] }

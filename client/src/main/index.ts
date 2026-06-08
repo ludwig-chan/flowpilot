@@ -247,6 +247,9 @@ function createScreenshotBridgeServer(): Server {
           sourceUrl: typeof body.sourceUrl === 'string' ? body.sourceUrl : undefined,
           sourceTitle: typeof body.sourceTitle === 'string' ? body.sourceTitle : undefined
         })
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.webContents.send('screenshots-updated')
+        }
         sendJson(res, 200, { ok: true, id: saved.id, path: saved.path }, originValue)
       } catch (err) {
         const message = (err as Error).message

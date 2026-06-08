@@ -24,6 +24,11 @@ const api = {
   deleteScreenshotPermanently: (id: string) =>
     ipcRenderer.invoke('delete-screenshot-permanently', id),
   openScreenshotInExplorer: (id: string) => ipcRenderer.invoke('open-screenshot-in-explorer', id),
+  onScreenshotsUpdated: (callback: () => void) => {
+    const listener = (): void => callback()
+    ipcRenderer.on('screenshots-updated', listener)
+    return () => ipcRenderer.removeListener('screenshots-updated', listener)
+  },
   onAutoClickerStatusChanged: (callback: (status: unknown) => void) => {
     const listener = (_event: Electron.IpcRendererEvent, status: unknown): void => callback(status)
     ipcRenderer.on('auto-clicker-status-changed', listener)

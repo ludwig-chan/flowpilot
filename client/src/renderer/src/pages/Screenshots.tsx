@@ -89,6 +89,10 @@ export default function Screenshots({ showToast }: ScreenshotsProps): React.JSX.
 
   useEffect(() => {
     void loadData()
+    const unsub = window.api.onScreenshotsUpdated(() => {
+      void loadData()
+    })
+    return unsub
   }, [])
 
   const filteredScreenshots = useMemo(() => {

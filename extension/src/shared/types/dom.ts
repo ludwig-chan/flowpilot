@@ -113,6 +113,7 @@ export interface FlowLogFromTabMessage {
 export interface FlowDoneFromTabMessage {
   type:  'FLOW_DONE_FROM_TAB'
   tabId: number
+  screenshotCount?: number
 }
 
 /** 流程执行出错 */

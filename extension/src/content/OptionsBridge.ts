@@ -80,9 +80,9 @@ export function initOptionsBridge(): void {
         flowName: m.flowName,
       })
       _stopCurrentFlow = stop
-      done.then(() => {
+      done.then((result) => {
         _stopCurrentFlow = null
-        chrome.runtime.sendMessage({ type: MSG.FLOW_DONE_FROM_TAB }).catch(() => {})
+        chrome.runtime.sendMessage({ type: MSG.FLOW_DONE_FROM_TAB, screenshotCount: result.screenshotCount }).catch(() => {})
       }).catch((e: unknown) => {
         _stopCurrentFlow = null
         chrome.runtime.sendMessage({ type: MSG.FLOW_ERROR_FROM_TAB, error: String(e) }).catch(() => {})

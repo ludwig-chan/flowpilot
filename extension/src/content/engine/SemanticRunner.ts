@@ -32,6 +32,7 @@ interface RunContext {
   runStartedAt: string
   flowId?: string
   flowName?: string
+  screenshotCount: number
 }
 
 function createRunId(): string {
@@ -49,7 +50,7 @@ export function runFlow(
   stepDelayRange?: [number, number],
   waitTimeout?: number,
   metadata: RunMetadata = {},
-): { done: Promise<void>; stop: () => void } {
+): { done: Promise<{ screenshotCount: number }>; stop: () => void } {
   const signal = { stopped: false }
   const runStartedAt = metadata.runStartedAt ?? new Date().toISOString()
 
@@ -77,18 +78,20 @@ export function runFlow(
       runStartedAt,
       flowId: metadata.flowId,
       flowName: metadata.flowName,
+      screenshotCount: 0,
     }
 
     for (const step of steps) {
       if (signal.stopped) {
         onLog('流程已停止')
-        return
+        return { screenshotCount: ctx.screenshotCount }
       }
       await executeStep(step, ctx)
       await applyStepDelay(step, ctx)
     }
 
     onLog('✅ 流程执行完成')
+    return { screenshotCount: ctx.screenshotCount }
   })()
 
   return { done, stop: () => { signal.stopped = true } }
@@ -309,6 +312,7 @@ async function executeStep(
       }
 
       if (saved?.ok) {
+        ctx.screenshotCount++
         onLog(`  已保存 → ${saved.path ?? filename}（${Math.round(dataUrl.length * 0.75 / 1024)} KB）`)
       } else {
         const bridgeError = saved?.error ?? '本地截图服务未返回保存结果'

@@ -84,6 +84,7 @@ interface FlowPilotAPI {
   restoreScreenshot: (id: string) => Promise<boolean>
   deleteScreenshotPermanently: (id: string) => Promise<boolean>
   openScreenshotInExplorer: (id: string) => Promise<boolean>
+  onScreenshotsUpdated: (callback: () => void) => () => void
   onAutoClickerStatusChanged: (callback: (status: AutoClickerStatus) => void) => () => void
 }
 

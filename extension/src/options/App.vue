@@ -40,7 +40,7 @@ async function onTabPickerConfirm(tabId: number) {
 // 当前目标 tab 的标题（用于 header 显示）
 const activeTab = computed(() => tabs.value.find(t => t.id === activeTabId.value) ?? null)
 
-const { logs, running, stopping, logDrawerOpen, runCurrentFlow, stopCurrentFlow } = useFlowRunner(editingFlow, flowStore.allFlows, bridge)
+const { logs, running, stopping, logDrawerOpen, screenshotCount, runCurrentFlow, stopCurrentFlow } = useFlowRunner(editingFlow, flowStore.allFlows, bridge)
 const { progressOpen, entries, formattedElapsed, onRunStart } = useFlowProgress(bridge)
 
 function handleRun() {
@@ -97,6 +97,7 @@ const { sidebarWidth, logDrawerHeight, progressDrawerHeight, startResize, startL
       :formatted-elapsed="formattedElapsed"
       :progress-drawer-height="progressDrawerHeight"
       :start-progress-resize="startProgressResize"
+      :screenshot-count="screenshotCount"
     />
 
     <!-- 底部全局日志抽屉 -->

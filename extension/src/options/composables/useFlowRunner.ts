@@ -15,6 +15,7 @@ export function useFlowRunner(
   const running       = ref(false)
   const stopping      = ref(false)
   const logDrawerOpen = ref(false)
+  const screenshotCount = ref(0)
 
   function tsLog(text: string): string {
     const n  = new Date()
@@ -47,6 +48,7 @@ export function useFlowRunner(
       if (!ok) return
     }
     running.value = true
+    screenshotCount.value = 0
     logs.value.push(tsLog(`▶ 开始运行流程 "${editingFlow.value.name}"`))
     await bridge.runFlow(
       editingFlow.value.steps, {},
@@ -65,11 +67,11 @@ export function useFlowRunner(
 
   const handler = (evt: BridgeEvent) => {
     if (evt.type === MSG.FLOW_LOG_FROM_TAB)   logs.value.push(tsLog(evt.text))
-    if (evt.type === MSG.FLOW_DONE_FROM_TAB)  { running.value = false; stopping.value = false; logs.value.push(tsLog('\u2705 流程运行完成')) }
+    if (evt.type === MSG.FLOW_DONE_FROM_TAB)  { running.value = false; stopping.value = false; screenshotCount.value = evt.screenshotCount ?? 0; logs.value.push(tsLog('\u2705 流程运行完成')) }
     if (evt.type === MSG.FLOW_ERROR_FROM_TAB) { running.value = false; stopping.value = false; logs.value.push(tsLog(`\u274c 错误：${evt.error}`)) }
   }
   bridge.on(handler)
   onUnmounted(() => bridge.off(handler))
 
-  return { logs, running, stopping, logDrawerOpen, runCurrentFlow, stopCurrentFlow }
+  return { logs, running, stopping, logDrawerOpen, screenshotCount, runCurrentFlow, stopCurrentFlow }
 }
