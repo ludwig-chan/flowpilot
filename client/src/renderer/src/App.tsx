@@ -26,40 +26,37 @@ export default function App(): React.JSX.Element {
   return (
     <div className="layout">
       <aside className="sidebar">
-        <div className="sidebar-logo">
-          <div className="logo-icon">F</div>
-          FlowPilot
-        </div>
+        <div className="sidebar-logo">FlowPilot</div>
         <nav>
           <div
             className={`nav-item ${page === 'home' ? 'active' : ''}`}
             onClick={() => setPage('home')}
           >
-            <span className="nav-icon">H</span> 主页
+            主页
           </div>
           <div
             className={`nav-item ${page === 'tutorial' ? 'active' : ''}`}
             onClick={() => setPage('tutorial')}
           >
-            <span className="nav-icon">I</span> 安装教程
+            安装教程
           </div>
           <div
             className={`nav-item ${page === 'usage' ? 'active' : ''}`}
             onClick={() => setPage('usage')}
           >
-            <span className="nav-icon">U</span> 使用教程
+            使用教程
           </div>
           <div
             className={`nav-item ${page === 'screenshots' ? 'active' : ''}`}
             onClick={() => setPage('screenshots')}
           >
-            <span className="nav-icon">P</span> 截图
+            截图
           </div>
           <div
             className={`nav-item ${page === 'settings' ? 'active' : ''}`}
             onClick={() => setPage('settings')}
           >
-            <span className="nav-icon">S</span> 设置
+            设置
           </div>
         </nav>
       </aside>
