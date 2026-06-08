@@ -4,6 +4,16 @@ import { existsSync, mkdirSync } from 'fs'
 import { join } from 'path'
 import { getEffectiveScreenshotDir, loadConfig, saveConfig, AppConfig } from './config'
 import type { AutoClickerService, AutoClickerStatus } from './autoClicker'
+import {
+  createScreenshotTag,
+  deleteScreenshotPermanently,
+  getScreenshotImage,
+  listScreenshots,
+  openScreenshotInExplorer,
+  restoreScreenshot,
+  trashScreenshot,
+  updateScreenshotTags
+} from './screenshotLibrary'
 
 const TESS_LANGS = ['chi_sim', 'eng'] as const
 
@@ -88,6 +98,41 @@ export function registerIpcHandlers(
   // 在资源管理器中打开目录
   ipcMain.handle('open-in-explorer', (_event, dirPath: string) => {
     shell.openPath(dirPath)
+  })
+
+  ipcMain.handle('list-screenshots', () => {
+    return listScreenshots()
+  })
+
+  ipcMain.handle('get-screenshot-image', (_event, id: string) => {
+    return getScreenshotImage(id)
+  })
+
+  ipcMain.handle('create-screenshot-tag', (_event, name: string) => {
+    return createScreenshotTag(name)
+  })
+
+  ipcMain.handle('update-screenshot-tags', (_event, id: string, tagIds: unknown) => {
+    const safeTagIds = Array.isArray(tagIds)
+      ? tagIds.filter((tagId): tagId is string => typeof tagId === 'string')
+      : []
+    return updateScreenshotTags(id, safeTagIds)
+  })
+
+  ipcMain.handle('trash-screenshot', (_event, id: string) => {
+    return trashScreenshot(id)
+  })
+
+  ipcMain.handle('restore-screenshot', (_event, id: string) => {
+    return restoreScreenshot(id)
+  })
+
+  ipcMain.handle('delete-screenshot-permanently', (_event, id: string) => {
+    return deleteScreenshotPermanently(id)
+  })
+
+  ipcMain.handle('open-screenshot-in-explorer', (_event, id: string) => {
+    return openScreenshotInExplorer(id)
   })
 
   // 检测已安装的浏览器

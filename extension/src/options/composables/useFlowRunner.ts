@@ -53,6 +53,8 @@ export function useFlowRunner(
       editingFlow.value.stepDelayLevel,
       editingFlow.value.stepDelayRange,
       editingFlow.value.waitTimeout,
+      editingFlow.value.id,
+      editingFlow.value.name,
     )
   }
 

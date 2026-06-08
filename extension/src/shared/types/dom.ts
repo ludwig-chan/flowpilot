@@ -67,6 +67,10 @@ export interface RequestTestClickMessage {
 export interface RunFlowInTabMessage {
   type:              'RUN_FLOW_IN_TAB'
   tabId:             number
+  flowId?:           string
+  flowName?:         string
+  runId?:            string
+  runStartedAt?:     string
   steps:             import('./flow').FlowStep[]
   variables:         Record<string, string>
   stepDelayLevel?:   import('./flow').StepDelayLevel

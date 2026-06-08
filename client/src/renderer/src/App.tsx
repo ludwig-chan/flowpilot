@@ -2,9 +2,10 @@ import React, { useState, useCallback } from 'react'
 import Home from './pages/Home'
 import Tutorial from './pages/Tutorial'
 import Usage from './pages/Usage'
+import Screenshots from './pages/Screenshots'
 import Settings from './pages/Settings'
 
-type Page = 'home' | 'tutorial' | 'usage' | 'settings'
+type Page = 'home' | 'tutorial' | 'usage' | 'screenshots' | 'settings'
 
 interface Toast {
   id: number
@@ -34,25 +35,31 @@ export default function App(): React.JSX.Element {
             className={`nav-item ${page === 'home' ? 'active' : ''}`}
             onClick={() => setPage('home')}
           >
-            <span className="nav-icon">🏠</span> 主页
+            <span className="nav-icon">H</span> 主页
           </div>
           <div
             className={`nav-item ${page === 'tutorial' ? 'active' : ''}`}
             onClick={() => setPage('tutorial')}
           >
-            <span className="nav-icon">📖</span> 安装教程
+            <span className="nav-icon">I</span> 安装教程
           </div>
           <div
             className={`nav-item ${page === 'usage' ? 'active' : ''}`}
             onClick={() => setPage('usage')}
           >
-            <span className="nav-icon">🎓</span> 使用教程
+            <span className="nav-icon">U</span> 使用教程
+          </div>
+          <div
+            className={`nav-item ${page === 'screenshots' ? 'active' : ''}`}
+            onClick={() => setPage('screenshots')}
+          >
+            <span className="nav-icon">P</span> 截图
           </div>
           <div
             className={`nav-item ${page === 'settings' ? 'active' : ''}`}
             onClick={() => setPage('settings')}
           >
-            <span className="nav-icon">⚙️</span> 设置
+            <span className="nav-icon">S</span> 设置
           </div>
         </nav>
       </aside>
@@ -61,6 +68,7 @@ export default function App(): React.JSX.Element {
         {page === 'home' && <Home showToast={showToast} />}
         {page === 'tutorial' && <Tutorial showToast={showToast} />}
         {page === 'usage' && <Usage />}
+        {page === 'screenshots' && <Screenshots showToast={showToast} />}
         {page === 'settings' && <Settings showToast={showToast} />}
       </main>
 
@@ -72,4 +80,3 @@ export default function App(): React.JSX.Element {
     </div>
   )
 }
-

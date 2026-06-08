@@ -14,6 +14,16 @@ const api = {
   setLaunchAtStartup: (enabled: boolean) => ipcRenderer.invoke('set-launch-at-startup', enabled),
   getAutoClickerStatus: () => ipcRenderer.invoke('get-auto-clicker-status'),
   setAutoClickerEnabled: (enabled: boolean) => ipcRenderer.invoke('set-auto-clicker-enabled', enabled),
+  listScreenshots: () => ipcRenderer.invoke('list-screenshots'),
+  getScreenshotImage: (id: string) => ipcRenderer.invoke('get-screenshot-image', id),
+  createScreenshotTag: (name: string) => ipcRenderer.invoke('create-screenshot-tag', name),
+  updateScreenshotTags: (id: string, tagIds: string[]) =>
+    ipcRenderer.invoke('update-screenshot-tags', id, tagIds),
+  trashScreenshot: (id: string) => ipcRenderer.invoke('trash-screenshot', id),
+  restoreScreenshot: (id: string) => ipcRenderer.invoke('restore-screenshot', id),
+  deleteScreenshotPermanently: (id: string) =>
+    ipcRenderer.invoke('delete-screenshot-permanently', id),
+  openScreenshotInExplorer: (id: string) => ipcRenderer.invoke('open-screenshot-in-explorer', id),
   onAutoClickerStatusChanged: (callback: (status: unknown) => void) => {
     const listener = (_event: Electron.IpcRendererEvent, status: unknown): void => callback(status)
     ipcRenderer.on('auto-clicker-status-changed', listener)

@@ -9,6 +9,13 @@ import { interpolate, evalCondition } from './conditionEval'
 
 type CachedFlow = { id: string; name: string; steps: FlowStep[] }
 
+interface RunMetadata {
+  runId?: string
+  runStartedAt?: string
+  flowId?: string
+  flowName?: string
+}
+
 // ─── 运行上下文（替代模块级全局变量，支持并发独立控制）──────────────────────────
 interface RunContext {
   variables: Record<string, string>
@@ -21,6 +28,16 @@ interface RunContext {
   context?: Element
   signal: { stopped: boolean }
   flowCache?: Map<string, CachedFlow>
+  runId: string
+  runStartedAt: string
+  flowId?: string
+  flowName?: string
+}
+
+function createRunId(): string {
+  return typeof crypto !== 'undefined' && 'randomUUID' in crypto
+    ? `run_${crypto.randomUUID()}`
+    : `run_${Date.now()}_${Math.random().toString(16).slice(2)}`
 }
 
 export function runFlow(
@@ -31,8 +48,10 @@ export function runFlow(
   stepDelayLevel?: StepDelayLevel,
   stepDelayRange?: [number, number],
   waitTimeout?: number,
+  metadata: RunMetadata = {},
 ): { done: Promise<void>; stop: () => void } {
   const signal = { stopped: false }
+  const runStartedAt = metadata.runStartedAt ?? new Date().toISOString()
 
   const done = (async () => {
     // 一次性预载所有流程，供 call_flow 使用（避免每步都发消息）
@@ -54,6 +73,10 @@ export function runFlow(
       depth: 0,
       signal,
       flowCache,
+      runId: metadata.runId ?? createRunId(),
+      runStartedAt,
+      flowId: metadata.flowId,
+      flowName: metadata.flowName,
     }
 
     for (const step of steps) {
@@ -274,6 +297,12 @@ async function executeStep(
           type: MSG.SAVE_SCREENSHOT,
           dataUrl,
           filename,
+          runId: ctx.runId,
+          runStartedAt: ctx.runStartedAt,
+          flowId: ctx.flowId,
+          flowName: ctx.flowName,
+          sourceUrl: location.href,
+          sourceTitle: document.title,
         }) as { ok: boolean; path?: string; error?: string } | undefined
       } catch (err) {
         saved = { ok: false, error: (err as Error).message }

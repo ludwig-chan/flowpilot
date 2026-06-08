@@ -1,6 +1,5 @@
 import { app, BrowserWindow, screen } from 'electron'
 import { join } from 'path'
-import { basename } from 'path'
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'http'
 import { cpSync, existsSync, readFileSync, mkdirSync, readdirSync, rmSync, renameSync, writeFileSync } from 'fs'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
@@ -9,6 +8,11 @@ import { setTrayAutoClickerStatus } from './tray'
 import { registerIpcHandlers, prefetchTessdata } from './ipc'
 import { getEffectiveScreenshotDir, loadConfig, saveConfig } from './config'
 import { AutoClickerService } from './autoClicker'
+import {
+  createUniqueScreenshotPath,
+  recordScreenshot,
+  type ScreenshotSaveMetadata
+} from './screenshotLibrary'
 
 const EXTENSION_ID = 'gehkoeflghpbmmljaoggjddmgjjimnbf'
 const SCREENSHOT_BRIDGE_HOST = '127.0.0.1'
@@ -130,18 +134,21 @@ function resolveScreenshotDir(): string {
 }
 
 /** 将 PNG data URL 写入文件，返回文件路径 */
-function saveScreenshotFile(dataUrl: string, filename: string): string {
+function saveScreenshotFile(
+  dataUrl: string,
+  filename: string,
+  metadata: ScreenshotSaveMetadata = {}
+): { id: string; path: string } {
   if (!dataUrl.startsWith('data:image/png;base64,')) {
     throw new Error('仅支持 PNG data URL')
   }
   const screenshotDir = resolveScreenshotDir()
   mkdirSync(screenshotDir, { recursive: true })
-  const safeFilename = basename(filename || 'screenshot.png')
-    .replace(/[<>:"/\\|?*\x00-\x1F]/g, '_')
-  const filePath = join(screenshotDir, safeFilename || 'screenshot.png')
+  const { filename: savedFilename, filePath } = createUniqueScreenshotPath(filename || 'screenshot.png')
   const base64 = dataUrl.replace(/^data:image\/png;base64,/, '')
   writeFileSync(filePath, Buffer.from(base64, 'base64'))
-  return filePath
+  const item = recordScreenshot(filePath, savedFilename, metadata)
+  return { id: item.id, path: filePath }
 }
 
 function setCorsHeaders(res: ServerResponse, origin?: string): void {
@@ -218,13 +225,29 @@ function createScreenshotBridgeServer(): Server {
 
     if (req.method === 'POST' && url.pathname === '/screenshots') {
       try {
-        const body = await readJsonBody(req) as { filename?: unknown; dataUrl?: unknown }
+        const body = await readJsonBody(req) as {
+          filename?: unknown
+          dataUrl?: unknown
+          runId?: unknown
+          runStartedAt?: unknown
+          flowId?: unknown
+          flowName?: unknown
+          sourceUrl?: unknown
+          sourceTitle?: unknown
+        }
         if (typeof body.filename !== 'string' || typeof body.dataUrl !== 'string') {
           sendJson(res, 400, { ok: false, error: 'filename 和 dataUrl 必须为字符串' }, originValue)
           return
         }
-        const filePath = saveScreenshotFile(body.dataUrl, body.filename)
-        sendJson(res, 200, { ok: true, path: filePath }, originValue)
+        const saved = saveScreenshotFile(body.dataUrl, body.filename, {
+          runId: typeof body.runId === 'string' ? body.runId : undefined,
+          runStartedAt: typeof body.runStartedAt === 'string' ? body.runStartedAt : undefined,
+          flowId: typeof body.flowId === 'string' ? body.flowId : undefined,
+          flowName: typeof body.flowName === 'string' ? body.flowName : undefined,
+          sourceUrl: typeof body.sourceUrl === 'string' ? body.sourceUrl : undefined,
+          sourceTitle: typeof body.sourceTitle === 'string' ? body.sourceTitle : undefined
+        })
+        sendJson(res, 200, { ok: true, id: saved.id, path: saved.path }, originValue)
       } catch (err) {
         const message = (err as Error).message
         sendJson(res, message === '请求体过大' ? 413 : 400, { ok: false, error: message }, originValue)

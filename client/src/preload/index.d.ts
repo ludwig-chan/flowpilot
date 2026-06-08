@@ -16,6 +16,53 @@ interface BrowserInfo {
   exePath: string
 }
 
+type ScreenshotStatus = 'active' | 'trash'
+
+interface ScreenshotRun {
+  id: string
+  startedAt: string
+  flowId?: string
+  flowName?: string
+  sourceUrl?: string
+  sourceTitle?: string
+}
+
+interface ScreenshotTag {
+  id: string
+  name: string
+  createdAt: string
+  updatedAt: string
+}
+
+interface ScreenshotItem {
+  id: string
+  filename: string
+  relativePath: string
+  status: ScreenshotStatus
+  runId: string
+  createdAt: string
+  size: number
+  tagIds: string[]
+  deletedAt?: string
+  run?: ScreenshotRun
+  tags: ScreenshotTag[]
+  thumbnailDataUrl: string
+}
+
+interface ScreenshotListResult {
+  screenshots: ScreenshotItem[]
+  runs: ScreenshotRun[]
+  tags: ScreenshotTag[]
+  screenshotDir: string
+  trashDir: string
+}
+
+interface ScreenshotImageResult {
+  id: string
+  filename: string
+  dataUrl: string
+}
+
 interface FlowPilotAPI {
   getConfig: () => Promise<AppConfig>
   saveConfig: (config: AppConfig) => Promise<boolean>
@@ -29,6 +76,14 @@ interface FlowPilotAPI {
   setLaunchAtStartup: (enabled: boolean) => Promise<boolean>
   getAutoClickerStatus: () => Promise<AutoClickerStatus>
   setAutoClickerEnabled: (enabled: boolean) => Promise<AutoClickerStatus>
+  listScreenshots: () => Promise<ScreenshotListResult>
+  getScreenshotImage: (id: string) => Promise<ScreenshotImageResult | null>
+  createScreenshotTag: (name: string) => Promise<ScreenshotTag>
+  updateScreenshotTags: (id: string, tagIds: string[]) => Promise<ScreenshotItem>
+  trashScreenshot: (id: string) => Promise<boolean>
+  restoreScreenshot: (id: string) => Promise<boolean>
+  deleteScreenshotPermanently: (id: string) => Promise<boolean>
+  openScreenshotInExplorer: (id: string) => Promise<boolean>
   onAutoClickerStatusChanged: (callback: (status: AutoClickerStatus) => void) => () => void
 }
 

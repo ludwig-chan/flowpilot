@@ -120,6 +120,15 @@ const SCREENSHOT_BRIDGE_HOST = '127.0.0.1'
 const SCREENSHOT_BRIDGE_PORTS = Array.from({ length: 11 }, (_, i) => 17365 + i)
 const SCREENSHOT_BRIDGE_TIMEOUT = 2000
 
+function withRunMetadata(message: any): any {
+  if (message.type !== MSG.RUN_FLOW_IN_TAB) return message
+  return {
+    ...message,
+    runId: message.runId ?? genId('run'),
+    runStartedAt: message.runStartedAt ?? new Date().toISOString(),
+  }
+}
+
 async function fetchWithTimeout(url: string, init: RequestInit = {}, timeout = SCREENSHOT_BRIDGE_TIMEOUT): Promise<Response> {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), timeout)
@@ -171,7 +180,16 @@ function handleSaveScreenshot(msg: any, _s: any, sr: (r: unknown) => void): true
       const res = await fetchWithTimeout(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ filename, dataUrl }),
+        body: JSON.stringify({
+          filename,
+          dataUrl,
+          runId: msg.runId,
+          runStartedAt: msg.runStartedAt,
+          flowId: msg.flowId,
+          flowName: msg.flowName,
+          sourceUrl: msg.sourceUrl,
+          sourceTitle: msg.sourceTitle,
+        }),
       }, 30_000)
       const body = await res.json().catch(() => ({ ok: false, error: `HTTP ${res.status}` })) as
         { ok?: boolean; path?: string; error?: string }
@@ -215,7 +233,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (FORWARD_TO_CONTENT.has(message.type)) {
     const tabId = (message.tabId as number | undefined) ?? activeTabId
     if (!tabId) { sendResponse({ ok: false, error: '未设置目标 Tab' }); return true }
-    chrome.tabs.sendMessage(tabId, message).then(r => sendResponse(r)).catch(e => {
+    chrome.tabs.sendMessage(tabId, withRunMetadata(message)).then(r => sendResponse(r)).catch(e => {
       sendResponse({ ok: false, error: String(e) })
     })
     return true
@@ -243,14 +261,16 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         const flow = flattenFlows(Array.isArray(data.builtFlows) ? data.builtFlows as RawFlow[] : [])
           .find(f => f.id === message.flowId)
         if (!flow) return
-        chrome.tabs.sendMessage(tabId, {
+        chrome.tabs.sendMessage(tabId, withRunMetadata({
           type: MSG.RUN_FLOW_IN_TAB,
+          flowId: flow.id,
+          flowName: flow.name,
           steps: flow.steps,
           variables: {},
           stepDelayLevel: flow.stepDelayLevel,
           stepDelayRange: flow.stepDelayRange,
           waitTimeout: flow.waitTimeout,
-        }).catch(() => {})
+        })).catch(() => {})
       })
     }
     sendResponse({ ok: true })
@@ -392,14 +412,16 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
       if (trigger.type === 'url_match' && trigger.urlPattern) {
         if (!matchUrl(url, trigger.urlPattern, (trigger.urlMatchMode as UrlMatchMode) ?? 'contains')) continue
         setTimeout(() => {
-          chrome.tabs.sendMessage(tabId, {
+          chrome.tabs.sendMessage(tabId, withRunMetadata({
           type: MSG.RUN_FLOW_IN_TAB,
+          flowId: flow.id,
+          flowName: flow.name,
           steps: flow.steps,
           variables: {},
           stepDelayLevel: flow.stepDelayLevel,
           stepDelayRange: flow.stepDelayRange,
           waitTimeout: flow.waitTimeout,
-        }).catch(() => {})
+        })).catch(() => {})
       }, trigger.delay ?? 0)
       }
 

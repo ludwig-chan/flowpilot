@@ -169,7 +169,16 @@ export function initFloatingWidget(): void {
     panel.style.display = 'none'
     addLog(`启动「${flow.name}」...`)
 
-    currentRunner = runFlow(flow.steps, { ...flowVars[flow.id] }, addLog)
+    currentRunner = runFlow(
+      flow.steps,
+      { ...flowVars[flow.id] },
+      addLog,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      { flowId: flow.id, flowName: flow.name }
+    )
     currentRunner.done
       .then(() => {
         activeFlowId = null

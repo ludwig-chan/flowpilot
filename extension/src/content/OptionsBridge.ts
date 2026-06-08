@@ -73,7 +73,12 @@ export function initOptionsBridge(): void {
         chrome.runtime.sendMessage({ type: MSG.FLOW_LOG_FROM_TAB, text }).catch(() => {})
       }, (event) => {
         chrome.runtime.sendMessage({ type: MSG.FLOW_STEP_EVENT_FROM_TAB, event }).catch(() => {})
-      }, m.stepDelayLevel, m.stepDelayRange, m.waitTimeout)
+      }, m.stepDelayLevel, m.stepDelayRange, m.waitTimeout, {
+        runId: m.runId,
+        runStartedAt: m.runStartedAt,
+        flowId: m.flowId,
+        flowName: m.flowName,
+      })
       _stopCurrentFlow = stop
       done.then(() => {
         _stopCurrentFlow = null

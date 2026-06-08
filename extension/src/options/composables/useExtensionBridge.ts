@@ -113,8 +113,19 @@ export function useExtensionBridge() {
     stepDelayLevel?: StepDelayLevel,
     stepDelayRange?: [number, number],
     waitTimeout?: number,
+    flowId?: string,
+    flowName?: string,
   ) {
-    return send({ type: MSG.RUN_FLOW_IN_TAB, steps, variables, stepDelayLevel, stepDelayRange, waitTimeout })
+    return send({
+      type: MSG.RUN_FLOW_IN_TAB,
+      steps,
+      variables,
+      stepDelayLevel,
+      stepDelayRange,
+      waitTimeout,
+      flowId,
+      flowName,
+    })
   }
 
   async function stopFlow() {
