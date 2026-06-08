@@ -16,7 +16,7 @@
  */
 
 import { execSync } from 'child_process'
-import { readFileSync, writeFileSync } from 'fs'
+import { existsSync, readFileSync, rmSync, writeFileSync } from 'fs'
 import { join, dirname } from 'path'
 import { fileURLToPath } from 'url'
 
@@ -36,6 +36,42 @@ function readJson(filePath) {
 
 function writeJson(filePath, data) {
   writeFileSync(filePath, JSON.stringify(data, null, 2) + '\n', 'utf-8')
+}
+
+function sleep(ms) {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms)
+}
+
+function killProcessByImage(imageName) {
+  try {
+    execSync(`taskkill /F /IM ${imageName} /T`, { stdio: 'ignore' })
+    console.log(`  Closed running ${imageName}`)
+  } catch {
+    // taskkill exits non-zero when the process is not running.
+  }
+}
+
+function removeDirWithRetry(dirPath, attempts = 5, delayMs = 1000) {
+  if (!existsSync(dirPath)) {
+    return
+  }
+
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      rmSync(dirPath, { recursive: true, force: true, maxRetries: 0 })
+      console.log(`  Removed stale build directory: ${dirPath}`)
+      return
+    } catch (error) {
+      if (attempt === attempts) {
+        console.error(`\nFailed to remove stale build directory: ${dirPath}`)
+        console.error('Close FlowPilot Client, Explorer preview panes, antivirus scans, or any process using client/dist/win-unpacked, then run the release again.')
+        throw error
+      }
+
+      console.warn(`  Could not remove stale build directory yet (attempt ${attempt}/${attempts}). Retrying in ${delayMs}ms...`)
+      sleep(delayMs)
+    }
+  }
 }
 
 function bumpVersion(pkgPath, version) {
@@ -117,12 +153,10 @@ run('npm run deploy', extDir)
 console.log('\n🖥️  [3/3] 构建 Electron 客户端（Windows）...')
 
 // 若旧版客户端正在运行，先关闭它，否则 electron-builder 无法覆盖 portable exe
-try {
-  execSync('taskkill /F /IM FlowPilotClient.exe /T', { stdio: 'ignore' })
-  console.log('  已关闭正在运行的 FlowPilotClient.exe')
-} catch {
-  // 进程不存在时 taskkill 返回非零退出码，忽略即可
-}
+killProcessByImage('FlowPilotClient.exe')
+killProcessByImage('electron.exe')
+sleep(1000)
+removeDirWithRetry(join(clientDir, 'dist', 'win-unpacked'))
 
 run('npm run build:win', clientDir)
 

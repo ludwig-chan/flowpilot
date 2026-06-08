@@ -6,9 +6,10 @@ export interface AppConfig {
   extensionDir: string
   extensionHash: string
   lastUpdatedAt: string
-  screenshotDir?: string   // 截图保存目录
-  launchAtStartup?: boolean // 开机自动启动
-  currentVersion?: string  // 运行时字段，不持久化
+  screenshotDir?: string
+  launchAtStartup?: boolean
+  autoClickerEnabled?: boolean
+  currentVersion?: string
 }
 
 const CONFIG_DIR = path.join(app.getPath('userData'), 'flowpilot')
@@ -18,6 +19,7 @@ const DEFAULT_CONFIG: AppConfig = {
   extensionDir: path.join(app.getPath('userData'), 'extension'),
   extensionHash: '',
   lastUpdatedAt: '',
+  autoClickerEnabled: false
 }
 
 export function loadConfig(): AppConfig {
@@ -43,5 +45,3 @@ export function saveConfig(config: AppConfig): void {
   }
   fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2), 'utf-8')
 }
-
-

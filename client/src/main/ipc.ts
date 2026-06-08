@@ -4,6 +4,7 @@ import { existsSync, mkdirSync } from 'fs'
 import { join } from 'path'
 import os from 'os'
 import { loadConfig, saveConfig, AppConfig } from './config'
+import type { AutoClickerService, AutoClickerStatus } from './autoClicker'
 
 const TESS_LANGS = ['chi_sim', 'eng'] as const
 
@@ -57,7 +58,10 @@ function findBrowserExe(id: string): string | null {
   return cfg.paths.find((p) => existsSync(p)) ?? null
 }
 
-export function registerIpcHandlers(mainWindow: BrowserWindow): void {
+export function registerIpcHandlers(
+  mainWindow: BrowserWindow,
+  autoClicker?: AutoClickerService
+): void {
   // 获取配置（currentVersion 来自客户端自身版本号）
   ipcMain.handle('get-config', () => {
     const config = loadConfig()
@@ -126,6 +130,22 @@ export function registerIpcHandlers(mainWindow: BrowserWindow): void {
     config.launchAtStartup = enabled
     saveConfig(config)
     return true
+  })
+
+  ipcMain.handle('get-auto-clicker-status', (): AutoClickerStatus => {
+    return autoClicker?.getStatus() ?? {
+      supported: process.platform === 'win32',
+      enabled: false,
+      clicking: false
+    }
+  })
+
+  ipcMain.handle('set-auto-clicker-enabled', (_event, enabled: boolean): AutoClickerStatus => {
+    return autoClicker?.setEnabled(enabled) ?? {
+      supported: process.platform === 'win32',
+      enabled: false,
+      clicking: false
+    }
   })
 
   // 自动加载插件（浏览器需已关闭）

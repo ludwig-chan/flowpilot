@@ -5,14 +5,17 @@ import { execSync } from 'child_process'
 import { appendFileSync, cpSync, existsSync, readFileSync, mkdirSync, readdirSync, rmSync, renameSync, writeFileSync } from 'fs'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { createTray } from './tray'
+import { setTrayAutoClickerStatus } from './tray'
 import { registerIpcHandlers, prefetchTessdata } from './ipc'
 import { loadConfig, saveConfig } from './config'
+import { AutoClickerService } from './autoClicker'
 
 const NATIVE_HOST_NAME = 'com.flowpilot.host'
 const EXTENSION_ID = 'gehkoeflghpbmmljaoggjddmgjjimnbf'
 const isNativeHost = process.argv.some(arg => arg.startsWith('chrome-extension://'))
 
 let mainWindow: BrowserWindow | null = null
+let autoClicker: AutoClickerService | null = null
 
 function createWindow(): BrowserWindow {
   const iconPath = is.dev
@@ -342,9 +345,26 @@ if (isNativeHost) {
     prefetchTessdata()
 
     mainWindow = createWindow()
-    registerIpcHandlers(mainWindow)
+    autoClicker = new AutoClickerService({
+      getEnabled: () => !!loadConfig().autoClickerEnabled,
+      setEnabled: (enabled) => {
+        const config = loadConfig()
+        config.autoClickerEnabled = enabled
+        saveConfig(config)
+      },
+      onStatusChange: (status) => {
+        mainWindow?.webContents.send('auto-clicker-status-changed', status)
+        if (mainWindow) setTrayAutoClickerStatus(mainWindow, status)
+      }
+    })
+    registerIpcHandlers(mainWindow, autoClicker)
 
-    createTray(mainWindow)
+    createTray(mainWindow, () => {
+      const status = autoClicker?.toggle()
+      if (status && mainWindow) setTrayAutoClickerStatus(mainWindow, status)
+    })
+    setTrayAutoClickerStatus(mainWindow, autoClicker.getStatus())
+    autoClicker.startFromConfig()
 
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) {
@@ -357,6 +377,7 @@ if (isNativeHost) {
 
   app.on('before-quit', () => {
     ;(app as typeof app & { isQuitting: boolean }).isQuitting = true
+    autoClicker?.dispose()
   })
 
   app.on('window-all-closed', () => {

@@ -6,7 +6,14 @@ interface AppConfig {
   lastUpdatedAt: string
   screenshotDir?: string
   launchAtStartup?: boolean
+  autoClickerEnabled?: boolean
   currentVersion: string
+}
+
+interface AutoClickerStatus {
+  supported: boolean
+  enabled: boolean
+  clicking: boolean
 }
 
 interface SettingsProps {
@@ -20,16 +27,32 @@ export default function Settings({ showToast }: SettingsProps): React.JSX.Elemen
     lastUpdatedAt: '',
     screenshotDir: '',
     launchAtStartup: false,
+    autoClickerEnabled: false,
     currentVersion: 'v0.0.0'
   })
   const [saving, setSaving] = useState(false)
   const [togglingStartup, setTogglingStartup] = useState(false)
+  const [togglingAutoClicker, setTogglingAutoClicker] = useState(false)
+  const [autoClickerStatus, setAutoClickerStatus] = useState<AutoClickerStatus>({
+    supported: false,
+    enabled: false,
+    clicking: false
+  })
 
   useEffect(() => {
     window.api.getConfig().then((cfg) => setConfig(cfg))
     window.api.getLaunchAtStartup().then((val: boolean) =>
       setConfig((prev) => ({ ...prev, launchAtStartup: val }))
     )
+    window.api.getAutoClickerStatus().then((status: AutoClickerStatus) => {
+      setAutoClickerStatus(status)
+      setConfig((prev) => ({ ...prev, autoClickerEnabled: status.enabled }))
+    })
+    const unsubscribe = window.api.onAutoClickerStatusChanged((status: AutoClickerStatus) => {
+      setAutoClickerStatus(status)
+      setConfig((prev) => ({ ...prev, autoClickerEnabled: status.enabled }))
+    })
+    return unsubscribe
   }, [])
 
   const handleBrowse = async (): Promise<void> => {
@@ -48,11 +71,31 @@ export default function Settings({ showToast }: SettingsProps): React.JSX.Elemen
       const next = !config.launchAtStartup
       await window.api.setLaunchAtStartup(next)
       setConfig((prev) => ({ ...prev, launchAtStartup: next }))
-      showToast(next ? '已开启开机自动启动' : '已关闭开机自动启动', 'success')
+      showToast(next ? '已开启开机自启动' : '已关闭开机自启动', 'success')
     } catch {
       showToast('操作失败', 'error')
     } finally {
       setTogglingStartup(false)
+    }
+  }
+
+  const handleToggleAutoClicker = async (): Promise<void> => {
+    if (!autoClickerStatus.supported) {
+      showToast('桌面长按连点仅支持 Windows', 'error')
+      return
+    }
+
+    setTogglingAutoClicker(true)
+    try {
+      const next = !autoClickerStatus.enabled
+      const status = await window.api.setAutoClickerEnabled(next)
+      setAutoClickerStatus(status)
+      setConfig((prev) => ({ ...prev, autoClickerEnabled: status.enabled }))
+      showToast(status.enabled ? '已开启桌面长按连点' : '已关闭桌面长按连点', 'success')
+    } catch {
+      showToast('操作失败', 'error')
+    } finally {
+      setTogglingAutoClicker(false)
     }
   }
 
@@ -87,22 +130,22 @@ export default function Settings({ showToast }: SettingsProps): React.JSX.Elemen
               type="text"
               value={config.extensionDir}
               onChange={(e) => setConfig((prev) => ({ ...prev, extensionDir: e.target.value }))}
-              placeholder="例：C:\FlowPilot\extension"
+              placeholder={'例如：C:\\FlowPilot\\extension'}
             />
             <button className="btn btn-secondary" onClick={handleBrowse}>
-              浏览…
+              浏览...
             </button>
             {config.extensionDir && (
               <button
                 className="btn btn-secondary"
                 onClick={() => window.api.openInExplorer(config.extensionDir)}
               >
-                📂
+                打开
               </button>
             )}
           </div>
           <div className="form-hint">
-            浏览器加载插件时，直接指向此目录（解压目录，包含 manifest.json）
+            浏览器加载插件时，直接指向此目录，目录内应包含 manifest.json。
           </div>
         </div>
       </div>
@@ -110,14 +153,18 @@ export default function Settings({ showToast }: SettingsProps): React.JSX.Elemen
       <div className="card">
         <div className="card-title">版本信息</div>
         <div className="form-group" style={{ marginBottom: 0 }}>
-          <label className="form-label">当前插件版本</label>
+          <label className="form-label">当前客户端版本</label>
           <div
             className="form-input"
-            style={{ maxWidth: 160, background: 'var(--bg-secondary, #f5f5f5)', cursor: 'default', userSelect: 'text' }}
+            style={{
+              maxWidth: 160,
+              background: 'var(--bg-secondary, #f5f5f5)',
+              cursor: 'default',
+              userSelect: 'text'
+            }}
           >
             {config.currentVersion}
           </div>
-          <div className="form-hint">自动从插件目录的 manifest.json 读取</div>
         </div>
       </div>
 
@@ -134,29 +181,31 @@ export default function Settings({ showToast }: SettingsProps): React.JSX.Elemen
               style={{ cursor: 'default' }}
             />
             <button className="btn btn-secondary" onClick={handleBrowseScreenshot}>
-              浏览…
+              浏览...
             </button>
             {config.screenshotDir && (
               <button
                 className="btn btn-secondary"
                 onClick={() => window.api.openInExplorer(config.screenshotDir!)}
               >
-                📂
+                打开
               </button>
             )}
           </div>
-          <div className="form-hint">元素截图将保存到此目录（需要 FlowPilot 客户端保持运行）</div>
+          <div className="form-hint">
+            元素截图会保存到此目录，需要 FlowPilot 客户端保持运行。
+          </div>
         </div>
       </div>
 
       <div className="card">
         <div className="card-title">系统</div>
-        <div className="form-group" style={{ marginBottom: 0 }}>
+        <div className="form-group">
           <div className="input-row" style={{ alignItems: 'center', gap: 12 }}>
             <label className="form-label" style={{ marginBottom: 0, flex: 1 }}>
-              开机自动启动
+              开机自启动
               <div className="form-hint" style={{ marginTop: 2 }}>
-                电脑开机后自动在后台运行客户端（托盘图标可见）
+                电脑开机后自动在后台运行客户端，托盘图标可见。
               </div>
             </label>
             <button
@@ -169,11 +218,37 @@ export default function Settings({ showToast }: SettingsProps): React.JSX.Elemen
             </button>
           </div>
         </div>
+
+        <div className="form-group" style={{ marginBottom: 0 }}>
+          <div className="input-row" style={{ alignItems: 'center', gap: 12 }}>
+            <label className="form-label" style={{ marginBottom: 0, flex: 1 }}>
+              桌面长按连点
+              <div className="form-hint" style={{ marginTop: 2 }}>
+                开启后，在任意 Windows 桌面位置左键长按 1200ms，可选择 200/500/1000ms 连续点击；按 Esc 停止。
+              </div>
+              <div className="form-hint" style={{ marginTop: 2 }}>
+                {autoClickerStatus.supported
+                  ? autoClickerStatus.clicking
+                    ? '当前状态：连点中'
+                    : '当前状态：空闲'
+                  : '当前系统暂不支持'}
+              </div>
+            </label>
+            <button
+              className={`btn ${autoClickerStatus.enabled ? 'btn-primary' : 'btn-secondary'}`}
+              onClick={handleToggleAutoClicker}
+              disabled={togglingAutoClicker || !autoClickerStatus.supported}
+              style={{ minWidth: 72, flexShrink: 0 }}
+            >
+              {autoClickerStatus.enabled ? '已开启' : '已关闭'}
+            </button>
+          </div>
+        </div>
       </div>
 
       <div className="save-row">
         <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
-          {saving ? '保存中…' : '保存设置'}
+          {saving ? '保存中...' : '保存设置'}
         </button>
       </div>
     </>

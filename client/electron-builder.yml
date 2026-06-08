@@ -7,6 +7,8 @@ extraResources:
     to: icon.png
   - from: resources/extension
     to: extension
+  - from: resources/autoclicker
+    to: autoclicker
 files:
   - '!**/.vscode/*'
   - '!src/*'

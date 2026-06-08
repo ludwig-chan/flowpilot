@@ -6,6 +6,7 @@ interface AppConfig {
   lastUpdatedAt: string
   screenshotDir?: string
   launchAtStartup?: boolean
+  autoClickerEnabled?: boolean
   currentVersion: string
 }
 
@@ -26,6 +27,15 @@ interface FlowPilotAPI {
   ocrImage: (dataUrl: string) => Promise<{ success: boolean; text?: string; error?: string }>
   getLaunchAtStartup: () => Promise<boolean>
   setLaunchAtStartup: (enabled: boolean) => Promise<boolean>
+  getAutoClickerStatus: () => Promise<AutoClickerStatus>
+  setAutoClickerEnabled: (enabled: boolean) => Promise<AutoClickerStatus>
+  onAutoClickerStatusChanged: (callback: (status: AutoClickerStatus) => void) => () => void
+}
+
+interface AutoClickerStatus {
+  supported: boolean
+  enabled: boolean
+  clicking: boolean
 }
 
 declare global {
