@@ -10,11 +10,11 @@
     "storage",
     "debugger",
     "scripting",
-    "contextMenus",
-    "nativeMessaging"
+    "contextMenus"
   ],
   "host_permissions": [
-    "<all_urls>"
+    "<all_urls>",
+    "http://127.0.0.1/*"
   ],
   "action": {
     "default_icon": {

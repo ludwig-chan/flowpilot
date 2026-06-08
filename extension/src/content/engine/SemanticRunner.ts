@@ -268,16 +268,23 @@ async function executeStep(
       if (!dataUrl) { onLog('  [跳过] 截图失败，无法保存'); break }
 
       const filename = `screenshot-${ts}.png`
-      const saved = await chrome.runtime.sendMessage({
-        type: 'SAVE_SCREENSHOT',
-        dataUrl,
-        filename,
-      }) as { ok: boolean; path?: string; error?: string } | undefined
+      let saved: { ok: boolean; path?: string; error?: string } | undefined
+      try {
+        saved = await chrome.runtime.sendMessage({
+          type: MSG.SAVE_SCREENSHOT,
+          dataUrl,
+          filename,
+        }) as { ok: boolean; path?: string; error?: string } | undefined
+      } catch (err) {
+        saved = { ok: false, error: (err as Error).message }
+      }
 
       if (saved?.ok) {
         onLog(`  已保存 → ${saved.path ?? filename}（${Math.round(dataUrl.length * 0.75 / 1024)} KB）`)
       } else {
-        // 降级：客户端未运行时回退到浏览器下载
+        const bridgeError = saved?.error ?? '本地截图服务未返回保存结果'
+        onLog(`  [降级] 本地截图服务失败：${bridgeError}`)
+        // 降级：客户端未运行或 HTTP 传输失败时回退到浏览器下载
         const a = document.createElement('a')
         a.href = dataUrl
         a.download = filename

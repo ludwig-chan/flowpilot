@@ -71,9 +71,9 @@ function onCancelSmartLoop() {
 
     <!-- 智能循环选择器模态框 -->
     <SmartLoopPickerModal
-      v-if="showSmartLoopModal && smartLoopPickedEl"
+      v-if="showSmartLoopModal"
       :candidates="smartLoopCandidates"
-      :picked-element="smartLoopPickedEl!"
+      :picked-element="smartLoopPickedEl"
       @confirm="onSmartLoopConfirm"
       @cancel="onCancelSmartLoop"
       @hover-candidate="(sel: string) => bridge.highlightLoopCandidates(sel)"

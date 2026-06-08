@@ -84,10 +84,15 @@ export interface RequestSmartLoopAnalyzeMessage {
   type: 'REQUEST_SMART_LOOP_ANALYZE'
 }
 
+export interface RequestSmartLoopFromSelectorMessage {
+  type:        'REQUEST_SMART_LOOP_FROM_SELECTOR'
+  cssSelector: string
+}
+
 /** Content Script → Options（经 background 转发）：返回重复结构候选列表 */
 export interface SmartLoopAnalyzedMessage {
   type:       'SMART_LOOP_ANALYZED'
-  element:    import('./dom').SerializedElement
+  element:    import('./dom').SerializedElement | null
   candidates: RepeatingCandidate[]
 }
 
@@ -116,6 +121,7 @@ export type ExtensionMessage =
   | WatchElementTriggerMessage
   | ElementTriggerFiredMessage
   | RequestSmartLoopAnalyzeMessage
+  | RequestSmartLoopFromSelectorMessage
   | SmartLoopAnalyzedMessage
   | HighlightLoopCandidatesMessage
   | ClearLoopHighlightsMessage

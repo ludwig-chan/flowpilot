@@ -105,7 +105,8 @@ function handleGetActiveTab(_m: any, _s: any, sr: (r: unknown) => void): true {
 const FORWARD_TO_CONTENT: Set<string> = new Set([
   MSG.REQUEST_DOM_SCAN, MSG.REQUEST_PICK_ELEMENT, MSG.CANCEL_PICK_ELEMENT,
   MSG.REQUEST_HIGHLIGHT, MSG.REQUEST_TEST_CLICK, MSG.RUN_FLOW_IN_TAB, MSG.STOP_FLOW_IN_TAB,
-  MSG.REQUEST_SMART_LOOP_ANALYZE, MSG.HIGHLIGHT_LOOP_CANDIDATES, MSG.CLEAR_LOOP_HIGHLIGHTS,
+  MSG.REQUEST_SMART_LOOP_ANALYZE, MSG.REQUEST_SMART_LOOP_FROM_SELECTOR,
+  MSG.HIGHLIGHT_LOOP_CANDIDATES, MSG.CLEAR_LOOP_HIGHLIGHTS,
 ])
 
 // 需要广播给 Options 页面的消息类型
@@ -115,64 +116,76 @@ const BROADCAST_TO_OPTIONS: Set<string> = new Set([
   MSG.SMART_LOOP_ANALYZED, MSG.FLOW_STEP_EVENT_FROM_TAB,
 ])
 
+const SCREENSHOT_BRIDGE_HOST = '127.0.0.1'
+const SCREENSHOT_BRIDGE_PORTS = Array.from({ length: 11 }, (_, i) => 17365 + i)
+const SCREENSHOT_BRIDGE_TIMEOUT = 2000
+
+async function fetchWithTimeout(url: string, init: RequestInit = {}, timeout = SCREENSHOT_BRIDGE_TIMEOUT): Promise<Response> {
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), timeout)
+  try {
+    return await fetch(url, { ...init, signal: controller.signal })
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
+async function findScreenshotBridge(): Promise<{ port: number; error?: string }> {
+  let lastError = ''
+
+  for (const port of SCREENSHOT_BRIDGE_PORTS) {
+    const url = `http://${SCREENSHOT_BRIDGE_HOST}:${port}/health`
+    try {
+      const res = await fetchWithTimeout(url, { method: 'GET', cache: 'no-store' })
+      if (!res.ok) {
+        lastError = `${port} 返回 ${res.status}`
+        continue
+      }
+      const body = await res.json() as { ok?: boolean; app?: string }
+      if (body.ok && body.app === 'FlowPilot') return { port }
+      lastError = `${port} 不是 FlowPilot 服务`
+    } catch (err) {
+      lastError = (err as Error).name === 'AbortError'
+        ? `${port} 探测超时`
+        : `${port} ${(err as Error).message}`
+    }
+  }
+
+  return { port: 0, error: lastError || '未找到 FlowPilot 本地服务' }
+}
+
 function handleSaveScreenshot(msg: any, _s: any, sr: (r: unknown) => void): true {
   const dataUrl: string = msg.dataUrl ?? ''
   const filename: string = msg.filename ?? 'screenshot.png'
-  console.log('[SAVE_SCREENSHOT] 开始调用 native host（分块传输），文件名：', filename, 'dataUrl长度：', dataUrl.length)
+  console.log('[SAVE_SCREENSHOT] 开始调用本地 HTTP 服务，文件名：', filename, 'dataUrl长度：', dataUrl.length)
 
-  const CHUNK_SIZE = 900_000 // < 1MB，留余量给 JSON 包装
-  const totalChunks = Math.ceil(dataUrl.length / CHUNK_SIZE)
+  ;(async () => {
+    try {
+      const bridge = await findScreenshotBridge()
+      if (!bridge.port) {
+        sr({ ok: false, error: `FlowPilot 本地截图服务不可用：${bridge.error}` })
+        return
+      }
 
-  let responded = false
-  const respond = (r: unknown): void => {
-    if (!responded) { responded = true; sr(r) }
-  }
+      const url = `http://${SCREENSHOT_BRIDGE_HOST}:${bridge.port}/screenshots`
+      const res = await fetchWithTimeout(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filename, dataUrl }),
+      }, 30_000)
+      const body = await res.json().catch(() => ({ ok: false, error: `HTTP ${res.status}` })) as
+        { ok?: boolean; path?: string; error?: string }
 
-  // 超时保护：30 秒无响应则断开
-  const timeout = setTimeout(() => {
-    console.error('[SAVE_SCREENSHOT] 超时（30秒无响应）')
-    try { port.disconnect() } catch { /* ignore */ }
-    respond({ ok: false, error: 'native host 超时（30秒）' })
-  }, 30_000)
+      if (!res.ok || !body.ok) {
+        sr({ ok: false, error: body.error ?? `HTTP ${res.status}` })
+        return
+      }
 
-  let port: chrome.runtime.Port
-  try {
-    port = chrome.runtime.connectNative('com.flowpilot.host')
-  } catch (err) {
-    console.error('[SAVE_SCREENSHOT] connectNative 失败：', err)
-    respond({ ok: false, error: String(err) })
-    return true
-  }
-
-  port.onMessage.addListener((response: any) => {
-    clearTimeout(timeout)
-    console.log('[SAVE_SCREENSHOT] native host 响应：', response)
-    respond(response ?? { ok: false, error: 'no response' })
-  })
-
-  port.onDisconnect.addListener(() => {
-    clearTimeout(timeout)
-    if (!responded) {
-      const errMsg = chrome.runtime.lastError?.message ?? '连接断开'
-      console.error('[SAVE_SCREENSHOT] native host 连接断开：', errMsg)
-      console.error('[SAVE_SCREENSHOT] 请检查 %LOCALAPPDATA%/FlowPilot/native-host-debug.log')
-      respond({ ok: false, error: errMsg })
+      sr({ ok: true, path: body.path })
+    } catch (err) {
+      sr({ ok: false, error: (err as Error).message })
     }
-  })
-
-  // 发送消息序列：START → CHUNK ×N → END
-  port.postMessage({ type: 'SAVE_SCREENSHOT_START', filename, totalChunks })
-
-  for (let i = 0; i < totalChunks; i++) {
-    port.postMessage({
-      type: 'SAVE_SCREENSHOT_CHUNK',
-      index: i,
-      data: dataUrl.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE),
-    })
-  }
-
-  port.postMessage({ type: 'SAVE_SCREENSHOT_END' })
-  console.log(`[SAVE_SCREENSHOT] 已发送 ${totalChunks} 个分块，等待响应...`)
+  })()
 
   return true
 }

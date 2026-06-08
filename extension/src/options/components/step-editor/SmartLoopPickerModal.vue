@@ -6,7 +6,7 @@ import BaseInput from '@shared/components/BaseInput.vue'
 
 const props = defineProps<{
   candidates:    RepeatingCandidate[]
-  pickedElement: SerializedElement
+  pickedElement: SerializedElement | null
 }>()
 
 const emit = defineEmits<{
@@ -37,11 +37,14 @@ function tagIcon(tagName: string): string {
       <!-- 已选目标元素 -->
       <div class="slp-section">
         <div class="slp-label">已选目标元素</div>
-        <div class="slp-picked">
+        <div v-if="pickedElement" class="slp-picked">
           <span class="slp-picked__label">{{ pickedElement.label || '（无标签）' }}</span>
           <code class="slp-picked__css" :title="pickedElement.selector.cssSelector">
             {{ pickedElement.selector.cssSelector }}
           </code>
+        </div>
+        <div v-else class="slp-empty slp-empty--compact">
+          未找到目标元素，请换一个元素重试
         </div>
       </div>
 
@@ -123,6 +126,7 @@ function tagIcon(tagName: string): string {
 
 .slp-empty {
   font-size: 12px; color: $color-text-muted-2; text-align: center; padding: 16px 0;
+  &--compact { padding: 4px 0; text-align: left; }
 }
 
 .slp-candidates {
