@@ -158,7 +158,7 @@ const emit = defineEmits<{
   &__add-btn { align-self: flex-start; }
 }
 .branch-insert-line {
-  height: 2px; background: transparent; border-radius: 1px; transition: background 0.15s;
+  height: 8px; background: transparent; border-radius: 1px; transition: background 0.15s;
   &--active { background: #89b4fa; }
 }
 .cond-child-card {

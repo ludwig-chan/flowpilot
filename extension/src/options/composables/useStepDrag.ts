@@ -26,7 +26,6 @@ export function useStepDrag(editingFlow: Ref<LocalFlow | null>) {
   function onDragOver(e: DragEvent, i: number) {
     e.preventDefault()
     e.dataTransfer!.dropEffect = 'move'
-    branchDropTarget.value = null
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
     dragInsertIdx.value = e.clientY < rect.top + rect.height / 2 ? i : i + 1
   }
