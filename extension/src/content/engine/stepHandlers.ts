@@ -68,6 +68,60 @@ async function executeBranch(
   }
 }
 
+// ─── 截图保存三级管线 ────────────────────────────────────────────────────────
+
+/** Step 1: 截图（canvas 优先 → 通用元素降级） */
+async function captureScreenshot(
+  selector: import('@shared/types/flow').SelectorStrategy,
+  sel: string,
+  resolve: ResolveFn,
+  onLog: (s: string) => void,
+): Promise<string | null> {
+  const quickEl = (() => { try { return document.querySelector(sel) } catch { return null } })()
+  const likelyCanvas = quickEl === null || quickEl.tagName.toLowerCase() === 'canvas'
+
+  let dataUrl: string | null = null
+  if (likelyCanvas) dataUrl = await screenshotCanvas(sel, onLog)
+  if (dataUrl === null) {
+    if (likelyCanvas && quickEl !== null) onLog('  [降级] canvas 路径失败，尝试通用元素截图...')
+    try {
+      const el = await resolve(selector) as HTMLElement
+      dataUrl = await screenshotElement(el, onLog)
+    } catch (err) {
+      onLog(`  [截图] 失败：${(err as Error).message}`)
+    }
+  }
+  return dataUrl
+}
+
+/** Step 2: 通过桥接服务保存到本地 */
+async function saveViaBridge(
+  dataUrl: string,
+  filename: string,
+  ctx: RunContext,
+): Promise<{ ok: boolean; path?: string; error?: string }> {
+  try {
+    const saved = await chrome.runtime.sendMessage({
+      type: MSG.SAVE_SCREENSHOT,
+      dataUrl, filename,
+      runId: ctx.runId, runStartedAt: ctx.runStartedAt,
+      flowId: ctx.flowId, flowName: ctx.flowName,
+      sourceUrl: location.href, sourceTitle: document.title,
+    }) as { ok: boolean; path?: string; error?: string } | undefined
+    return saved ?? { ok: false, error: '桥接服务未响应' }
+  } catch (err) {
+    return { ok: false, error: (err as Error).message }
+  }
+}
+
+/** Step 3: 降级到浏览器下载 */
+function downloadFallback(dataUrl: string, filename: string, onLog: (s: string) => void): void {
+  const a = document.createElement('a')
+  a.href = dataUrl; a.download = filename; a.style.display = 'none'
+  document.body.appendChild(a); a.click(); a.remove()
+  onLog(`  已保存（浏览器下载）→ ${filename}（${Math.round(dataUrl.length * 0.75 / 1024)} KB）`)
+}
+
 // ─── 步骤处理器 ────────────────────────────────────────────────────────────────
 
 async function handleClick(step: FlowStep, _ctx: RunContext, resolve: ResolveFn): Promise<void> {
@@ -294,51 +348,21 @@ async function handleSaveCanvas(
 ): Promise<void> {
   const { onLog } = ctx
   if (!step.selector) { onLog('  [跳过] 截图缺少 selector'); return }
+
   const sel = step.selector.cssSelector
-  const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
-
-  // Step 1: 截图（canvas 优先 → 通用元素降级）
-  const quickEl = (() => { try { return document.querySelector(sel) } catch { return null } })()
-  const likelyCanvas = quickEl === null || quickEl.tagName.toLowerCase() === 'canvas'
-
-  let dataUrl: string | null = null
-  if (likelyCanvas) dataUrl = await screenshotCanvas(sel, onLog)
-  if (dataUrl === null) {
-    if (likelyCanvas && quickEl !== null) onLog('  [降级] canvas 路径失败，尝试通用元素截图...')
-    try {
-      const el = await resolve(step.selector) as HTMLElement
-      dataUrl = await screenshotElement(el, onLog)
-    } catch (err) {
-      onLog(`  [截图] 失败：${(err as Error).message}`)
-    }
-  }
+  const dataUrl = await captureScreenshot(step.selector, sel, resolve, onLog)
   if (!dataUrl) { onLog('  [跳过] 截图失败，无法保存'); return }
 
-  // Step 2: 通过桥接服务保存
+  const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
   const filename = `screenshot-${ts}.png`
-  let saved: { ok: boolean; path?: string; error?: string } | undefined
-  try {
-    saved = await chrome.runtime.sendMessage({
-      type: MSG.SAVE_SCREENSHOT,
-      dataUrl, filename,
-      runId: ctx.runId, runStartedAt: ctx.runStartedAt,
-      flowId: ctx.flowId, flowName: ctx.flowName,
-      sourceUrl: location.href, sourceTitle: document.title,
-    }) as { ok: boolean; path?: string; error?: string } | undefined
-  } catch (err) {
-    saved = { ok: false, error: (err as Error).message }
-  }
+  const saved = await saveViaBridge(dataUrl, filename, ctx)
 
-  // Step 3: 保存成功 or 降级到浏览器下载
-  if (saved?.ok) {
+  if (saved.ok) {
     ctx.screenshotCount++
     onLog(`  已保存 → ${saved.path ?? filename}（${Math.round(dataUrl.length * 0.75 / 1024)} KB）`)
   } else {
-    onLog(`  [降级] 本地截图服务失败：${saved?.error ?? '本地截图服务未返回保存结果'}`)
-    const a = document.createElement('a')
-    a.href = dataUrl; a.download = filename; a.style.display = 'none'
-    document.body.appendChild(a); a.click(); a.remove()
-    onLog(`  已保存（浏览器下载）→ ${filename}（${Math.round(dataUrl.length * 0.75 / 1024)} KB）`)
+    onLog(`  [降级] 本地截图服务失败：${saved.error ?? '本地截图服务未返回保存结果'}`)
+    downloadFallback(dataUrl, filename, onLog)
   }
 }
 
