@@ -39,11 +39,15 @@ export interface SerializedDomNode {
 /** 请求 content script 扫描并返回 DOM 树 */
 export interface RequestDomScanMessage {
   type: 'REQUEST_DOM_SCAN'
+  /** 可选：限定扫描范围的 CSS 选择器（如 "#sidebar"），不传则扫描整个页面 */
+  scope?: string
 }
 
 /** 请求 content script 进入元素拾取模式 */
 export interface RequestPickElementMessage {
   type: 'REQUEST_PICK_ELEMENT'
+  /** 可选：限定拾取范围的 CSS 选择器（如 "#sidebar"），不传则全页面可拾取 */
+  scope?: string
 }
 
 /** 取消拾取模式 */

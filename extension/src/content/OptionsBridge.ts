@@ -43,12 +43,12 @@ function watchElementTrigger(flowId: string, selector: string, delay: number): v
 export function initOptionsBridge(): void {
   chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     if (msg.type === MSG.REQUEST_DOM_SCAN) {
-      handleDomScan()
+      handleDomScan((msg as { scope?: string }).scope)
       sendResponse({ ok: true })
       return
     }
     if (msg.type === MSG.REQUEST_PICK_ELEMENT) {
-      handlePickElement()
+      handlePickElement((msg as { scope?: string }).scope)
       sendResponse({ ok: true })
       return
     }

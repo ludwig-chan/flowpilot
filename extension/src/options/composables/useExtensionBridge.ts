@@ -75,12 +75,12 @@ export function useExtensionBridge() {
     return send({ type: MSG.SET_ACTIVE_TAB, tabId })
   }
 
-  async function requestDomScan() {
-    return send({ type: MSG.REQUEST_DOM_SCAN })
+  async function requestDomScan(scope?: string) {
+    return send({ type: MSG.REQUEST_DOM_SCAN, scope })
   }
 
-  async function requestPickElement() {
-    return send({ type: MSG.REQUEST_PICK_ELEMENT })
+  async function requestPickElement(scope?: string) {
+    return send({ type: MSG.REQUEST_PICK_ELEMENT, scope })
   }
 
   async function cancelPickElement() {

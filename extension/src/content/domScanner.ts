@@ -40,9 +40,9 @@ export function ensureDomObserver(): void {
 }
 
 // ─── DOM 扫描 ─────────────────────────────────────────────────────────────────
-export function handleDomScan(): void {
+export function handleDomScan(scope?: string): void {
   ensureDomObserver()
-  const tree = buildSerializedTree()
+  const tree = buildSerializedTree(scope)
   chrome.runtime.sendMessage({
     type:     MSG.DOM_SCAN_RESULT,
     tabTitle: document.title,
@@ -51,7 +51,7 @@ export function handleDomScan(): void {
   }).catch(() => {})
 }
 
-export function buildSerializedTree(): SerializedDomNode[] {
+export function buildSerializedTree(scope?: string): SerializedDomNode[] {
   const MAX_DEPTH = 30
   const MAX_NODES = 5000
   let nodeCount = 0
@@ -118,11 +118,18 @@ export function buildSerializedTree(): SerializedDomNode[] {
   }
 
   const result: SerializedDomNode[] = []
-  if (document.body) {
-    for (const child of document.body.children) {
-      const node = walk(child, 0)
-      if (node) result.push(node)
-    }
+
+  // 确定扫描起始点：有 scope → 从 scope 元素开始；否则从 body 开始
+  let startEls: Element[] = []
+  if (scope) {
+    try { const el = document.querySelector(scope); if (el) startEls = [el] } catch { /* 非法选择器，回退到 body */ }
+  }
+  if (startEls.length === 0 && document.body) {
+    startEls = Array.from(document.body.children)
+  }
+  for (const child of startEls) {
+    const node = walk(child, 0)
+    if (node) result.push(node)
   }
   return result
 }

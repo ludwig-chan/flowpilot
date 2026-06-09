@@ -13,8 +13,11 @@ export function cancelPickElement(): void {
   pickCleanup?.()
 }
 
-export function handlePickElement(): void {
+export function handlePickElement(scope?: string): void {
   pickCleanup?.()  // 取消之前可能存在的拾取
+
+  // 解析范围：scope 为空 → 全页面；否则只允许 scope 内的元素
+  const rootEl: Element | null = scope ? (() => { try { return document.querySelector(scope) } catch { return null } })() : null
 
   const ov    = document.createElement('div')
   const hlDiv = document.createElement('div')
@@ -46,6 +49,15 @@ export function handlePickElement(): void {
           if (inner) { pickedEl = inner; pickedIframe = iframe }
         }
       } catch { /* cross-origin 不处理 */ }
+    }
+
+    // 范围过滤：有 rootEl 时，元素必须在 rootEl 内部
+    if (rootEl && !rootEl.contains(pickedEl)) {
+      // 但 iframe 内的元素需检查 iframe 本身是否在范围内
+      if (!pickedIframe || !rootEl.contains(pickedIframe)) {
+        hlDiv.style.display = 'none'
+        return
+      }
     }
 
     cur       = pickedEl

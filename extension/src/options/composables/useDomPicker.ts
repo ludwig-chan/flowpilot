@@ -26,7 +26,7 @@ export function useDomPicker(
     if (scanTimer !== null) { clearTimeout(scanTimer); scanTimer = null }
   }
 
-  async function scanDom() {
+  async function scanDom(scope?: string) {
     if (!activeTabId.value) { await showAlert('请先选择一个目标 Tab'); return }
     domScanning.value = true
     domMutated.value  = false
@@ -39,21 +39,21 @@ export function useDomPicker(
       }
     }, SCAN_TIMEOUT_MS)
     try {
-      await bridge.requestDomScan()
+      await bridge.requestDomScan(scope)
     } catch {
       clearScanTimer()
       domScanning.value = false
     }
   }
 
-  async function togglePickMode() {
+  async function togglePickMode(scope?: string) {
     if (!activeTabId.value) { await showAlert('请先选择一个目标 Tab'); return }
     if (pickMode.value) {
       pickMode.value = false
       await bridge.cancelPickElement()
     } else {
       pickMode.value = true
-      await bridge.requestPickElement()
+      await bridge.requestPickElement(scope)
     }
   }
 
