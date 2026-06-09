@@ -1,9 +1,9 @@
 {
-  "name": "BOSS直聘 - 查看简历截图",
-  "description": "自动打开在线简历、截图保存、关闭弹窗",
-  "tags": ["招聘", "BOSS直聘", "简历"],
+  "name": "BOSS直聘 - 简历筛选与截图",
+  "description": "按年龄和学历筛选候选人，自动打开简历截图保存",
+  "tags": ["招聘", "BOSS直聘", "简历", "筛选"],
   "version": 1,
-  "exportedAt": "2026-06-05T09:13:53.726Z",
+  "exportedAt": "2026-06-09T00:00:00.000Z",
   "nodes": [
     {
       "id": "fd_1780650458249_nq8zy",
@@ -50,6 +50,62 @@
           "kind": "flow",
           "name": "依次点击",
           "steps": []
+        },
+        {
+          "kind": "flow",
+          "id": "bf_1780918119029_ydlr1",
+          "name": "筛选简历",
+          "steps": [
+            {
+              "id": "step_1780918226209_d1r",
+              "label": "获取文字：23岁",
+              "selector": {
+                "cssSelector": "div#container > div:nth-child(1) > div > div:nth-child(2) > div:nth-child(2) > div:nth-child(2) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:nth-child(3)",
+                "text": "23岁"
+              },
+              "type": "get_text",
+              "value": "age"
+            },
+            {
+              "id": "step_1780918303458_vpi",
+              "label": "获取文字：高中 · 高中",
+              "selector": {
+                "cssSelector": "div#container > div:nth-child(1) > div > div:nth-child(2) > div:nth-child(2) > div:nth-child(2) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:nth-child(2) > div:nth-child(1) > div > div:nth-child(2) > ul > li:nth-child(2) > span",
+                "text": "高中 · 高中"
+              },
+              "type": "get_text",
+              "value": "school"
+            },
+            {
+              "children": [
+                {
+                  "flowRef": "bf_1780635596137_sll6d",
+                  "id": "step_1780918243405_a665g",
+                  "label": "嵌入流程：查看详情",
+                  "type": "call_flow"
+                }
+              ],
+              "elseChildren": [],
+              "id": "step_1780918236481_9xg32",
+              "label": "条件判断",
+              "type": "condition",
+              "value": "{{age}} <= 30",
+              "conditions": [
+                {
+                  "id": "cond_1780975751733_ltkwr",
+                  "mode": "expr",
+                  "value": "{{age}} <= 30"
+                },
+                {
+                  "id": "cond_1780975765327_n2kmz",
+                  "mode": "expr",
+                  "value": "{{school}} contains 高中"
+                }
+              ],
+              "conditionLogic": "and"
+            }
+          ],
+          "pinnedInMenu": true
         }
       ]
     }
