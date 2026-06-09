@@ -32,7 +32,7 @@ function tagIcon(tagName: string): string {
 </script>
 
 <template>
-  <BaseModal title="🔁 智能列表循环" width="520px" max-height="85vh" :z-index="1070" @close="emit('cancel')">
+  <BaseModal title="🔁 选择列表" width="520px" max-height="85vh" :z-index="1070" @close="emit('cancel')">
 
       <!-- 已选目标元素 -->
       <div class="slp-section">
@@ -51,7 +51,7 @@ function tagIcon(tagName: string): string {
       <!-- 候选结构列表 -->
       <div class="slp-section slp-section--scroll">
         <div class="slp-label">
-          找到 {{ candidates.length }} 种可能的重复结构，请选择要循环的层级：
+          找到 {{ candidates.length }} 种可能的列表结构：
         </div>
 
         <div v-if="candidates.length === 0" class="slp-empty">
@@ -98,7 +98,7 @@ function tagIcon(tagName: string): string {
           kind="primary"
           :disabled="candidates.length === 0"
           @click="onConfirm"
-        >确认，循环此结构</BaseButton>
+        >确认选择</BaseButton>
       </template>
 
   </BaseModal>

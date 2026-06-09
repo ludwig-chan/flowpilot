@@ -181,24 +181,6 @@ export function useLoopEditor(
     es.showEditLoopModal     = true
   }
 
-  /** 智能列表循环选择器确认 → 建立 loop_items 步骤，EditLoopModal 由上层在 scoped 扫描完成后打开 */
-  function onSmartLoopConfirm(candidate: import('@shared/types/message').RepeatingCandidate) {
-    if (!editingFlow.value) return
-    const newStep: FlowStep = {
-      id:                genId('step'),
-      type:              'loop_items',
-      label:             `循环列表：${candidate.itemSelector.slice(0, 40)}`,
-      selector:          { cssSelector: candidate.itemSelector },
-      loopChildSelector: candidate.relativeSelector || undefined,
-      children:          [],
-    }
-    editingFlow.value.steps.push(newStep)
-    const idx = editingFlow.value.steps.length - 1
-    editingLoopStepIdx.value = idx
-    es.editingLoopStep       = JSON.parse(JSON.stringify(newStep)) as FlowStep
-    // EditLoopModal 将在 scoped 扫描完成后由 usePickerOrchestrator 打开
-  }
-
   /** onElementPicked 中为循环子步骤计算相对选择器 */
   function getLoopChildActionOpts(el: SerializedElement): {
     overrideSel?: string
@@ -410,7 +392,6 @@ export function useLoopEditor(
     onLoopEditChild,
     onListBuilderDone,
     onListBuilderDoneDirect,
-    onSmartLoopConfirm,
     getLoopChildActionOpts,
     showLoopCallFlowPicker,
     onLoopAddCallFlow,

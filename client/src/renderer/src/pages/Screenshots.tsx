@@ -106,6 +106,14 @@ export default function Screenshots({ showToast }: ScreenshotsProps): React.JSX.
     return unsub
   }, [])
 
+  const filteredScreenshots = useMemo(() => {
+    return data.screenshots.filter((item) => {
+      if (item.status !== viewMode) return false
+      if (tagFilter !== 'all' && !item.tagIds.includes(tagFilter)) return false
+      return true
+    })
+  }, [data.screenshots, tagFilter, viewMode])
+
   useEffect(() => {
     if (!preview) return
     const onKey = (e: KeyboardEvent) => {
@@ -116,14 +124,6 @@ export default function Screenshots({ showToast }: ScreenshotsProps): React.JSX.
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [preview, filteredScreenshots])
-
-  const filteredScreenshots = useMemo(() => {
-    return data.screenshots.filter((item) => {
-      if (item.status !== viewMode) return false
-      if (tagFilter !== 'all' && !item.tagIds.includes(tagFilter)) return false
-      return true
-    })
-  }, [data.screenshots, tagFilter, viewMode])
 
   const screenshotColumns = useMemo<Column<ScreenshotItem>[]>(() => [
     {

@@ -251,7 +251,7 @@ provide(STEP_EDITOR_MODALS_KEY, {
         <template #default="{ close }">
           <BaseButton @click="openPicker(); close()">选择元素</BaseButton>
           <BaseButton @click="addElementBranch(); close()">元素分支</BaseButton>
-          <BaseButton @click="openSmartLoopPicker(); close()">逐项点击</BaseButton>
+          <BaseButton @click="openSmartLoopPicker(); close()">选择列表</BaseButton>
           <BaseButton @click="addConditionStep(); close()">条件判断</BaseButton>
           <BaseButton @click="addCallFlowStep(); close()">嵌入流程</BaseButton>
           <BaseButton @click="addDelayStep(); close()">等待</BaseButton>

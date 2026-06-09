@@ -1,4 +1,4 @@
-import { ref, watch, nextTick } from 'vue'
+import { ref } from 'vue'
 import type { Ref } from 'vue'
 import type { LocalFlow } from '../stores/useFlowStore'
 import type { FlowStep, ActionType } from '@shared/types/flow'
@@ -37,7 +37,6 @@ export function usePickerOrchestrator(
     onLoopReselectChild,
     onLoopAddChild:            _onLoopAddChildRaw,
     onLoopEditChild:           _onLoopEditChildRaw,
-    onSmartLoopConfirm:        _onSmartLoopConfirmLoop,
     getLoopChildActionOpts,
     showLoopCallFlowPicker,
     onLoopAddCallFlow,
@@ -60,53 +59,23 @@ export function usePickerOrchestrator(
     editBranchStep,
   } = useStepEditor(editingFlow)
 
-  // ── useSmartLoop（传入 wrapper：确认后触发 scoped 扫描）─────────────────
-  const scopedScanPending = ref(false)
-
-  const _onSmartLoopConfirmedAndScan = (candidate: import('@shared/types/message').RepeatingCandidate) => {
-    _onSmartLoopConfirmLoop(candidate)  // 创建 loop_items 步骤
-    // 标记"等待 scoped 扫描完成"，扫描前先不开选择器（避免用旧树）
-    es.addingToLoopChild    = true
-    scopedScanPending.value = true
-    scanDom(candidate.itemSelector)
-  }
-
-  // ── useSmartLoop ──────────────────────────────────────────────────
+  // ── useSmartLoop（简化版：只返回选中的候选结果）──────────────────────────
   const {
     showSmartLoopModal,
     smartLoopCandidates,
     smartLoopPickedEl,
     onSmartLoopConfirm,
-  } = useSmartLoop(editingFlow, _onSmartLoopConfirmedAndScan)
+  } = useSmartLoop(editingFlow, (candidate) => {
+    console.log('选中列表候选：', candidate)
+    // TODO: 这里是后续重写功能的入口点
+  })
 
   // ── Smart Loop 模式标志 ───────────────────────────────────────────
   const smartLoopMode = ref(false)
 
-  // ── Scoped 扫描完成后自动打开选择器（构建模式） ──────────────────────
-  watch([domScanning, scopedScanPending], ([scanning, pending]) => {
-    if (!scanning && pending) {
-      scopedScanPending.value = false
-      // 空树 = 扫描失败（scope 选择器未匹配到元素），提示用户
-      if (!domTree.value.length) {
-        es.buildingLoopChildren = false
-        es.addingToLoopChild    = false
-        showAlert('无法定位列表项，请尝试选择其他候选结构')
-        return
-      }
-      es.buildingLoopChildren = true
-      // nextTick：等 Vue 完成 buildingLoopChildren 的响应式传播后再开选择器
-      nextTick(() => { showPickerModal.value = true })
-    }
-  })
-
-  // ── 构建模式下 ActionPickerModal 确认后回到选择器 ────────────────────
+  // ── ActionPickerModal 确认 ──────────────────────────────────────────
   function onActionConfirm(step: FlowStep) {
     _onActionConfirmBase(step)
-    if (es.buildingLoopChildren && es.editingLoopStep) {
-      // onActionConfirm 内部会清掉 addingToLoopChild，这里重新设上以便继续添加子步骤
-      es.addingToLoopChild = true
-      showPickerModal.value = true
-    }
   }
 
   // ── Wrappers ──────────────────────────────────────────────────────
