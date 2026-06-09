@@ -130,7 +130,8 @@ export function useStepEditor(
       es.editingLoopStep.children = [...(es.editingLoopStep.children ?? []), step]
       es.addingToLoopChild = false
       es.clearEditState()
-      es.returnToLoop()
+      // 构建模式下不回到 EditLoopModal，由上层 orchestrator 重新打开 scoped 选择器
+      if (!es.buildingLoopChildren) es.returnToLoop()
       return
     }
 

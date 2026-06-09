@@ -27,6 +27,7 @@ const props = defineProps<{
   pickedCssSelector:  string
   selectAny?:         boolean    // 允许选任意节点（不只是可交互节点）
   highlightSelector?: string     // 高亮目标，默认用 pickedCssSelector
+  buildingMode?:      boolean    // 构建循环子步骤模式：显示「添加动作」+「完成」按钮
 }>()
 
 const emit = defineEmits<{
@@ -38,6 +39,7 @@ const emit = defineEmits<{
   (e: 'test-action', css: string, actionType: string, value?: string): void
   (e: 'hover',       css: string):           void
   (e: 'update:domFilter', v: string):        void
+  (e: 'finish-building'):                    void   // 构建模式：完成按钮
 }>()
 
 // ── pending / more 状态 ────────────────────────────────────────────────────
@@ -179,7 +181,7 @@ function onTestClick(node: SerializedDomNode) {
             title="元素内容宽度超出可见区域"
           >↔ {{ pendingNode.scrollW }}</span>
         </span>
-        <BaseButton kind="primary" size="sm" style="flex-shrink:0" @click="confirmPending">确定 ✓</BaseButton>
+        <BaseButton kind="primary" size="sm" style="flex-shrink:0" @click="confirmPending">{{ buildingMode ? '添加动作 →' : '确定 ✓' }}</BaseButton>
       </div>
 
       <!-- ── DOM 树 ── -->
@@ -203,9 +205,12 @@ function onTestClick(node: SerializedDomNode) {
       <!-- ── 可选：树下方内容（如推断结果预览） ── -->
       <slot name="below-tree" />
 
-      <!-- ── 底部按钮栏（仅在提供 footer 插槽时渲染） ── -->
-      <div v-if="$slots.footer" class="epd-panel__footer">
+      <!-- ── 底部按钮栏（仅在提供 footer 插槽或构建模式时渲染） ── -->
+      <div v-if="$slots.footer || buildingMode" class="epd-panel__footer">
         <slot name="footer" />
+        <template v-if="buildingMode && !$slots.footer">
+          <BaseButton @click="emit('finish-building')">完成 ✓</BaseButton>
+        </template>
       </div>
 
     </div>

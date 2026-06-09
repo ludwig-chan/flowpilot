@@ -1,4 +1,4 @@
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import type { Ref } from 'vue'
 import type { LocalFlow } from '../stores/useFlowStore'
 import type { FlowStep, ActionType } from '@shared/types/flow'
@@ -17,7 +17,9 @@ export function usePickerOrchestrator(
   requireTab: (cb: () => void) => void,
   pickedCssSelector: Ref<string>,
   pickMode: Ref<boolean>,
-  scanDom: () => void,
+  scanDom: (scope?: string) => void,
+  domScanning: Ref<boolean>,
+  scopeCanonicalSelector: Ref<string | undefined>,
 ) {
   const bridge = useBridge()
   const es = useEditorStore()
@@ -45,7 +47,7 @@ export function usePickerOrchestrator(
     onLoopAddBranchCallFlow,
     onLoopAddBranchCondition:  _onLoopAddBranchConditionRaw,
     onLoopEditBranchChild,
-  } = useLoopEditor(editingFlow, scanDom, pickedCssSelector)
+  } = useLoopEditor(editingFlow, scanDom, pickedCssSelector, scopeCanonicalSelector)
 
   // ── useStepEditor ─────────────────────────────────────────────────
   const {
@@ -53,9 +55,17 @@ export function usePickerOrchestrator(
     editStep,
     onActionRePick: _onActionRePickBase,
     cancelActionModal,
-    onActionConfirm,
+    onActionConfirm: _onActionConfirmBase,
     editBranchStep,
   } = useStepEditor(editingFlow)
+
+  // ── useSmartLoop（传入 wrapper：确认后触发 scoped 扫描）─────────────────
+  const _onSmartLoopConfirmedAndScan = (candidate: import('@shared/types/message').RepeatingCandidate) => {
+    _onSmartLoopConfirmLoop(candidate)  // 创建 loop_items 步骤
+    // 进入构建模式，触发 scoped DOM 扫描（只扫第一个列表项内部）
+    es.buildingLoopChildren = true
+    scanDom(candidate.itemSelector)
+  }
 
   // ── useSmartLoop ──────────────────────────────────────────────────
   const {
@@ -63,10 +73,25 @@ export function usePickerOrchestrator(
     smartLoopCandidates,
     smartLoopPickedEl,
     onSmartLoopConfirm,
-  } = useSmartLoop(editingFlow, _onSmartLoopConfirmLoop)
+  } = useSmartLoop(editingFlow, _onSmartLoopConfirmedAndScan)
 
   // ── Smart Loop 模式标志 ───────────────────────────────────────────
   const smartLoopMode = ref(false)
+
+  // ── Scoped 扫描完成后自动打开选择器（构建模式） ──────────────────────
+  watch([domScanning, () => es.buildingLoopChildren], ([scanning, building]) => {
+    if (!scanning && building) {
+      showPickerModal.value = true
+    }
+  })
+
+  // ── 构建模式下 ActionPickerModal 确认后回到选择器 ────────────────────
+  function onActionConfirm(step: FlowStep) {
+    _onActionConfirmBase(step)
+    if (es.buildingLoopChildren && es.editingLoopStep) {
+      showPickerModal.value = true
+    }
+  }
 
   // ── Wrappers ──────────────────────────────────────────────────────
 

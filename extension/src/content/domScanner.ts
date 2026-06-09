@@ -43,11 +43,21 @@ export function ensureDomObserver(): void {
 export function handleDomScan(scope?: string): void {
   ensureDomObserver()
   const tree = buildSerializedTree(scope)
+  // 当 scope 非空时，计算被 scope 元素的规范 CSS 路径，
+  // 供 Options 端在"循环子步骤选择器"场景下做前缀裁剪
+  let scopeCanonicalSelector: string | undefined
+  if (scope) {
+    try {
+      const el = document.querySelector(scope)
+      if (el) scopeCanonicalSelector = getCssSelector(el)
+    } catch { /* 无效选择器，忽略 */ }
+  }
   chrome.runtime.sendMessage({
     type:     MSG.DOM_SCAN_RESULT,
     tabTitle: document.title,
     tabUrl:   location.href,
     tree,
+    scopeCanonicalSelector,
   }).catch(() => {})
 }
 

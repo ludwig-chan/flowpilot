@@ -11,6 +11,7 @@ export function useLoopEditor(
   editingFlow: Ref<LocalFlow | null>,
   scanDom: () => void,
   pickedCssSelector: Ref<string>,
+  scopeCanonicalSelector: Ref<string | undefined>,
 ) {
   const es = useEditorStore()
 
@@ -180,7 +181,7 @@ export function useLoopEditor(
     es.showEditLoopModal     = true
   }
 
-  /** 智能列表循环选择器确认 → 建立 loop_items 步骤并打开 EditLoopModal */
+  /** 智能列表循环选择器确认 → 建立 loop_items 步骤，EditLoopModal 由上层在 scoped 扫描完成后打开 */
   function onSmartLoopConfirm(candidate: import('@shared/types/message').RepeatingCandidate) {
     if (!editingFlow.value) return
     const newStep: FlowStep = {
@@ -195,7 +196,7 @@ export function useLoopEditor(
     const idx = editingFlow.value.steps.length - 1
     editingLoopStepIdx.value = idx
     es.editingLoopStep       = JSON.parse(JSON.stringify(newStep)) as FlowStep
-    es.showEditLoopModal     = true
+    // EditLoopModal 将在 scoped 扫描完成后由 usePickerOrchestrator 打开
   }
 
   /** onElementPicked 中为循环子步骤计算相对选择器 */
@@ -203,6 +204,15 @@ export function useLoopEditor(
     overrideSel?: string
     isRelative: boolean
   } {
+    // 优先使用 scoped 扫描返回的规范路径做前缀裁剪（双方都是 getCssSelector 格式，保证匹配）
+    if (scopeCanonicalSelector.value) {
+      const prefix = scopeCanonicalSelector.value
+      if (el.selector.cssSelector.startsWith(prefix)) {
+        const relSel = el.selector.cssSelector.slice(prefix.length).replace(/^\s*>\s*/, '')
+        return { isRelative: true, overrideSel: relSel || undefined }
+      }
+    }
+    // 兜底：旧版 computeRelativeSelector（非 scoped 扫描场景）
     const itemSel = es.editingLoopStep?.selector?.cssSelector ?? ''
     const relSel  = itemSel ? computeRelativeSelector(el.selector.cssSelector, itemSel) : ''
     return {

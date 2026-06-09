@@ -17,6 +17,8 @@ export const useEditorStore = defineStore('editor', () => {
   const editingLoopChild      = ref<number | null>(null)
   const addingToLoopChild     = ref(false)
   const addingToLoopBranch    = ref<{ condChildId: string; branch: 'if' | 'else' } | null>(null)
+  /** 构建模式：智能循环确认后，正在列表项内部挑选子步骤目标元素*/
+  const buildingLoopChildren  = ref(false)
 
   function returnToLoop() {
     showEditLoopModal.value = true
@@ -100,6 +102,7 @@ export const useEditorStore = defineStore('editor', () => {
     editingLoopChild.value          = null
     addingToLoopChild.value         = false
     addingToLoopBranch.value        = null
+    buildingLoopChildren.value      = false
   }
 
   return {
@@ -109,6 +112,7 @@ export const useEditorStore = defineStore('editor', () => {
     editingLoopChild,
     addingToLoopChild,
     addingToLoopBranch,
+    buildingLoopChildren,
     returnToLoop,
     // action modal
     showActionModal,

@@ -9,7 +9,7 @@ import type { RepeatingCandidate } from '@shared/types/message'
 import { MSG } from '@shared/types/message'
 
 export type BridgeEvent =
-  | { type: 'DOM_SCAN_RESULT'; tabId: number; tabTitle: string; tabUrl: string; tree: SerializedDomNode[] }
+  | { type: 'DOM_SCAN_RESULT'; tabId: number; tabTitle: string; tabUrl: string; tree: SerializedDomNode[]; scopeCanonicalSelector?: string }
   | { type: 'ELEMENT_PICKED';  tabId: number; element: SerializedElement; cssSelector: string }
   | { type: 'FLOW_LOG_FROM_TAB'; tabId: number; text: string }
   | { type: 'FLOW_DONE_FROM_TAB'; tabId: number; screenshotCount?: number }

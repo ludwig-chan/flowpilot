@@ -10,6 +10,7 @@ const props = defineProps<{
   domTabTitle:       string
   pickMode:          boolean
   pickedCssSelector: string
+  buildingMode?:     boolean
 }>()
 
 const emit = defineEmits<{
@@ -21,6 +22,7 @@ const emit = defineEmits<{
   (e: 'testAction', css: string, actionType: string, value?: string): void
   (e: 'hover',      css: string):                     void
   (e: 'update:domFilter', v: string):                 void
+  (e: 'finish-building'):                             void
 }>()
 
 function onSelect(node: SerializedDomNode) {
@@ -39,6 +41,7 @@ function onSelect(node: SerializedDomNode) {
     :dom-tab-title="domTabTitle"
     :pick-mode="pickMode"
     :picked-css-selector="pickedCssSelector"
+    :building-mode="buildingMode"
     @close="emit('close')"
     @scan="emit('scan')"
     @toggle-pick="emit('togglePick')"
@@ -47,6 +50,7 @@ function onSelect(node: SerializedDomNode) {
     @test-action="(css: string, type: string, val?: string) => emit('testAction', css, type, val)"
     @hover="emit('hover', $event)"
     @update:dom-filter="emit('update:domFilter', $event)"
+    @finish-building="emit('finish-building')"
   />
 </template>
 

@@ -17,7 +17,7 @@ import { STEP_EDITOR_MODALS_KEY } from './stepEditorContext'
 const es = useEditorStore()
 const flowStore = useFlowStore()
 const bridge = useBridge()
-const { editingFlow } = storeToRefs(es)
+const { editingFlow, buildingLoopChildren } = storeToRefs(es)
 
 const ctx = inject(STEP_EDITOR_MODALS_KEY)!
 const {
@@ -45,6 +45,12 @@ function onCancelSmartLoop() {
   showSmartLoopModal.value = false
   bridge.clearLoopHighlights()
 }
+
+function onFinishBuildingLoop() {
+  showPickerModal.value = false
+  es.buildingLoopChildren = false
+  es.returnToLoop()
+}
 </script>
 
 <template>
@@ -59,6 +65,7 @@ function onCancelSmartLoop() {
       :dom-tab-title="domTabTitle"
       :pick-mode="pickMode"
       :picked-css-selector="pickedCssSelector"
+      :building-mode="buildingLoopChildren"
       @close="closePicker"
       @scan="scanDom"
       @toggle-pick="togglePickMode"
@@ -67,6 +74,7 @@ function onCancelSmartLoop() {
       @test-action="onTestAction"
       @hover="(css: string) => bridge.requestHighlight(css)"
       @update:dom-filter="domFilter = $event"
+      @finish-building="onFinishBuildingLoop"
     />
 
     <!-- 智能循环选择器模态框 -->

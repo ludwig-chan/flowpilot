@@ -1,4 +1,8 @@
-/** 计算 pickedCss 相对于 itemSel（列表项选择器）的相对路径 */
+/**
+ * 计算 pickedCss 相对于 itemSel（列表项选择器）的相对路径。
+ * @deprecated 循环子步骤的相对选择器已改用 scoped DOM 扫描 + scopeCanonicalSelector 前缀裁剪，
+ *   不再依赖此函数做字符串格式的"猜谜"。仅在旧版 ListBuilder 路径中保留兼容。
+ */
 export function computeRelativeSelector(pickedCss: string, itemSel: string): string {
   const strip = (s: string) => s.replace(/:nth-child\(\d+\)/g, '').replace(/:nth-of-type\(\d+\)/g, '')
   const pickedSegs = pickedCss.split(/\s*>\s*/)

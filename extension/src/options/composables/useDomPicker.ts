@@ -18,7 +18,8 @@ export function useDomPicker(
   const domTabTitle = ref('')
   const domMutated  = ref(false)
   const pickMode    = ref(false)
-  const pickedCssSelector = ref('')
+  const pickedCssSelector      = ref('')
+  const scopeCanonicalSelector = ref<string | undefined>(undefined)
 
   let scanTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -63,6 +64,7 @@ export function useDomPicker(
       domScanning.value = false
       domTree.value     = evt.tree
       domTabTitle.value = evt.tabTitle
+      scopeCanonicalSelector.value = evt.scopeCanonicalSelector
     }
     if (evt.type === MSG.ELEMENT_PICKED) {
       pickMode.value          = false
@@ -72,5 +74,5 @@ export function useDomPicker(
   bridge.on(handler)
   onUnmounted(() => { bridge.off(handler); clearScanTimer() })
 
-  return { domTree, domFilter, domScanning, domMutated, domTabTitle, pickMode, pickedCssSelector, scanDom, togglePickMode }
+  return { domTree, domFilter, domScanning, domMutated, domTabTitle, pickMode, pickedCssSelector, scopeCanonicalSelector, scanDom, togglePickMode }
 }

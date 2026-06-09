@@ -48,7 +48,7 @@ const {
 
 const {
   domTree, domFilter, domScanning, domMutated, domTabTitle,
-  pickMode, pickedCssSelector, scanDom, togglePickMode,
+  pickMode, pickedCssSelector, scopeCanonicalSelector, scanDom, togglePickMode,
 } = useDomPicker(activeTabId)
 
 const {
@@ -68,7 +68,7 @@ const {
   onLoopAddBranchCondition:  _onLoopAddBranchConditionRaw,
   onLoopEditBranchChild,
   addElementBranch,
-} = usePickerOrchestrator(editingFlow, activeTabId, requireTab, pickedCssSelector, pickMode, scanDom)
+} = usePickerOrchestrator(editingFlow, activeTabId, requireTab, pickedCssSelector, pickMode, scanDom, domScanning, scopeCanonicalSelector)
 
 const {
   removeStep, addDelayStep, editDelayStep, onDelayConfirm,
