@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, nextTick, onMounted, onUnmounted } from 'vue'
+import { ref, computed, nextTick, onMounted, onUnmounted, watch } from 'vue'
 
 export interface SelectOption {
   value:     string | number
@@ -20,11 +20,10 @@ const emit = defineEmits<{
   (e: 'update:modelValue', value: string | number): void
 }>()
 
-const isOpen     = ref(false)
-const placement  = ref<'down' | 'up'>('down')
-const visible    = ref(true)
-const triggerRef = ref<HTMLElement>()
-const listRef    = ref<HTMLElement>()
+const isOpen        = ref(false)
+const dropdownStyle = ref<Record<string, string>>({})
+const triggerRef    = ref<HTMLElement>()
+const listRef       = ref<HTMLElement>()
 
 const selectedLabel = computed(() =>
   props.options.find(o => o.value === props.modelValue)?.label ?? null
@@ -35,18 +34,40 @@ async function toggle(e: MouseEvent) {
   if (props.disabled) return
   if (isOpen.value) { isOpen.value = false; return }
 
-  visible.value   = false
-  placement.value = 'down'
-  isOpen.value    = true
+  isOpen.value = true
   await nextTick()
 
   if (triggerRef.value && listRef.value) {
-    const rect  = triggerRef.value.getBoundingClientRect()
-    const listH = listRef.value.offsetHeight
-    placement.value = (window.innerHeight - rect.bottom < listH + 8) ? 'up' : 'down'
+    const rect       = triggerRef.value.getBoundingClientRect()
+    const listH      = listRef.value.offsetHeight
+    const spaceBelow = window.innerHeight - rect.bottom
+    if (spaceBelow < listH + 8) {
+      dropdownStyle.value = {
+        left:   `${rect.left}px`,
+        bottom: `${window.innerHeight - rect.top + 4}px`,
+        width:  `${rect.width}px`,
+      }
+    } else {
+      dropdownStyle.value = {
+        left:  `${rect.left}px`,
+        top:   `${rect.bottom + 4}px`,
+        width: `${rect.width}px`,
+      }
+    }
   }
-  visible.value = true
 }
+
+function closeDropdown() { isOpen.value = false }
+
+watch(isOpen, (val) => {
+  if (val) {
+    document.addEventListener('scroll', closeDropdown, true)
+    window.addEventListener('resize', closeDropdown)
+  } else {
+    document.removeEventListener('scroll', closeDropdown, true)
+    window.removeEventListener('resize', closeDropdown)
+  }
+})
 
 function select(opt: SelectOption) {
   if (opt.disabled) return
@@ -69,14 +90,14 @@ onUnmounted(() => document.removeEventListener('click', onDocClick))
       <span class="bsel__arrow" :class="{ 'bsel__arrow--up': isOpen }">▾</span>
     </button>
 
-    <div
-      v-if="isOpen"
-      ref="listRef"
-      class="bsel__list"
-      :class="[`bsel__list--${placement}`]"
-      :style="{ visibility: visible ? 'visible' : 'hidden' }"
-      @click.stop
-    >
+    <Teleport to="body">
+      <div
+        v-if="isOpen"
+        ref="listRef"
+        class="bsel__list"
+        :style="dropdownStyle"
+        @click.stop
+      >
       <button
         v-for="opt in options"
         :key="opt.value"
@@ -91,7 +112,8 @@ onUnmounted(() => document.removeEventListener('click', onDocClick))
         <span class="bsel__item-label">{{ opt.label }}</span>
         <span v-if="opt.value === modelValue" class="bsel__item-check">✓</span>
       </button>
-    </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -148,10 +170,8 @@ onUnmounted(() => document.removeEventListener('click', onDocClick))
 }
 
 .bsel__list {
-  position: absolute;
-  left: 0;
-  right: 0;
-  z-index: $z-modal;
+  position: fixed;
+  z-index: $z-modal-top;
   background: $color-surface-0;
   border: 1px solid $color-surface-2;
   border-radius: $radius-md;
@@ -162,17 +182,7 @@ onUnmounted(() => document.removeEventListener('click', onDocClick))
   max-height: 240px;
   overflow-y: auto;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
-
-  &--down {
-    top: calc(100% + 4px);
-    animation: bsel-down 0.18s cubic-bezier(0.16, 1, 0.3, 1);
-    transform-origin: top center;
-  }
-  &--up {
-    bottom: calc(100% + 4px);
-    animation: bsel-up 0.18s cubic-bezier(0.16, 1, 0.3, 1);
-    transform-origin: bottom center;
-  }
+  animation: bsel-down 0.18s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .bsel__item {
@@ -219,8 +229,4 @@ onUnmounted(() => document.removeEventListener('click', onDocClick))
   to   { opacity: 1; transform: none; }
 }
 
-@keyframes bsel-up {
-  from { opacity: 0; transform: translateY(4px) scale(0.97); }
-  to   { opacity: 1; transform: none; }
-}
 </style>
