@@ -798,6 +798,58 @@ body {
   background: rgba(255,255,255,0.28);
 }
 
+.screenshot-lightbox-counter {
+  position: fixed;
+  top: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: rgba(255,255,255,0.75);
+  font-size: 14px;
+  font-weight: 500;
+  pointer-events: none;
+}
+
+.screenshot-lightbox-arrow {
+  position: fixed;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 56px;
+  border: none;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.12);
+  color: rgba(255,255,255,0.85);
+  font-size: 22px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+  z-index: 1;
+}
+
+.screenshot-lightbox-arrow:hover:not(:disabled) {
+  background: rgba(255,255,255,0.28);
+}
+
+.screenshot-lightbox-arrow:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.screenshot-lightbox-arrow-left {
+  left: 16px;
+}
+
+.screenshot-lightbox-arrow-right {
+  right: 16px;
+}
+
+.screenshot-lightbox-loading {
+  color: rgba(255,255,255,0.6);
+  font-size: 16px;
+}
+
 /* ── DataTable 通用表格组件 ── */
 .datatable-wrap {
   overflow-x: auto;

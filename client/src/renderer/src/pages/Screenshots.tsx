@@ -79,7 +79,8 @@ export default function Screenshots({ showToast }: ScreenshotsProps): React.JSX.
   const [layoutMode, setLayoutMode] = useState<LayoutMode>('table')
   const [tagFilter, setTagFilter] = useState('all')
   const [newTagById, setNewTagById] = useState<Record<string, string>>({})
-  const [preview, setPreview] = useState<ScreenshotImageResult | null>(null)
+  const [preview, setPreview] = useState<{ index: number; image: ScreenshotImageResult } | null>(null)
+  const [previewLoading, setPreviewLoading] = useState(false)
   const [ocrLoading, setOcrLoading] = useState<Record<string, boolean>>({})
   const [batchOcrLoading, setBatchOcrLoading] = useState(false)
   const [batchOcrProgress, setBatchOcrProgress] = useState('')
@@ -104,6 +105,17 @@ export default function Screenshots({ showToast }: ScreenshotsProps): React.JSX.
     })
     return unsub
   }, [])
+
+  useEffect(() => {
+    if (!preview) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') { setPreview(null); return }
+      if (e.key === 'ArrowLeft')  { e.preventDefault(); navigatePreview('prev'); return }
+      if (e.key === 'ArrowRight') { e.preventDefault(); navigatePreview('next'); return }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [preview, filteredScreenshots])
 
   const filteredScreenshots = useMemo(() => {
     return data.screenshots.filter((item) => {
@@ -238,13 +250,29 @@ export default function Screenshots({ showToast }: ScreenshotsProps): React.JSX.
   ], [viewMode, ocrLoading])
 
   const openPreview = async (id: string): Promise<void> => {
-    const image = await window.api.getScreenshotImage(id)
-    if (!image) {
-      showToast('图片文件不存在', 'error')
-      await loadData()
-      return
+    const index = filteredScreenshots.findIndex(s => s.id === id)
+    if (index < 0) return
+    setPreviewLoading(true)
+    try {
+      const image = await window.api.getScreenshotImage(id)
+      if (!image) {
+        showToast('图片文件不存在', 'error')
+        await loadData()
+        return
+      }
+      setPreview({ index, image })
+    } finally {
+      setPreviewLoading(false)
     }
-    setPreview(image)
+  }
+
+  const navigatePreview = (direction: 'prev' | 'next'): void => {
+    if (!preview || filteredScreenshots.length === 0) return
+    const total = filteredScreenshots.length
+    const newIndex = direction === 'next'
+      ? (preview.index + 1) % total
+      : (preview.index - 1 + total) % total
+    void openPreview(filteredScreenshots[newIndex].id)
   }
 
   const addExistingTag = async (item: ScreenshotItem, tagId: string): Promise<void> => {
@@ -607,11 +635,34 @@ export default function Screenshots({ showToast }: ScreenshotsProps): React.JSX.
           <button className="screenshot-lightbox-close" onClick={() => setPreview(null)}>
             ×
           </button>
-          <img
-            src={preview.dataUrl}
-            alt={preview.filename}
-            onClick={(event) => event.stopPropagation()}
-          />
+          <span className="screenshot-lightbox-counter">
+            {preview.index + 1} / {filteredScreenshots.length}
+          </span>
+          <button
+            className="screenshot-lightbox-arrow screenshot-lightbox-arrow-left"
+            onClick={(e) => { e.stopPropagation(); navigatePreview('prev') }}
+            disabled={previewLoading}
+            title="上一张 (←)"
+          >
+            ◀
+          </button>
+          {previewLoading ? (
+            <div className="screenshot-lightbox-loading">加载中...</div>
+          ) : (
+            <img
+              src={preview.image.dataUrl}
+              alt={preview.image.filename}
+              onClick={(event) => event.stopPropagation()}
+            />
+          )}
+          <button
+            className="screenshot-lightbox-arrow screenshot-lightbox-arrow-right"
+            onClick={(e) => { e.stopPropagation(); navigatePreview('next') }}
+            disabled={previewLoading}
+            title="下一张 (→)"
+          >
+            ▶
+          </button>
         </div>
       )}
 
