@@ -25,8 +25,7 @@ export interface StepEditorModalContext {
   onSmartLoopConfirm: (candidate: RepeatingCandidate) => void
   onLoopSave: (editedStep: FlowStep) => void
   onLoopClose: () => void
-  onLoopReselect: () => void
-  onLoopReselectChild: (currentState: FlowStep) => void
+  onLoopReselect: (currentState: FlowStep) => void
   onLoopEditChild:         (childIdx: number, currentState: FlowStep) => void
   onLoopAddChild:          (currentState: FlowStep) => void
   onLoopAddCallFlow:       (currentState: FlowStep) => void

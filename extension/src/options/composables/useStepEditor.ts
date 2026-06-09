@@ -171,7 +171,6 @@ export function useStepEditor(
         type:              'loop_items',
         label:             `循环列表：${itemSel.slice(0, 40)}`,
         selector:          { cssSelector: itemSel },
-        loopChildSelector: step.relativeSelector ? step.selector?.cssSelector : undefined,
         children:          [step],
       })
     }

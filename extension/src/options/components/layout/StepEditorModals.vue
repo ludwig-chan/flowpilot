@@ -25,7 +25,7 @@ const {
   pickMode, pickedCssSelector, scanDom, togglePickMode,
   showPickerModal, closePicker, onElementPicked, onTestAction,
   showSmartLoopModal, smartLoopCandidates, smartLoopPickedEl, onSmartLoopConfirm,
-  onLoopSave, onLoopClose, onLoopReselect, onLoopReselectChild, onLoopEditChild,
+  onLoopSave, onLoopClose, onLoopReselect, onLoopEditChild,
   onLoopAddChild, onLoopAddCallFlow, onLoopAddCondition, onLoopAddDelay,
   onLoopAddBranchChild, onLoopAddBranchCallFlow, onLoopAddBranchCondition, onLoopEditBranchChild,
   onActionConfirm, onActionTry, onActionRePick, cancelActionModal,
@@ -95,7 +95,6 @@ function onFinishBuildingLoop() {
       @save="onLoopSave"
       @close="onLoopClose"
       @reselect="onLoopReselect"
-      @reselect-child="onLoopReselectChild"
       @edit-child="onLoopEditChild"
       @add-child="onLoopAddChild"
       @add-call-flow="onLoopAddCallFlow"

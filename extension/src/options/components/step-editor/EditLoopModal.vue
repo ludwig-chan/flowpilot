@@ -13,8 +13,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'save',                 step: FlowStep): void
   (e: 'close'):                                void
-  (e: 'reselect'):                             void
-  (e: 'reselect-child',       currentState: FlowStep): void
+  (e: 'reselect',             currentState: FlowStep): void
   (e: 'edit-child',           childIdx: number, currentState: FlowStep): void
   (e: 'add-child',            currentState: FlowStep): void
   (e: 'add-call-flow',        currentState: FlowStep): void
@@ -28,7 +27,6 @@ const emit = defineEmits<{
 
 const label          = ref(props.step.label)
 const itemDelay      = ref<[number | undefined, number | undefined]>([props.step.itemDelay?.[0] ?? 800, props.step.itemDelay?.[1] ?? 2000])
-const childSel       = ref(props.step.loopChildSelector ?? '')
 const scrollBehavior = ref<'none' | 'item' | 'bottom'>(props.step.scrollBehavior ?? 'none')
 const children           = ref<FlowStep[]>(JSON.parse(JSON.stringify(props.step.children ?? [])))
 const showAdvanced       = ref(false)
@@ -48,7 +46,6 @@ function currentState(): FlowStep {
     ...props.step,
     label:             label.value.trim() || props.step.label,
     itemDelay:         [Math.max(0, itemDelay.value[0] ?? 0), Math.max(0, itemDelay.value[1] ?? 0)],
-    loopChildSelector: childSel.value || undefined,
     children:          children.value,
     scrollBehavior:    scrollBehavior.value === 'none' ? undefined : scrollBehavior.value,
   }
@@ -133,17 +130,7 @@ function onDeleteBranchChild(condChildId: string, branch: 'if' | 'else', childId
           <code class="elm-selector-val" :title="step.selector?.cssSelector">
             {{ step.selector?.cssSelector || '（未设置）' }}
           </code>
-          <BaseButton class="elm-resel-btn" @click="emit('reselect')">重新选择…</BaseButton>
-        </div>
-      </div>
-
-      <!-- 子元素路径 -->
-      <div class="elm-section">
-        <label class="elm-label">操作目标子元素路径</label>
-        <div class="elm-selector-row">
-          <code v-if="childSel" class="elm-selector-val" :title="childSel">{{ childSel }}</code>
-          <span v-else class="elm-selector-empty">（未设置，将操作列表项本身）</span>
-          <BaseButton class="elm-resel-btn" @click="emit('reselect-child', currentState())">重选子项…</BaseButton>
+          <BaseButton class="elm-resel-btn" @click="emit('reselect', currentState())">重新选择…</BaseButton>
         </div>
       </div>
 
