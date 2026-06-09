@@ -16,6 +16,8 @@ interface AutoClickerStatus {
   clicking: boolean
 }
 
+const AUTO_CLICKER_VISIBLE = false
+
 interface SettingsProps {
   showToast: (msg: string, type?: 'success' | 'error' | 'info') => void
 }
@@ -219,31 +221,33 @@ export default function Settings({ showToast }: SettingsProps): React.JSX.Elemen
           </div>
         </div>
 
-        <div className="form-group" style={{ marginBottom: 0 }}>
-          <div className="input-row" style={{ alignItems: 'center', gap: 12 }}>
-            <label className="form-label" style={{ marginBottom: 0, flex: 1 }}>
-              桌面长按连点
-              <div className="form-hint" style={{ marginTop: 2 }}>
-                开启后，在任意 Windows 桌面位置左键长按 1200ms，可选择 200/500/1000ms 连续点击；按 Esc 停止。
-              </div>
-              <div className="form-hint" style={{ marginTop: 2 }}>
-                {autoClickerStatus.supported
-                  ? autoClickerStatus.clicking
-                    ? '当前状态：连点中'
-                    : '当前状态：空闲'
-                  : '当前系统暂不支持'}
-              </div>
-            </label>
-            <button
-              className={`btn ${autoClickerStatus.enabled ? 'btn-primary' : 'btn-secondary'}`}
-              onClick={handleToggleAutoClicker}
-              disabled={togglingAutoClicker || !autoClickerStatus.supported}
-              style={{ minWidth: 72, flexShrink: 0 }}
-            >
-              {autoClickerStatus.enabled ? '已开启' : '已关闭'}
-            </button>
+        {AUTO_CLICKER_VISIBLE && (
+          <div className="form-group" style={{ marginBottom: 0 }}>
+            <div className="input-row" style={{ alignItems: 'center', gap: 12 }}>
+              <label className="form-label" style={{ marginBottom: 0, flex: 1 }}>
+                桌面长按连点
+                <div className="form-hint" style={{ marginTop: 2 }}>
+                  开启后，在任意 Windows 桌面位置左键长按 1200ms，可选择 200/500/1000ms 连续点击；按 Esc 停止。
+                </div>
+                <div className="form-hint" style={{ marginTop: 2 }}>
+                  {autoClickerStatus.supported
+                    ? autoClickerStatus.clicking
+                      ? '当前状态：连点中'
+                      : '当前状态：空闲'
+                    : '当前系统暂不支持'}
+                </div>
+              </label>
+              <button
+                className={`btn ${autoClickerStatus.enabled ? 'btn-primary' : 'btn-secondary'}`}
+                onClick={handleToggleAutoClicker}
+                disabled={togglingAutoClicker || !autoClickerStatus.supported}
+                style={{ minWidth: 72, flexShrink: 0 }}
+              >
+                {autoClickerStatus.enabled ? '已开启' : '已关闭'}
+              </button>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       <div className="save-row">

@@ -62,8 +62,9 @@ export function usePickerOrchestrator(
   // ── useSmartLoop（传入 wrapper：确认后触发 scoped 扫描）─────────────────
   const _onSmartLoopConfirmedAndScan = (candidate: import('@shared/types/message').RepeatingCandidate) => {
     _onSmartLoopConfirmLoop(candidate)  // 创建 loop_items 步骤
-    // 进入构建模式，触发 scoped DOM 扫描（只扫第一个列表项内部）
+    // 进入构建模式，标记"接下来的元素选择是给循环加子步骤"
     es.buildingLoopChildren = true
+    es.addingToLoopChild    = true
     scanDom(candidate.itemSelector)
   }
 
@@ -89,6 +90,8 @@ export function usePickerOrchestrator(
   function onActionConfirm(step: FlowStep) {
     _onActionConfirmBase(step)
     if (es.buildingLoopChildren && es.editingLoopStep) {
+      // onActionConfirm 内部会清掉 addingToLoopChild，这里重新设上以便继续添加子步骤
+      es.addingToLoopChild = true
       showPickerModal.value = true
     }
   }

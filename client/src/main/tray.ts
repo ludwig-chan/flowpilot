@@ -3,6 +3,8 @@ import * as path from 'path'
 import { is } from '@electron-toolkit/utils'
 import type { AutoClickerStatus } from './autoClicker'
 
+const AUTO_CLICKER_VISIBLE = false
+
 let tray: Tray | null = null
 let autoClickerStatus: AutoClickerStatus = {
   supported: process.platform === 'win32',
@@ -50,18 +52,22 @@ export function updateTrayMenu(mainWindow: BrowserWindow): void {
       label: '打开 FlowPilot',
       click: () => showMainWindow(mainWindow)
     },
-    {
-      label: autoClickerStatus.enabled ? '关闭桌面长按连点' : '开启桌面长按连点',
-      enabled: autoClickerStatus.supported,
-      type: 'checkbox',
-      checked: autoClickerStatus.enabled,
-      click: () => toggleAutoClicker?.()
-    },
-    {
-      label: autoClickerStatus.clicking ? '连点中：按 Esc 停止' : '连点状态：空闲',
-      enabled: false
-    },
-    { type: 'separator' },
+    ...(AUTO_CLICKER_VISIBLE
+      ? [
+          {
+            label: autoClickerStatus.enabled ? '关闭桌面长按连点' : '开启桌面长按连点',
+            enabled: autoClickerStatus.supported,
+            type: 'checkbox' as const,
+            checked: autoClickerStatus.enabled,
+            click: () => toggleAutoClicker?.()
+          },
+          {
+            label: autoClickerStatus.clicking ? '连点中：按 Esc 停止' : '连点状态：空闲',
+            enabled: false
+          },
+          { type: 'separator' as const }
+        ]
+      : []),
     {
       label: '退出',
       click: () => app.quit()
