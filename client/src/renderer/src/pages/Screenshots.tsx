@@ -84,6 +84,7 @@ export default function Screenshots({ showToast }: ScreenshotsProps): React.JSX.
   const [batchOcrLoading, setBatchOcrLoading] = useState(false)
   const [batchOcrProgress, setBatchOcrProgress] = useState('')
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [ocrDialog, setOcrDialog] = useState<{ text: string; filename: string } | null>(null)
 
   const loadData = async (): Promise<void> => {
     setLoading(true)
@@ -176,6 +177,26 @@ export default function Screenshots({ showToast }: ScreenshotsProps): React.JSX.
             </button>
           ))}
         </div>
+      ),
+    },
+    {
+      key: 'ocr',
+      header: 'OCR识别',
+      width: '160px',
+      render: (item) => (
+        item.ocrText ? (
+          <span
+            className="ocr-text-datatable"
+            title="点击查看完整结果"
+            onClick={(e) => { e.stopPropagation(); setOcrDialog({ text: item.ocrText!, filename: item.filename }) }}
+          >
+            {item.ocrText.length > 30
+              ? `${item.ocrText.slice(0, 30)}...`
+              : item.ocrText}
+          </span>
+        ) : (
+          <span className="ocr-text-datatable ocr-empty">-</span>
+        )
       ),
     },
     {
@@ -591,6 +612,18 @@ export default function Screenshots({ showToast }: ScreenshotsProps): React.JSX.
             alt={preview.filename}
             onClick={(event) => event.stopPropagation()}
           />
+        </div>
+      )}
+
+      {ocrDialog && (
+        <div className="ocr-dialog-overlay" onClick={() => setOcrDialog(null)}>
+          <div className="ocr-dialog" onClick={(e) => e.stopPropagation()}>
+            <div className="ocr-dialog-header">
+              <span>OCR 识别结果 — {ocrDialog.filename}</span>
+              <button className="ocr-dialog-close" onClick={() => setOcrDialog(null)}>×</button>
+            </div>
+            <div className="ocr-dialog-body">{ocrDialog.text}</div>
+          </div>
         </div>
       )}
     </>

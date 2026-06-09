@@ -68,7 +68,7 @@ const {
   onLoopAddBranchCondition:  _onLoopAddBranchConditionRaw,
   onLoopEditBranchChild,
   addElementBranch,
-} = usePickerOrchestrator(editingFlow, activeTabId, requireTab, pickedCssSelector, pickMode, scanDom, domScanning, scopeCanonicalSelector)
+} = usePickerOrchestrator(editingFlow, activeTabId, requireTab, pickedCssSelector, pickMode, scanDom, domScanning, domTree, scopeCanonicalSelector)
 
 const {
   removeStep, addDelayStep, editDelayStep, onDelayConfirm,
