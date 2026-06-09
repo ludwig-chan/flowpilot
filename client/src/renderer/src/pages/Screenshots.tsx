@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react'
+import DataTable, { type Column } from '../components/DataTable'
 
 type ViewMode = 'active' | 'trash'
+type LayoutMode = 'table' | 'card'
 
 interface ScreenshotRun {
   id: string
@@ -74,6 +76,7 @@ export default function Screenshots({ showToast }: ScreenshotsProps): React.JSX.
   })
   const [loading, setLoading] = useState(true)
   const [viewMode, setViewMode] = useState<ViewMode>('active')
+  const [layoutMode, setLayoutMode] = useState<LayoutMode>('table')
   const [tagFilter, setTagFilter] = useState('all')
   const [newTagById, setNewTagById] = useState<Record<string, string>>({})
   const [preview, setPreview] = useState<ScreenshotImageResult | null>(null)
@@ -107,6 +110,110 @@ export default function Screenshots({ showToast }: ScreenshotsProps): React.JSX.
       return true
     })
   }, [data.screenshots, tagFilter, viewMode])
+
+  const screenshotColumns = useMemo<Column<ScreenshotItem>[]>(() => [
+    {
+      key: 'preview',
+      header: '预览',
+      width: '52px',
+      render: (item) => (
+        <img
+          className="datatable-thumb"
+          src={item.thumbnailDataUrl}
+          alt={item.filename}
+          onClick={() => openPreview(item.id)}
+          style={{ cursor: 'zoom-in' }}
+        />
+      ),
+    },
+    {
+      key: 'filename',
+      header: '文件名',
+      render: (item) => (
+        <span className="screenshot-name" title={item.filename}>
+          {item.filename}
+        </span>
+      ),
+    },
+    {
+      key: 'run',
+      header: '来源流程',
+      render: (item) => getRunName(item),
+    },
+    {
+      key: 'source',
+      header: '页面',
+      render: (item) => item.run?.sourceTitle ?? '-',
+    },
+    {
+      key: 'date',
+      header: '时间',
+      width: '130px',
+      render: (item) => formatDate(item.createdAt),
+    },
+    {
+      key: 'size',
+      header: '大小',
+      width: '72px',
+      align: 'right',
+      render: (item) => formatSize(item.size),
+    },
+    {
+      key: 'tags',
+      header: '标签',
+      render: (item) => (
+        <div className="tag-row datatable-tag-row">
+          {item.tags.length === 0 && <span className="tag-empty">-</span>}
+          {item.tags.map((tag) => (
+            <button
+              key={tag.id}
+              className="tag-pill"
+              onClick={(e) => { e.stopPropagation(); removeTag(item, tag.id) }}
+              title="点击移除标签"
+            >
+              {tag.name} ×
+            </button>
+          ))}
+        </div>
+      ),
+    },
+    {
+      key: 'actions',
+      header: '操作',
+      width: '164px',
+      align: 'right',
+      render: (item) => (
+        <div className="screenshot-actions datatable-actions" onClick={(e) => e.stopPropagation()}>
+          <button className="btn btn-secondary btn-sm" onClick={() => window.api.openScreenshotInExplorer(item.id)}>
+            位置
+          </button>
+          {viewMode === 'active' && (
+            <button
+              className="btn btn-primary btn-sm"
+              onClick={() => runOcr(item)}
+              disabled={ocrLoading[item.id]}
+            >
+              {ocrLoading[item.id] ? '识别中...' : 'OCR'}
+            </button>
+          )}
+          {viewMode === 'active' ? (
+            <button className="btn btn-danger btn-sm" onClick={() => moveToTrash(item)}>
+              删除
+            </button>
+          ) : (
+            <>
+              <button className="btn btn-secondary btn-sm" onClick={() => restore(item)}>
+                恢复
+              </button>
+              <button className="btn btn-danger btn-sm" onClick={() => deleteForever(item)}>
+                永久删除
+              </button>
+            </>
+          )}
+        </div>
+      ),
+    },
+  ], [viewMode, ocrLoading])
 
   const openPreview = async (id: string): Promise<void> => {
     const image = await window.api.getScreenshotImage(id)
@@ -228,6 +335,21 @@ export default function Screenshots({ showToast }: ScreenshotsProps): React.JSX.
           </button>
         </div>
 
+        <div className="segmented">
+          <button
+            className={layoutMode === 'table' ? 'active' : ''}
+            onClick={() => setLayoutMode('table')}
+          >
+            📋 列表
+          </button>
+          <button
+            className={layoutMode === 'card' ? 'active' : ''}
+            onClick={() => setLayoutMode('card')}
+          >
+            🖼️ 卡片
+          </button>
+        </div>
+
         <select
           className="form-select screenshot-filter"
           value={tagFilter}
@@ -266,6 +388,12 @@ export default function Screenshots({ showToast }: ScreenshotsProps): React.JSX.
         <div className="empty-tip">
           {viewMode === 'trash' ? '回收站为空' : '还没有截图'}
         </div>
+      ) : layoutMode === 'table' ? (
+        <DataTable
+          columns={screenshotColumns}
+          data={filteredScreenshots}
+          rowKey={(item) => item.id}
+        />
       ) : (
         <div className="screenshot-grid">
           {filteredScreenshots.map((item) => (

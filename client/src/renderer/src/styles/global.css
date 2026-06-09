@@ -720,6 +720,92 @@ body {
   background: rgba(255,255,255,0.28);
 }
 
+/* ── DataTable 通用表格组件 ── */
+.datatable-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.datatable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  table-layout: auto;
+}
+
+.datatable thead {
+  background: var(--bg);
+}
+
+.datatable th {
+  padding: 10px 14px;
+  text-align: left;
+  font-weight: 600;
+  color: var(--text-muted);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 2px solid var(--border);
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+  background: var(--bg);
+}
+
+.datatable td {
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+
+.datatable tbody tr:hover {
+  background: #f8f9fd;
+}
+
+.datatable tbody tr.clickable {
+  cursor: pointer;
+}
+
+.datatable tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* 表格内缩略图 */
+.datatable-thumb {
+  width: 40px;
+  height: 28px;
+  border-radius: 4px;
+  object-fit: cover;
+  border: 1px solid var(--border);
+  display: block;
+}
+
+/* 表格内标签行 */
+.datatable-tag-row {
+  padding: 0;
+  min-height: unset;
+}
+
+.datatable-tag-row .tag-pill {
+  font-size: 10px;
+  padding: 2px 6px;
+}
+
+/* 表格内操作按钮 */
+.datatable-actions {
+  padding: 0;
+  border-top: none;
+  margin-top: 0;
+  justify-content: flex-end;
+}
+
+.datatable-actions .btn-sm {
+  font-size: 11px;
+  padding: 4px 8px;
+}
+
 code {
   background: var(--bg);
   border: 1px solid var(--border);
