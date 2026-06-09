@@ -7,6 +7,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { FlowStep, StepDelayLevel, FlowTrigger } from '@shared/types/flow'
 import { genId } from '@shared/utils/genId'
+import { toLocalTimeString } from '@shared/utils/time'
 import { BUILTIN_PRESETS } from '@/presets/index'
 
 export interface LocalFlow {
@@ -245,7 +246,7 @@ export const useFlowStore = defineStore('flows', () => {
   function exportNode(id: string): ExportPayload | null {
     const node = findNode(tree.value, id)
     if (!node) return null
-    return { version: 1, exportedAt: new Date().toISOString(), nodes: [JSON.parse(JSON.stringify(node))] }
+    return { version: 1, exportedAt: toLocalTimeString(), nodes: [JSON.parse(JSON.stringify(node))] }
   }
 
   async function importInto(payload: ExportPayload, parentId?: string): Promise<number> {
@@ -258,7 +259,7 @@ export const useFlowStore = defineStore('flows', () => {
   function exportSelected(ids: Set<string>): ExportPayload {
     return {
       version:    1,
-      exportedAt: new Date().toISOString(),
+      exportedAt: toLocalTimeString(),
       nodes:      filterNodesByIds(tree.value, ids),
     }
   }

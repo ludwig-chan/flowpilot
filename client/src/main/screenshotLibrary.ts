@@ -80,8 +80,14 @@ const DATA_DIR = join(app.getPath('userData'), 'data')
 const LIBRARY_FILE = join(DATA_DIR, 'screenshot-library.json')
 const TRASH_DIR = join(DATA_DIR, 'screenshots-trash')
 
+const pad2 = (n: number) => String(n).padStart(2, '0')
+
+function formatLocalTime(d: Date): string {
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())} ${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`
+}
+
 function nowIso(): string {
-  return new Date().toISOString()
+  return formatLocalTime(new Date())
 }
 
 function newId(prefix: string): string {
@@ -136,7 +142,7 @@ function saveLibrary(library: ScreenshotLibrary): void {
 function getLegacyRun(): ScreenshotRun {
   return {
     id: LEGACY_RUN_ID,
-    startedAt: '1970-01-01T00:00:00.000Z',
+    startedAt: '1970-01-01 00:00:00',
     flowName: '历史截图/未知执行'
   }
 }
@@ -226,7 +232,7 @@ function syncLegacyFiles(library: ScreenshotLibrary): boolean {
       relativePath: relativePathFor('active', filename),
       status: 'active',
       runId: LEGACY_RUN_ID,
-      createdAt: stat.birthtime.toISOString(),
+      createdAt: formatLocalTime(stat.birthtime),
       size: stat.size,
       tagIds: []
     })

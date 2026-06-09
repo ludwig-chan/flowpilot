@@ -1,6 +1,7 @@
 import type { FlowStep } from '@shared/types/flow'
 import type { ResolveFn, RunChildStepFn, RunContext } from './types'
 import { MSG } from '@shared/types/message'
+import { toLocalTimeString } from '@shared/utils/time'
 import { screenshotCanvas } from './screenshotCanvas'
 import { screenshotElement } from './screenshotElement'
 import { waitForElementToDisappear } from './domResolver'
@@ -353,7 +354,7 @@ async function handleSaveCanvas(
   const dataUrl = await captureScreenshot(step.selector, sel, resolve, onLog)
   if (!dataUrl) { onLog('  [跳过] 截图失败，无法保存'); return }
 
-  const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
+  const ts = toLocalTimeString().replace(/:/g, '-')
   const filename = `screenshot-${ts}.png`
   const saved = await saveViaBridge(dataUrl, filename, ctx)
 

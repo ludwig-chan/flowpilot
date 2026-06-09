@@ -1,6 +1,7 @@
 import { ref } from 'vue'
 import type { useFlowStore } from '../stores/useFlowStore'
 import { showAlert } from '@shared/utils/dialog'
+import { toLocalTimeString } from '@shared/utils/time'
 import { filterNodesByIds } from '../stores/useFlowStore'
 import type { ExportPayload } from '../stores/useFlowStore'
 
@@ -12,7 +13,7 @@ export function useFlowIO(flowStore: FlowStore) {
 
   function handleExportSelected(ids: Set<string>) {
     const payload = flowStore.exportSelected(ids)
-    const date = new Date().toISOString().slice(0, 10)
+    const date = toLocalTimeString().slice(0, 10)
     const filename = `flowpilot-export-${date}.flowpilot`
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' })
     const url = URL.createObjectURL(blob)

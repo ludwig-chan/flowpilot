@@ -1,6 +1,7 @@
 import type { FlowStep, SelectorStrategy, StepDelayLevel, StepEvent } from '@shared/types/flow'
 import { STEP_DELAY_PRESETS } from '@shared/types/flow'
 import { MSG } from '@shared/types/message'
+import { toLocalTimeString } from '@shared/utils/time'
 import { resolveElementByStrategy } from './domResolver'
 import { humanDelay } from './eventSimulator'
 import type { CachedFlow, RunMetadata, RunContext } from './types'
@@ -48,7 +49,7 @@ export function runFlow(
       signal,
       flowCache,
       runId: metadata.runId ?? createRunId(),
-      runStartedAt: metadata.runStartedAt ?? new Date().toISOString(),
+      runStartedAt: metadata.runStartedAt ?? toLocalTimeString(),
       flowId: metadata.flowId,
       flowName: metadata.flowName,
       screenshotCount: 0,

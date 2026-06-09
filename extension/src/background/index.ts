@@ -4,6 +4,7 @@
 
 import type { UrlMatchMode } from '@shared/types/flow'
 import { genId } from '@shared/utils/genId'
+import { toLocalTimeString } from '@shared/utils/time'
 import { MSG } from '@shared/types/message'
 import { BUILTIN_PRESETS } from '@/presets/index'
 
@@ -125,7 +126,7 @@ function withRunMetadata(message: any): any {
   return {
     ...message,
     runId: message.runId ?? genId('run'),
-    runStartedAt: message.runStartedAt ?? new Date().toISOString(),
+    runStartedAt: message.runStartedAt ?? toLocalTimeString(),
   }
 }
 
