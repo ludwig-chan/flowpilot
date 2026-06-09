@@ -32,6 +32,15 @@ export type ActionType =
   | 'call_flow'
   | 'save_canvas'
 
+// ─── 多条件分支 ────────────────────────────────────────────────────────────────
+export interface ConditionItem {
+  id:       string
+  mode:     'expr' | 'elem'
+  value?:   string       // expr 模式：如 "{{price}} > 100"
+  selector?: string      // elem 模式：CSS 选择器
+}
+export type ConditionLogic = 'and' | 'or'
+
 // ─── 单个步骤 ──────────────────────────────────────────────────────────────────
 export interface FlowStep {
   id: string
@@ -49,6 +58,8 @@ export interface FlowStep {
   scrollBehavior?: 'none' | 'item' | 'bottom' // loop_items: 每项处理前/后的滚动行为
   relativeSelector?: boolean // 子步骤专用：selector 相对于所在列表项而非整个页面
   elseChildren?: FlowStep[] // condition: else 分支步骤
+  conditions?:      ConditionItem[]   // condition: 多条件列表
+  conditionLogic?:  ConditionLogic    // condition: 条件连接方式，默认 'and'
 }
 
 // ─── 触发器 ────────────────────────────────────────────────────────────────────

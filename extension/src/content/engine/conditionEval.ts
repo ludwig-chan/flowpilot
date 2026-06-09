@@ -40,3 +40,30 @@ export function evalCondition(expr: string): boolean {
   // 无运算符：非空视为真
   return expr.trim().length > 0
 }
+
+// ─── 多条件组合求值 ────────────────────────────────────────────────────────────
+interface CondItemLike { mode: string; value?: string; selector?: string }
+
+function evalOne(cond: CondItemLike, variables: Record<string, string>): boolean {
+  if (cond.mode === 'elem') {
+    return !!document.querySelector(cond.selector ?? '')
+  }
+  return evalCondition(interpolate(cond.value ?? '', variables))
+}
+
+/**
+ * 对多个条件按 AND/OR 组合求值
+ * - logic='and' → 所有条件都成立才为 true
+ * - logic='or'  → 任一条件成立即为 true
+ * - 空数组直接返回 true
+ */
+export function evalMultiCondition(
+  conditions: CondItemLike[],
+  logic: 'and' | 'or',
+  variables: Record<string, string>,
+): boolean {
+  if (!conditions.length) return true
+  return logic === 'and'
+    ? conditions.every(c => evalOne(c, variables))
+    : conditions.some(c => evalOne(c, variables))
+}

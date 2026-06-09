@@ -104,6 +104,8 @@ function onCancelSmartLoop() {
       v-if="showConditionModal"
       :initial-label="conditionModalStep?.label"
       :initial-value="conditionModalStep?.value"
+      :initial-conditions="conditionModalStep?.conditions"
+      :initial-logic="conditionModalStep?.conditionLogic"
       :available-vars="conditionAvailableVars"
       @close="onCloseConditionModal"
       @confirm="onConditionConfirm"

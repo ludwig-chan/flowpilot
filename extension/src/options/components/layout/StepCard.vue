@@ -61,6 +61,15 @@ const emit = defineEmits<{
     <div class="step-card__body">
       <div class="step-card__label">{{ step.label }}</div>
       <div class="step-card__type">{{ stepTypeLabels[step.type] ?? step.type }}</div>
+      <!-- 多条件摘要 -->
+      <div v-if="step.type === 'condition' && step.conditions?.length" class="step-card__cond-summary">
+        <code v-for="(c, i) in step.conditions" :key="c.id">
+          {{ c.mode === 'expr' ? (c.value ?? '?') : (c.selector?.slice(0, 25) ?? '?') }}
+          <span v-if="i < step.conditions.length - 1" class="step-card__cond-logic">
+            {{ step.conditionLogic === 'or' ? ' 或 ' : ' 且 ' }}
+          </span>
+        </code>
+      </div>
       <div
         v-if="step.type === 'call_flow' && isBrokenRef(step.flowRef)"
         class="step-card__broken"
@@ -144,6 +153,11 @@ const emit = defineEmits<{
 .step-card__body { flex: 1; min-width: 0; }
 .step-card__label { font-size: 13px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .step-card__type  { font-size: 11px; color: #89b4fa; margin-top: 2px; }
+.step-card__cond-summary {
+  margin-top: 3px; font-size: 10px; line-height: 1.5;
+  code { font-family: 'Cascadia Code', monospace; color: #a6adc8; background: rgba(166, 173, 200, .08); padding: 1px 4px; border-radius: 2px; }
+}
+.step-card__cond-logic { color: #fab387; font-weight: 600; }
 .step-card__broken { font-size: 11px; color: #f38ba8; margin-top: 2px; font-weight: 500; }
 .step-card__actions { display: flex; gap: 4px; flex-shrink: 0; }
 .step-card__btn {

@@ -1,7 +1,7 @@
 import { ref, computed } from 'vue'
 import type { Ref } from 'vue'
 import type { LocalFlow } from '../stores/useFlowStore'
-import type { FlowStep } from '@shared/types/flow'
+import type { FlowStep, ConditionItem, ConditionLogic } from '@shared/types/flow'
 import { useEditorStore } from '../stores/useEditorStore'
 import { genId } from '@shared/utils/genId'
 
@@ -46,14 +46,31 @@ export function useConditionEditor(
 
   /** ConditionPickerModal 确认回调 */
   function onConditionConfirm(data: {
-    label: string; mode: 'expr' | 'elem'; value?: string; selector?: string
+    label: string; conditions: ConditionItem[]; logic: ConditionLogic
   }) {
     showConditionModal.value = false
 
-    const newSelector = data.mode === 'elem' && data.selector
-      ? { cssSelector: data.selector }
+    // 兼容旧格式：从第一个条件提取 value/selector，供 StepCard 等组件显示
+    const firstCond = data.conditions[0]
+    const compatSelector = firstCond?.mode === 'elem' && firstCond?.selector
+      ? { cssSelector: firstCond.selector }
       : undefined
-    const newValue = data.mode === 'expr' ? data.value : undefined
+    const compatValue = firstCond?.mode === 'expr' ? firstCond?.value : undefined
+
+    // 构建条件步骤的辅助函数
+    function makeCondStep(): FlowStep {
+      return {
+        id:             genId('step'),
+        type:           'condition',
+        label:          data.label,
+        conditions:     data.conditions,
+        conditionLogic: data.logic,
+        value:          compatValue,
+        selector:       compatSelector,
+        children:       [],
+        elseChildren:   [],
+      }
+    }
 
     // ── Loop 上下文：写入 editingLoopStep ──────────────────────────────
     if (es.editingLoopStep) {
@@ -65,10 +82,7 @@ export function useConditionEditor(
           const arr = branchCtx.branch === 'if'
             ? (cond.children     = cond.children     ?? [])
             : (cond.elseChildren = cond.elseChildren ?? [])
-          arr.push({
-            id: genId('step'), type: 'condition', label: data.label,
-            value: newValue, selector: newSelector, children: [], elseChildren: [],
-          })
+          arr.push(makeCondStep())
         }
         es.addingToLoopBranch = null
       } else {
@@ -78,12 +92,13 @@ export function useConditionEditor(
         if (idx !== null && loopChildren[idx]) {
           // 编辑模式
           const s = loopChildren[idx]
-          s.label = data.label; s.value = newValue; s.selector = newSelector
+          s.label          = data.label
+          s.conditions     = data.conditions
+          s.conditionLogic = data.logic
+          s.value          = compatValue
+          s.selector       = compatSelector
         } else {
-          loopChildren.push({
-            id: genId('step'), type: 'condition', label: data.label,
-            value: newValue, selector: newSelector, children: [], elseChildren: [],
-          })
+          loopChildren.push(makeCondStep())
         }
         es.editingLoopChild = null
       }
@@ -100,10 +115,7 @@ export function useConditionEditor(
       const { condStepId, branch } = es.addingToBranch
       const condStep = editingFlow.value.steps.find(s => s.id === condStepId)
       if (condStep) {
-        const step: FlowStep = {
-          id: genId('step'), type: 'condition', label: data.label,
-          value: newValue, selector: newSelector, children: [], elseChildren: [],
-        }
+        const step = makeCondStep()
         if (branch === 'if') condStep.children = [...(condStep.children ?? []), step]
         else condStep.elseChildren = [...(condStep.elseChildren ?? []), step]
       }
@@ -114,19 +126,13 @@ export function useConditionEditor(
     }
     if (conditionModalIdx.value !== null) {
       const s = editingFlow.value.steps[conditionModalIdx.value]
-      s.label    = data.label
-      s.value    = newValue
-      s.selector = newSelector
+      s.label          = data.label
+      s.conditions     = data.conditions
+      s.conditionLogic = data.logic
+      s.value          = compatValue
+      s.selector       = compatSelector
     } else {
-      editingFlow.value.steps.push({
-        id:           genId('step'),
-        type:         'condition',
-        label:        data.label,
-        value:        newValue,
-        selector:     newSelector,
-        children:     [],
-        elseChildren: [],
-      })
+      editingFlow.value.steps.push(makeCondStep())
     }
     conditionModalStep.value = null
     conditionModalIdx.value  = null

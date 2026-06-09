@@ -5,7 +5,7 @@ import { screenshotCanvas }  from './screenshotCanvas'
 import { screenshotElement } from './screenshotElement'
 import { resolveElementByStrategy, waitForElementToDisappear } from './domResolver'
 import { humanDelay, simulateClick, findScrollContainer, sleep } from './eventSimulator'
-import { interpolate, evalCondition } from './conditionEval'
+import { interpolate, evalCondition, evalMultiCondition } from './conditionEval'
 
 type CachedFlow = { id: string; name: string; steps: FlowStep[] }
 
@@ -332,7 +332,12 @@ async function executeStep(
 
     case 'condition': {
       let condMet = false
-      if (step.value?.trim()) {
+      // 多条件模式（优先）
+      if (step.conditions?.length) {
+        condMet = evalMultiCondition(step.conditions, step.conditionLogic ?? 'and', ctx.variables)
+        const logicLabel = step.conditionLogic === 'or' ? 'OR' : 'AND'
+        onLog(`  多条件(${logicLabel}) → ${condMet ? '成立' : '不成立'}`)
+      } else if (step.value?.trim()) {
         const expr = interpolate(step.value.trim(), ctx.variables)
         condMet = evalCondition(expr)
         onLog(`  条件表达式：${expr} → ${condMet ? '成立' : '不成立'}`)

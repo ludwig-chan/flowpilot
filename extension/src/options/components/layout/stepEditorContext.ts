@@ -47,7 +47,7 @@ export interface StepEditorModalContext {
   conditionModalStep: Ref<FlowStep | null>
   conditionModalIdx: Ref<number | null>
   conditionAvailableVars: ComputedRef<string[]>
-  onConditionConfirm: (data: { label: string; mode: 'expr' | 'elem'; value?: string; selector?: string }) => void
+  onConditionConfirm: (data: { label: string; conditions: import('@shared/types/flow').ConditionItem[]; logic: import('@shared/types/flow').ConditionLogic }) => void
   // ── useFlowEditor ─────────────────────────────────────────────────
   showSettingsModal: Ref<boolean>
   onSettingsConfirm: (data: { waitTimeout: number; stepDelayLevel: StepDelayLevel; stepDelayRange: [number, number] | undefined; trigger: FlowTrigger | undefined }) => void
