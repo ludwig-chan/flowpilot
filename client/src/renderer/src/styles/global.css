@@ -806,6 +806,28 @@ body {
   padding: 4px 8px;
 }
 
+/* 复选框列 */
+.datatable-check-col {
+  width: 36px;
+  padding: 0 10px !important;
+  text-align: center;
+}
+
+.datatable-check-col input[type="checkbox"] {
+  width: 15px;
+  height: 15px;
+  cursor: pointer;
+  accent-color: var(--primary);
+}
+
+/* 批量操作提示 */
+.batch-hint {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--primary);
+  white-space: nowrap;
+}
+
 code {
   background: var(--bg);
   border: 1px solid var(--border);

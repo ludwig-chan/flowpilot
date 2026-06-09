@@ -83,6 +83,7 @@ export default function Screenshots({ showToast }: ScreenshotsProps): React.JSX.
   const [ocrLoading, setOcrLoading] = useState<Record<string, boolean>>({})
   const [batchOcrLoading, setBatchOcrLoading] = useState(false)
   const [batchOcrProgress, setBatchOcrProgress] = useState('')
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
 
   const loadData = async (): Promise<void> => {
     setLoading(true)
@@ -315,6 +316,57 @@ export default function Screenshots({ showToast }: ScreenshotsProps): React.JSX.
     }
   }
 
+  const batchDelete = async (): Promise<void> => {
+    const items = filteredScreenshots.filter((s) => selectedIds.has(s.id))
+    if (items.length === 0) return
+
+    if (viewMode === 'active') {
+      if (!window.confirm(`移入回收站 ${items.length} 张截图？`)) return
+      for (const item of items) {
+        await window.api.trashScreenshot(item.id)
+      }
+      showToast(`已移入回收站 ${items.length} 张`, 'success')
+    } else {
+      if (!window.confirm(`永久删除 ${items.length} 张截图？此操作不可撤销。`)) return
+      for (const item of items) {
+        await window.api.deleteScreenshotPermanently(item.id)
+      }
+      showToast(`已永久删除 ${items.length} 张`, 'success')
+    }
+    setSelectedIds(new Set())
+    await loadData()
+  }
+
+  const batchOcrSelected = async (): Promise<void> => {
+    const items = filteredScreenshots.filter((s) => selectedIds.has(s.id) && s.status === 'active')
+    if (items.length === 0) {
+      showToast('没有可识别的截图', 'info')
+      return
+    }
+
+    setBatchOcrLoading(true)
+    setBatchOcrProgress(`正在识别 0/${items.length}...`)
+    try {
+      const ids = items.map((s) => s.id)
+      const result = await window.api.ocrScreenshotsBatch(ids)
+      if (result.success) {
+        const ok = result.results.filter((r) => r.text).length
+        const fail = result.results.filter((r) => r.error).length
+        showToast(`批量 OCR 完成：${ok} 张成功${fail > 0 ? `，${fail} 张失败` : ''}`, 'success')
+      } else {
+        showToast(`批量 OCR 失败：${result.error}`, 'error')
+      }
+      setBatchOcrProgress('')
+      setSelectedIds(new Set())
+      await loadData()
+    } catch (err) {
+      showToast(`批量 OCR 异常：${(err as Error).message}`, 'error')
+    } finally {
+      setBatchOcrLoading(false)
+      setBatchOcrProgress('')
+    }
+  }
+
   return (
     <>
       <div className="page-title">截图</div>
@@ -367,19 +419,36 @@ export default function Screenshots({ showToast }: ScreenshotsProps): React.JSX.
           刷新
         </button>
 
-        {viewMode === 'active' && (
-          <button
-            className="btn btn-primary"
-            onClick={runBatchOcr}
-            disabled={batchOcrLoading}
-          >
-            {batchOcrLoading ? (batchOcrProgress || '识别中...') : '批量 OCR'}
-          </button>
+        {selectedIds.size > 0 ? (
+          <>
+            <span className="batch-hint">已选 {selectedIds.size} 张</span>
+            {viewMode === 'active' && (
+              <button
+                className="btn btn-primary"
+                onClick={batchOcrSelected}
+                disabled={batchOcrLoading}
+              >
+                {batchOcrLoading ? (batchOcrProgress || '识别中...') : 'OCR 选中'}
+              </button>
+            )}
+            <button className="btn btn-danger" onClick={batchDelete}>
+              {viewMode === 'active' ? '删除选中' : '永久删除选中'}
+            </button>
+            <button className="btn btn-secondary" onClick={() => setSelectedIds(new Set())}>
+              取消选择
+            </button>
+          </>
+        ) : (
+          viewMode === 'active' && (
+            <button
+              className="btn btn-primary"
+              onClick={runBatchOcr}
+              disabled={batchOcrLoading}
+            >
+              {batchOcrLoading ? (batchOcrProgress || '识别中...') : '批量 OCR'}
+            </button>
+          )
         )}
-      </div>
-
-      <div className="path-hint screenshot-path">
-        {viewMode === 'trash' ? data.trashDir : data.screenshotDir || '截图目录尚未初始化'}
       </div>
 
       {loading ? (
@@ -393,6 +462,9 @@ export default function Screenshots({ showToast }: ScreenshotsProps): React.JSX.
           columns={screenshotColumns}
           data={filteredScreenshots}
           rowKey={(item) => item.id}
+          selectable
+          selectedIds={selectedIds}
+          onSelectionChange={setSelectedIds}
         />
       ) : (
         <div className="screenshot-grid">
