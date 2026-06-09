@@ -1,3 +1,11 @@
+/** 在元素矩形内随机取一个点（30%~70% 范围，避免边缘） */
+export function randomPosInRect(rect: DOMRect): { x: number; y: number } {
+  return {
+    x: rect.left + rect.width  * (0.3 + Math.random() * 0.4),
+    y: rect.top  + rect.height * (0.3 + Math.random() * 0.4),
+  }
+}
+
 export function humanDelay(min: number, max: number): Promise<void> {
   // Box-Muller 变换，模拟人类反应时间的正态分布（比均匀分布更难被行为分析识别）
   const u1 = Math.random() || 1e-10  // 避免 log(0)
@@ -11,9 +19,7 @@ export function humanDelay(min: number, max: number): Promise<void> {
 
 export function simulateClick(el: HTMLElement): void {
   const rect = el.getBoundingClientRect()
-  // 在元素内随机取一个点，而不是固定用中心点
-  const x = rect.left + rect.width  * (0.3 + Math.random() * 0.4)
-  const y = rect.top  + rect.height * (0.3 + Math.random() * 0.4)
+  const { x, y } = randomPosInRect(rect)
   const opts: MouseEventInit = {
     bubbles: true, cancelable: true,
     clientX: x, clientY: y,
