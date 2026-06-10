@@ -43,7 +43,7 @@ const bridge = useBridge()
 const {
   saveToast,
   showSettingsModal, onSettingsConfirm,
-  saveFlow, estimatedFlowTime,
+  saveFlow, resetPresetCustomization, estimatedFlowTime,
 } = useFlowEditor(flowStore, editingFlow)
 
 const {
@@ -168,6 +168,7 @@ provide(STEP_EDITOR_MODALS_KEY, {
       :running="running"
       :stopping="stopping"
       @save="saveFlow"
+      @restore-default="resetPresetCustomization"
       @open-settings="showSettingsModal = true"
       @run="$emit('run')"
       @stop="$emit('stop')"

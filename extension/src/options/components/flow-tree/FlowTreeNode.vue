@@ -19,6 +19,7 @@ const emit = defineEmits<{
   (e: 'createIn', id:   string):    void
   (e: 'edit',     id:   string):    void
   (e: 'pin',      id:   string):    void
+  (e: 'restore-default', id: string): void
 }>()
 
 const collapsed = ref(new Set<string>())
@@ -63,6 +64,7 @@ function toggle(id: string) {
           @create-in="emit('createIn', $event)"
           @edit="emit('edit', $event)"
           @pin="emit('pin', $event)"
+          @restore-default="emit('restore-default', $event)"
         />
       </template>
 
@@ -76,6 +78,7 @@ function toggle(id: string) {
         <span class="tree-icon tree-icon--flow">▶</span>
         <span class="tree-name">{{ node.name }}</span>
         <span v-if="node.builtin" class="tree-badge tree-badge--preset">预设</span>
+        <span v-else-if="(node as LocalFlow).sourcePresetId" class="tree-badge tree-badge--custom">已自定义</span>
         <span
           v-if="brokenFlowIds?.has(node.id)"
           class="tree-warn"
@@ -88,6 +91,12 @@ function toggle(id: string) {
           @click.stop="emit('pin', node.id)"
         >{{ (node as LocalFlow).pinnedInMenu ? '📌' : '📍' }}</BaseButton>
         <template v-if="!node.builtin">
+          <BaseButton
+            v-if="(node as LocalFlow).sourcePresetId"
+            class="tree-btn"
+            title="恢复预设默认设置"
+            @click.stop="emit('restore-default', node.id)"
+          >↺</BaseButton>
           <BaseButton class="tree-btn" @click.stop="emit('edit', node.id)" title="编辑">✏️</BaseButton>
           <BaseButton class="tree-btn tree-btn--del" @click.stop="emit('delete', node.id)" title="删除流程">🗑</BaseButton>
         </template>
@@ -115,6 +124,7 @@ function toggle(id: string) {
 .tree-count { font-size: 11px; color: #6c7086; flex-shrink: 0; }
 .tree-badge { font-size: 10px; padding: 1px 5px; border-radius: 3px; flex-shrink: 0; }
 .tree-badge--preset { background: #45475a; color: #bac2de; }
+.tree-badge--custom { background: #28435f; color: #89b4fa; }
 
 .tree-btn {
   background: none; border: none; cursor: pointer; font-size: 12px;

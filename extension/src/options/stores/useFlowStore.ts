@@ -22,6 +22,7 @@ export interface LocalFlow {
   trigger?:         FlowTrigger           // 自动触发配置
   targetTabId?:     number                // 上次运行绑定的目标 Tab ID
   builtin?:         boolean               // 内置预设标记（只读）
+  sourcePresetId?:  string                // 来自内置预设的自定义副本
 }
 
 export interface FlowFolder {
@@ -115,6 +116,7 @@ function cloneWithNewIds(nodes: FlowNode[], idMap = new Map<string, string>()): 
     return {
       id, kind: 'flow', name: (n as LocalFlow).name,
       steps: JSON.parse(JSON.stringify((n as LocalFlow).steps)),
+      sourcePresetId: (n as LocalFlow).sourcePresetId,
     } as LocalFlow
   })
 }
@@ -136,7 +138,14 @@ function migrate(raw: unknown[]): FlowNode[] {
         children: migrate((item.children as unknown[]) ?? []),
       } as FlowFolder
     }
-    return { kind: 'flow', id: item.id, name: item.name, steps: item.steps ?? [], pinnedInMenu: (item.pinnedInMenu as boolean | undefined) } as LocalFlow
+    return {
+      kind: 'flow',
+      id: item.id,
+      name: item.name,
+      steps: item.steps ?? [],
+      pinnedInMenu: item.pinnedInMenu as boolean | undefined,
+      sourcePresetId: item.sourcePresetId as string | undefined,
+    } as LocalFlow
   })
 }
 
@@ -214,6 +223,10 @@ export const useFlowStore = defineStore('flows', () => {
     const idx = parent.findIndex(n => n.id === id)
     if (idx >= 0) parent.splice(idx, 1)
     await persist()
+  }
+
+  function findUserFlowBySourcePresetId(presetId: string): LocalFlow | null {
+    return allFlows().find(f => f.sourcePresetId === presetId) ?? null
   }
 
   /** 将节点移动到新的父级（newParentId 为 undefined 表示移至根目录） */
@@ -372,15 +385,36 @@ export const useFlowStore = defineStore('flows', () => {
 
   /** 将内置预设节点 fork 到用户区（深拷贝 + 新 ID），返回新节点 */
   async function forkPresetNode(presetId: string): Promise<FlowNode | null> {
+    const existing = findUserFlowBySourcePresetId(presetId)
+    if (existing) return existing
+
     const presetNode = findNode(displayTree.value, presetId)
     if (!presetNode || !presetNode.builtin) return null
 
     const cloned = cloneWithNewIds([presetNode])[0]
+    if (cloned.kind === 'flow') cloned.sourcePresetId = presetId
     tree.value.push(cloned)
     await persist()
     return cloned
   }
 
-  return { tree, loading, load, saveFlow, saveFolder, update, remove, togglePin, moveNode, getParentFolderId, allFlows, allFolders, exportNode, exportSelected, importInto, renameNode, brokenFlowIds, displayTree, forkPresetNode }
+  async function resetPresetCustomization(id: string): Promise<LocalFlow | null> {
+    const customFlow = findNode(tree.value, id)
+    if (!customFlow || customFlow.kind !== 'flow' || !customFlow.sourcePresetId) return null
+
+    const presetNode = findNode(displayTree.value, customFlow.sourcePresetId)
+    if (!presetNode || presetNode.kind !== 'flow' || !presetNode.builtin) return null
+
+    customFlow.name           = presetNode.name
+    customFlow.steps          = JSON.parse(JSON.stringify(presetNode.steps))
+    customFlow.stepDelayLevel = presetNode.stepDelayLevel
+    customFlow.stepDelayRange = presetNode.stepDelayRange
+    customFlow.waitTimeout    = presetNode.waitTimeout
+    customFlow.trigger        = presetNode.trigger
+    await persist()
+    return JSON.parse(JSON.stringify(customFlow)) as LocalFlow
+  }
+
+  return { tree, loading, load, saveFlow, saveFolder, update, remove, togglePin, moveNode, getParentFolderId, findUserFlowBySourcePresetId, allFlows, allFolders, exportNode, exportSelected, importInto, renameNode, brokenFlowIds, displayTree, forkPresetNode, resetPresetCustomization }
 })
 

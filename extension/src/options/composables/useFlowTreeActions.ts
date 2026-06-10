@@ -76,6 +76,14 @@ export function useFlowTreeActions(flowStore: FlowStore, editingFlow: Ref<LocalF
     showEditModal.value       = true
   }
 
+  async function restoreDefaultPreset(id: string) {
+    const node = findNodeInTree(flowStore.tree, id)
+    if (!node || node.kind !== 'flow' || !node.sourcePresetId) return
+    if (!await showConfirm(`将「${node.name}」恢复为预设默认设置？\n当前自定义步骤和设置会被覆盖。`, '恢复默认')) return
+    const resetFlow = await flowStore.resetPresetCustomization(id)
+    if (resetFlow && editingFlow.value?.id === id) editingFlow.value = JSON.parse(JSON.stringify(resetFlow))
+  }
+
   async function onConfirmEdit(id: string, name: string, parentId: string | undefined) {
     await flowStore.renameNode(id, name)
     const currentParent = flowStore.getParentFolderId(id)
@@ -89,6 +97,6 @@ export function useFlowTreeActions(flowStore: FlowStore, editingFlow: Ref<LocalF
     openCreateModal, onConfirmCreate,
     deleteFlowOrFolder,
     showEditModal, editingNodeId, editingNodeName, editingNodeKind, editingNodeParentId,
-    handleEdit, onConfirmEdit,
+    handleEdit, onConfirmEdit, restoreDefaultPreset,
   }
 }

@@ -33,15 +33,18 @@ export function useFlowEditor(flowStore: FlowStore, editingFlow: Ref<LocalFlow |
 
   async function saveFlow() {
     if (!editingFlow.value) return
-    // 如果是内置预设，先 fork 到用户区
     let flowId = editingFlow.value.id
-    if (!flowStore.tree.find(n => n.id === flowId || (n.kind === 'folder' && n.children.some(c => c.id === flowId)))) {
+
+    if (editingFlow.value.builtin) {
       const forked = await flowStore.forkPresetNode(flowId)
       if (forked && forked.kind === 'flow') {
         flowId = forked.id
         editingFlow.value.id = flowId
+        editingFlow.value.builtin = false
+        editingFlow.value.sourcePresetId = forked.sourcePresetId
       }
     }
+
     await flowStore.update(flowId, {
       name:           editingFlow.value.name,
       steps:          editingFlow.value.steps,
@@ -49,10 +52,19 @@ export function useFlowEditor(flowStore: FlowStore, editingFlow: Ref<LocalFlow |
       stepDelayRange: editingFlow.value.stepDelayRange,
       waitTimeout:    editingFlow.value.waitTimeout,
       trigger:        editingFlow.value.trigger,
+      sourcePresetId: editingFlow.value.sourcePresetId,
     })
     if (_toastTimer) clearTimeout(_toastTimer)
     saveToast.value = true
     _toastTimer = setTimeout(() => { saveToast.value = false }, 2000)
+  }
+
+  async function resetPresetCustomization() {
+    if (!editingFlow.value?.sourcePresetId) return
+    if (!await showConfirm(`将「${editingFlow.value.name}」恢复为预设默认设置？\n当前自定义步骤和设置会被覆盖。`, '恢复默认')) return
+
+    const resetFlow = await flowStore.resetPresetCustomization(editingFlow.value.id)
+    if (resetFlow) editingFlow.value = resetFlow
   }
 
   const { estimatedFlowTime } = useFlowEstimate(editingFlow)
@@ -63,6 +75,7 @@ export function useFlowEditor(flowStore: FlowStore, editingFlow: Ref<LocalFlow |
     showSettingsModal,
     onSettingsConfirm,
     saveFlow,
+    resetPresetCustomization,
     estimatedFlowTime,
   }
 }

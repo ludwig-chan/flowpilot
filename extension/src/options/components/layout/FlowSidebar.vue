@@ -19,7 +19,7 @@ const {
   openCreateModal, onConfirmCreate,
   deleteFlowOrFolder,
   showEditModal, editingNodeId, editingNodeName, editingNodeKind, editingNodeParentId,
-  handleEdit, onConfirmEdit,
+  handleEdit, onConfirmEdit, restoreDefaultPreset,
 } = useFlowTreeActions(flowStore, editingFlow)
 
 const {
@@ -47,6 +47,7 @@ const {
         @create-in="(id: string) => openCreateModal(id)"
         @edit="handleEdit"
         @pin="(id: string) => flowStore.togglePin(id)"
+        @restore-default="restoreDefaultPreset"
       />
       <div v-if="flowStore.displayTree.length === 0 && !showCreateModal" class="empty-hint">暂无流程，点击"新增"创建</div>
     </div>

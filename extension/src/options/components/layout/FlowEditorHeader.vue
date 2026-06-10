@@ -10,6 +10,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'save'): void
+  (e: 'restore-default'): void
   (e: 'open-settings'): void
   (e: 'run'): void
   (e: 'stop'): void
@@ -21,8 +22,15 @@ const emit = defineEmits<{
   <div class="editor__header">
     <div class="editor__header-row">
       <span class="editor__name-display">{{ flow.name }}</span>
+      <span v-if="flow.builtin" class="editor__badge editor__badge--preset">预设</span>
+      <span v-else-if="flow.sourcePresetId" class="editor__badge editor__badge--custom">已自定义</span>
       <span v-if="estimatedTime" class="editor__est-time">⏱ {{ estimatedTime }}</span>
       <BaseButton title="设置" @click="emit('open-settings')">设置</BaseButton>
+      <BaseButton
+        v-if="flow.sourcePresetId"
+        title="恢复预设默认设置"
+        @click="emit('restore-default')"
+      >恢复默认</BaseButton>
       <BaseButton title="保存" kind="primary" @click="emit('save')">保存</BaseButton>
       <BaseButton
         :title="stopping ? '停止中' : running ? '停止' : '运行'"
@@ -41,6 +49,9 @@ const emit = defineEmits<{
 }
 .editor__est-time { font-size: 11px; color: #cdd6f4; margin-right: 4px; }
 .editor__name-display { flex: 1; font-size: 14px; font-weight: 600; color: #cdd6f4; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.editor__badge { font-size: 11px; padding: 2px 6px; border-radius: 3px; flex-shrink: 0; }
+.editor__badge--preset { background: #45475a; color: #bac2de; }
+.editor__badge--custom { background: #28435f; color: #89b4fa; }
 .editor__delay-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .editor__delay-label { font-size: 12px; color: #a6adc8; white-space: nowrap; }
 .editor__delay-unit { font-size: 12px; color: #a6adc8; }
