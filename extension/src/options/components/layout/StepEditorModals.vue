@@ -24,7 +24,7 @@ const {
   domTree, domFilter, domScanning, domMutated, domTabTitle,
   pickMode, pickedCssSelector, scanDom, togglePickMode,
   showPickerModal, closePicker, onElementPicked, onTestAction,
-  showSmartLoopModal, smartLoopCandidates, smartLoopPickedEl, onSmartLoopConfirm,
+  showSmartLoopModal, smartLoopCandidates, smartLoopPickedEl, onSmartLoopConfirm, onSmartLoopCancel,
   onLoopSave, onLoopClose, onLoopReselect, onLoopEditChild,
   onLoopAddChild, onLoopAddCallFlow, onLoopAddCondition, onLoopAddDelay,
   onLoopAddBranchChild, onLoopAddBranchCallFlow, onLoopAddBranchCondition, onLoopEditBranchChild,
@@ -42,8 +42,7 @@ function onCloseConditionModal() {
 }
 
 function onCancelSmartLoop() {
-  showSmartLoopModal.value = false
-  bridge.clearLoopHighlights()
+  onSmartLoopCancel()
 }
 
 function onFinishBuildingLoop() {

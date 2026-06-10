@@ -264,23 +264,29 @@ async function handleLoopItems(
   const itemsArr = Array.from(document.querySelectorAll(step.selector.cssSelector))
   onLog(`找到 ${itemsArr.length} 个条目，开始循环...`)
   const scrollBehavior = step.scrollBehavior ?? 'none'
+  const hasChildSteps = !!step.children?.length
 
   for (let i = 0; i < itemsArr.length; i++) {
     const item = itemsArr[i]
     if (signal.stopped) return
     onStep?.({ type: 'loop_progress', stepId: step.id, index: i + 1, total: itemsArr.length })
-    if (scrollBehavior === 'item') {
+    if (!hasChildSteps) {
+      (item as HTMLElement).scrollIntoView({ behavior: 'smooth', block: 'center' })
+      await sleep(400)
+    } else if (scrollBehavior === 'item') {
       (item as HTMLElement).scrollIntoView({ behavior: 'smooth', block: 'center' })
       await sleep(400)
     }
     onLog(`  → 处理：${item.textContent?.trim().slice(0, 50)}`)
-    if (step.children?.length) {
+    if (hasChildSteps) {
       for (const child of step.children) {
         if (signal.stopped) return
         await runChild(child, { ...ctx, context: item as Element, depth: ctx.depth + 1 })
       }
+    } else {
+      simulateClick(item as HTMLElement)
     }
-    if (scrollBehavior === 'bottom') {
+    if (hasChildSteps && scrollBehavior === 'bottom') {
       const container = findScrollContainer(item)
       container.scrollTop = container.scrollHeight
       await sleep(300)

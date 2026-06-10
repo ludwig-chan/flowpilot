@@ -59,25 +59,35 @@ export function usePickerOrchestrator(
     editBranchStep,
   } = useStepEditor(editingFlow)
 
-  // ── useSmartLoop（确认候选后创建循环步骤）───────────────────────────────
+  function makeLoopClickLabel(name: string, count?: number) {
+    return count !== undefined
+      ? `逐项点击列表：${name}（${count} 项）`
+      : `逐项点击列表：${name}`
+  }
+
+  // ── useSmartLoop（确认候选后创建/更新逐项点击列表步骤）────────────────────
   const {
     showSmartLoopModal,
     smartLoopCandidates,
     smartLoopPickedEl,
     onSmartLoopConfirm,
   } = useSmartLoop(editingFlow, (candidate) => {
+    if (reselectingLoopList.value && es.editingLoopStep) {
+      reselectingLoopList.value = false
+      es.editingLoopStep.selector = { cssSelector: candidate.itemSelector }
+      es.editingLoopStep.label = makeLoopClickLabel(candidate.inferredLabel, candidate.count)
+      es.showEditLoopModal = true
+      return
+    }
     if (!editingFlow.value) return
     const newStep: FlowStep = {
       id:                genId('step'),
       type:              'loop_items',
-      label:             `循环列表：${candidate.inferredLabel}（${candidate.count} 项）`,
+      label:             makeLoopClickLabel(candidate.inferredLabel, candidate.count),
       selector:          { cssSelector: candidate.itemSelector },
       children:          [],
     }
     editingFlow.value.steps.push(newStep)
-    editingLoopStepIdx.value = editingFlow.value.steps.length - 1
-    es.editingLoopStep       = JSON.parse(JSON.stringify(newStep)) as FlowStep
-    es.showEditLoopModal     = true
   })
 
   // ── Smart Loop 模式标志 ───────────────────────────────────────────
@@ -94,14 +104,9 @@ export function usePickerOrchestrator(
   /** ElementPickerModal 选中元素后 → 打开 ActionPickerModal（或直接创建 element_branch 步骤） */
   function onElementPicked(el: SerializedElement) {
     if (reselectingLoopList.value) {
-      reselectingLoopList.value = false
       showPickerModal.value = false
       if (pickMode.value) { pickMode.value = false; bridge.cancelPickElement() }
-      if (es.editingLoopStep) {
-        es.editingLoopStep.selector = el.selector
-        es.editingLoopStep.label = `循环列表：${el.label || el.selector.cssSelector.slice(0, 40)}`
-        es.showEditLoopModal = true
-      }
+      bridge.requestSmartLoopFromSelector(el.selector.cssSelector)
       return
     }
     // ── Smart Loop 模式：关闭选择器，通知 content script 分析祖先结构 ──
@@ -189,6 +194,15 @@ export function usePickerOrchestrator(
     _onLoopReselectRaw(currentState, openPickerInScope)
   }
 
+  function onSmartLoopCancel() {
+    showSmartLoopModal.value = false
+    bridge.clearLoopHighlights()
+    if (reselectingLoopList.value && es.editingLoopStep) {
+      es.showEditLoopModal = true
+    }
+    reselectingLoopList.value = false
+  }
+
   /** EditLoopModal "添加操作" wrapper */
   function onLoopAddChild(currentState: FlowStep) {
     _onLoopAddChildRaw(currentState, openPickerInScope)
@@ -245,7 +259,7 @@ export function usePickerOrchestrator(
     editStep, cancelActionModal, onActionConfirm, editBranchStep,
     // useSmartLoop
     showSmartLoopModal, smartLoopCandidates, smartLoopPickedEl,
-    openSmartLoopPicker, onSmartLoopConfirm,
+    openSmartLoopPicker, onSmartLoopConfirm, onSmartLoopCancel,
     // Wrappers
     onElementPicked, onActionRePick, openPicker, closePicker,
     scanPickerDom, togglePickerPickMode,

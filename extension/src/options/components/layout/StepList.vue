@@ -57,7 +57,7 @@ const {
   onLoopEditChild:           _onLoopEditChildRaw,
   editStep, cancelActionModal, onActionConfirm, editBranchStep,
   showSmartLoopModal, smartLoopCandidates, smartLoopPickedEl,
-  openSmartLoopPicker, onSmartLoopConfirm,
+  openSmartLoopPicker, onSmartLoopConfirm, onSmartLoopCancel,
   onElementPicked, onActionRePick, openPicker, closePicker, scanPickerDom, togglePickerPickMode,
   onLoopAddChild, onActionTry, onTestAction,
   showLoopCallFlowPicker, onLoopAddCallFlow, onLoopConfirmCallFlow,
@@ -162,7 +162,7 @@ provide(STEP_EDITOR_MODALS_KEY, {
   pickMode, pickedCssSelector, scanDom: scanPickerDom, togglePickMode: togglePickerPickMode,
   // usePickerOrchestrator
   showPickerModal, closePicker, onElementPicked, onTestAction,
-  showSmartLoopModal, smartLoopCandidates, smartLoopPickedEl, onSmartLoopConfirm,
+  showSmartLoopModal, smartLoopCandidates, smartLoopPickedEl, onSmartLoopConfirm, onSmartLoopCancel,
   onLoopSave, onLoopClose, onLoopReselect,
   onLoopEditChild, onLoopAddChild, onLoopAddCallFlow,
   onLoopAddCondition, onLoopAddDelay,

@@ -23,6 +23,7 @@ export interface StepEditorModalContext {
   smartLoopCandidates: Ref<RepeatingCandidate[]>
   smartLoopPickedEl: Ref<SerializedElement | null>
   onSmartLoopConfirm: (candidate: RepeatingCandidate) => void
+  onSmartLoopCancel: () => void
   onLoopSave: (editedStep: FlowStep) => void
   onLoopClose: () => void
   onLoopReselect: (currentState: FlowStep) => void
