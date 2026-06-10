@@ -12,6 +12,7 @@ const emit = defineEmits<{
   (e: 'reselect',             currentState: FlowStep): void
   (e: 'reselect-target',      currentState: FlowStep, actionIdx?: number): void
   (e: 'configure-action',     currentState: FlowStep, actionIdx: number): void
+  (e: 'add-call-flow',        currentState: FlowStep): void
 }>()
 
 function autoLabel(step: FlowStep): string {
@@ -68,7 +69,12 @@ function ensureItemActions(): FlowStep[] {
 }
 
 function actionTargetLabel(action: FlowStep): string {
+  if (action.type === 'call_flow') return '嵌入流程'
   return action.selector?.relativeSelector || action.selector?.cssSelector || '默认整项'
+}
+
+function actionLabel(action: FlowStep): string {
+  return action.label || action.type
 }
 
 function addItemAction() {
@@ -78,6 +84,14 @@ function addItemAction() {
 
 function removeItemAction(idx: number) {
   ensureItemActions().splice(idx, 1)
+}
+
+function moveItemAction(idx: number, offset: -1 | 1) {
+  const actions = ensureItemActions()
+  const nextIdx = idx + offset
+  if (nextIdx < 0 || nextIdx >= actions.length) return
+  const [item] = actions.splice(idx, 1)
+  actions.splice(nextIdx, 0, item)
 }
 
 function reselectItemActionTarget(idx: number) {
@@ -113,6 +127,7 @@ function configureItemAction(idx: number) {
               {{ actionTargetLabel(action) }}
             </code>
             <BaseButton
+              v-if="action.type !== 'call_flow'"
               class="elm-resel-btn"
               :disabled="!step.selector?.cssSelector"
               @click="reselectItemActionTarget(idx)"
@@ -120,13 +135,24 @@ function configureItemAction(idx: number) {
           </div>
           <div class="elm-inline-field elm-inline-field--action">
             <span class="elm-inline-label">动作</span>
-            <code class="elm-action-val" :title="action.label || action.type">
-              {{ action.label || action.type }}
+            <code class="elm-action-val" :title="actionLabel(action)">
+              {{ actionLabel(action) }}
             </code>
             <BaseButton
+              v-if="action.type !== 'call_flow'"
               class="elm-resel-btn"
               @click="configureItemAction(idx)"
             >选择动作</BaseButton>
+            <BaseButton
+              class="elm-resel-btn"
+              :disabled="idx === 0"
+              @click="moveItemAction(idx, -1)"
+            >上移</BaseButton>
+            <BaseButton
+              class="elm-resel-btn"
+              :disabled="idx === itemActions.length - 1"
+              @click="moveItemAction(idx, 1)"
+            >下移</BaseButton>
             <BaseButton
               class="elm-resel-btn"
               @click="removeItemAction(idx)"
@@ -144,12 +170,16 @@ function configureItemAction(idx: number) {
           @click="addItemAction"
         >添加项内动作</BaseButton>
         <BaseButton
+          class="elm-resel-btn"
+          @click="emit('add-call-flow', currentState())"
+        >添加嵌入流程</BaseButton>
+        <BaseButton
           v-if="itemActions.length"
           class="elm-resel-btn"
           @click="clearItemTarget"
         >清空动作</BaseButton>
       </div>
-      <p class="elm-hint">每一项会按上面的顺序执行：例如先点头像，再点昵称，然后进入下一项。</p>
+      <p class="elm-hint">每一项会按上面的顺序执行：例如先点头像，再执行流程 A，再点昵称，然后进入下一项。</p>
     </div>
 
     <template #footer>

@@ -54,13 +54,23 @@ const {
 const {
   showPickerModal,
   editLoopStep, onLoopSave, onLoopClose, onLoopReselect, onLoopTargetReselect, onLoopActionConfigure,
+  onLoopAddCallFlow, showLoopCallFlowPicker, confirmLoopCallFlow,
   editStep, cancelActionModal, onActionConfirm, editBranchStep,
   showSmartLoopModal, smartLoopCandidates,
   openSmartLoopPicker, onSmartLoopConfirm, onSmartLoopCancel,
   onElementPicked, onActionRePick, openPicker, closePicker, scanPickerDom, togglePickerPickMode,
   onActionTry, onTestAction,
   addElementBranch,
-} = usePickerOrchestrator(editingFlow, requireTab, pickedCssSelector, pickMode, scopeCanonicalSelector, scanDom, togglePickMode)
+} = usePickerOrchestrator(
+  editingFlow,
+  requireTab,
+  pickedCssSelector,
+  pickMode,
+  scopeCanonicalSelector,
+  scanDom,
+  togglePickMode,
+  (id: string) => flowStore.allFlows().find(f => f.id === id)?.name ?? id,
+)
 
 const {
   removeStep, addDelayStep, editDelayStep, onDelayConfirm,
@@ -139,6 +149,7 @@ provide(STEP_EDITOR_MODALS_KEY, {
   showPickerModal, closePicker, onElementPicked, onTestAction,
   showSmartLoopModal, smartLoopCandidates, onSmartLoopConfirm, onSmartLoopCancel,
   onLoopSave, onLoopClose, onLoopReselect, onLoopTargetReselect, onLoopActionConfigure,
+  onLoopAddCallFlow, showLoopCallFlowPicker, confirmLoopCallFlow,
   onActionConfirm, onActionTry, onActionRePick, cancelActionModal,
   // useConditionEditor
   showConditionModal, conditionModalStep, conditionModalIdx, conditionAvailableVars, onConditionConfirm,

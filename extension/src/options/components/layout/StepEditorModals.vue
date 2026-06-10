@@ -26,6 +26,7 @@ const {
   showPickerModal, closePicker, onElementPicked, onTestAction,
   showSmartLoopModal, smartLoopCandidates, onSmartLoopConfirm, onSmartLoopCancel,
   onLoopSave, onLoopClose, onLoopReselect, onLoopTargetReselect, onLoopActionConfigure,
+  onLoopAddCallFlow, showLoopCallFlowPicker, confirmLoopCallFlow,
   onActionConfirm, onActionTry, onActionRePick, cancelActionModal,
   showConditionModal, conditionModalStep, conditionModalIdx, conditionAvailableVars, onConditionConfirm,
   showSettingsModal, onSettingsConfirm, saveToast,
@@ -85,6 +86,7 @@ function onCancelSmartLoop() {
       @reselect="onLoopReselect"
       @reselect-target="onLoopTargetReselect"
       @configure-action="onLoopActionConfigure"
+      @add-call-flow="onLoopAddCallFlow"
     />
 
     <!-- 条件配置模态框 -->
@@ -128,6 +130,14 @@ function onCancelSmartLoop() {
       :flows="flowStore.allFlows().filter(f => f.id !== editingFlow?.id)"
       @confirm="confirmCallFlow"
       @cancel="showCallFlowPicker = false"
+    />
+
+    <!-- 循环队列嵌入流程选择 -->
+    <CallFlowPickerModal
+      v-if="showLoopCallFlowPicker"
+      :flows="flowStore.allFlows().filter(f => f.id !== editingFlow?.id)"
+      @confirm="confirmLoopCallFlow"
+      @cancel="showLoopCallFlowPicker = false; es.showEditLoopModal = true"
     />
 
     <!-- 等待步骤编辑弹窗 -->

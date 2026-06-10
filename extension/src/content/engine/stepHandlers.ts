@@ -264,6 +264,7 @@ async function executeLoopItemAction(
   item: Element,
   ctx: RunContext,
   index: number,
+  runChild: RunChildStepFn,
 ): Promise<void> {
   const el = target as HTMLElement
   if (action.foundDelay) await humanDelay(action.foundDelay[0], action.foundDelay[1])
@@ -347,6 +348,17 @@ async function executeLoopItemAction(
       } else {
         ctx.onLog(`  [降级] 本地截图服务失败：${saved.error ?? '本地截图服务未返回保存结果'}`)
         downloadFallback(dataUrl, filename, ctx.onLog)
+      }
+      break
+    }
+    case 'call_flow': {
+      if (!action.flowRef) { ctx.onLog('[跳过] 循环项内嵌入流程缺少 flowRef'); break }
+      const subFlow = ctx.flowCache?.get(action.flowRef)
+      if (!subFlow) { ctx.onLog(`[跳过] 找不到嵌入流程 ${action.flowRef}`); break }
+      ctx.onLog(`  嵌入执行：${subFlow.name}`)
+      for (const s of subFlow.steps) {
+        if (ctx.signal.stopped) return
+        await runChild(s, { ...ctx, depth: ctx.depth + 1 })
       }
       break
     }
@@ -523,7 +535,7 @@ async function handleLoopItems(
         const itemTarget = firstItem ? resolveLoopActionTarget(step, action, item, firstItem) : item
         if (action.selector && itemTarget === item) onLog('  未找到项内目标，回退对整项执行动作')
         onLog(`  执行动作：${action.label ?? action.type}`)
-        await executeLoopItemAction(action, itemTarget, item, ctx, i + 1)
+        await executeLoopItemAction(action, itemTarget, item, ctx, i + 1, runChild)
       }
     }
     if (hasChildSteps && scrollBehavior === 'bottom') {

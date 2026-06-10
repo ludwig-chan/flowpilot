@@ -19,6 +19,7 @@ export function usePickerOrchestrator(
   scopeCanonicalSelector: Ref<string | undefined>,
   scanDom: (scope?: string) => void,
   togglePickMode: (scope?: string) => void,
+  getFlowName: (id: string) => string,
 ) {
   const bridge = useBridge()
   const es = useEditorStore()
@@ -81,6 +82,7 @@ export function usePickerOrchestrator(
   const configuringLoopItemAction = ref(false)
   const selectingLoopTargetIdx = ref<number | null>(null)
   const configuringLoopItemActionIdx = ref<number | null>(null)
+  const showLoopCallFlowPicker = ref(false)
 
   function toItemRelativeSelector(cssSelector: string): string | undefined {
     const scope = scopeCanonicalSelector.value
@@ -343,6 +345,26 @@ export function usePickerOrchestrator(
     openLoopActionModal(el, actionIdx, normalizeLoopItemActions(currentState)[actionIdx])
   }
 
+  function onLoopAddCallFlow(currentState: FlowStep) {
+    es.editingLoopStep = currentState
+    es.showEditLoopModal = false
+    showLoopCallFlowPicker.value = true
+  }
+
+  function confirmLoopCallFlow(id: string) {
+    if (!es.editingLoopStep || !id) return
+    const actions = ensureLoopItemActions(es.editingLoopStep)
+    const name = getFlowName(id)
+    actions.push({
+      id:      genId('step'),
+      type:    'call_flow',
+      label:   `嵌入流程：${name}`,
+      flowRef: id,
+    })
+    showLoopCallFlowPicker.value = false
+    es.showEditLoopModal = true
+  }
+
   function onSmartLoopCancel() {
     showSmartLoopModal.value = false
     bridge.clearLoopHighlights()
@@ -374,6 +396,7 @@ export function usePickerOrchestrator(
     // useLoopEditor
     editingLoopStepIdx,
     editLoopStep, onLoopSave, onLoopClose, onLoopReselect, onLoopTargetReselect, onLoopActionConfigure,
+    onLoopAddCallFlow, showLoopCallFlowPicker, confirmLoopCallFlow,
     // useStepEditor
     editStep, cancelActionModal, onActionConfirm, editBranchStep,
     // useSmartLoop
