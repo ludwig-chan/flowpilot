@@ -247,7 +247,7 @@ export default function Screenshots({ showToast }: ScreenshotsProps): React.JSX.
         </div>
       ),
     },
-  ], [viewMode, ocrLoading])
+  ], [viewMode, ocrLoading, filteredScreenshots])
 
   const openPreview = async (id: string): Promise<void> => {
     const index = filteredScreenshots.findIndex(s => s.id === id)
