@@ -315,7 +315,7 @@ export const useFlowStore = defineStore('flows', () => {
         else walk(n.children)
       }
     }
-    walk(tree.value)
+    walk(displayTree.value)
     return result
   }
 
