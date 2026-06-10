@@ -56,6 +56,12 @@ export interface FlowStep {
   flowRef?: string          // call_flow: 引用的已保存流程 ID
   itemDelay?: [number, number] // loop_items: 每项处理完后的随机延迟 [min, max] ms
   scrollBehavior?: 'none' | 'item' | 'bottom' // loop_items: 每项处理前/后的滚动行为
+  maxLoopItems?: number // loop_items: 本次最多处理多少项（空表示全部）
+  loopBatchSize?: number // loop_items: 每批处理多少项（空表示不分批）
+  loopCooldown?: [number, number] // loop_items: 每批处理完后的随机冷却 [min, max] ms
+  loopStopSelector?: string // loop_items: 命中此选择器时停止循环（如验证码/登录/异常提示）
+  scrollWait?: [number, number] // loop_items: 滚动后的随机等待 [min, max] ms
+  requireManualConfirm?: boolean // loop_items: 预留人工确认模式
   itemTargetSelector?: SelectorStrategy // loop_items: 从第一项中选择的点击目标模板
   itemTargetRelativeSelector?: string // loop_items: 模板目标相对列表项的 CSS 路径
   itemAction?: FlowStep // loop_items: 对每一项或项内目标执行的动作配置

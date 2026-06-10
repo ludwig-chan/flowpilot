@@ -203,6 +203,45 @@ function getLoopItemText(item: Element): string {
   return item.textContent?.replace(/\s+/g, ' ').trim().slice(0, 80) ?? ''
 }
 
+function rangeAverage(range?: [number, number]): number {
+  return range ? (range[0] + range[1]) / 2 : 0
+}
+
+function normalizePositiveInt(value: number | undefined): number | undefined {
+  if (value === undefined || !Number.isFinite(value)) return undefined
+  const normalized = Math.floor(value)
+  return normalized > 0 ? normalized : undefined
+}
+
+function isElementInViewport(el: Element): boolean {
+  const rect = el.getBoundingClientRect()
+  const height = window.innerHeight || document.documentElement.clientHeight
+  const width = window.innerWidth || document.documentElement.clientWidth
+  return rect.top >= 0 && rect.left >= 0 && rect.bottom <= height && rect.right <= width
+}
+
+async function scrollElementIntoViewIfNeeded(el: HTMLElement, waitRange?: [number, number]): Promise<void> {
+  if (!isElementInViewport(el)) {
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    await humanDelay(...(waitRange ?? [500, 1800]))
+  }
+}
+
+function findLoopStopElement(selector?: string): Element | null {
+  const trimmed = selector?.trim()
+  if (!trimmed) return null
+  try { return document.querySelector(trimmed) } catch { return null }
+}
+
+function stopLoopIfNeeded(step: FlowStep, ctx: RunContext): boolean {
+  const stopElement = findLoopStopElement(step.loopStopSelector)
+  if (!stopElement) return false
+  const label = stopElement.textContent?.replace(/\s+/g, ' ').trim().slice(0, 60)
+  ctx.onLog(`  [停止] 检测到异常提示${label ? `：「${label}」` : ''}`)
+  ctx.signal.stopped = true
+  return true
+}
+
 function dispatchDoubleClick(el: HTMLElement): void {
   simulateClick(el)
   const rect = el.getBoundingClientRect()
@@ -525,8 +564,16 @@ async function handleLoopItems(
 ): Promise<void> {
   const { onLog, onStep, signal } = ctx
   if (!step.selector) return
-  const itemsArr = Array.from(document.querySelectorAll(step.selector.cssSelector))
-  onLog(`找到 ${itemsArr.length} 个条目，开始循环...`)
+  const allItems = Array.from(document.querySelectorAll(step.selector.cssSelector))
+  const maxLoopItems = normalizePositiveInt(step.maxLoopItems)
+  const itemsArr = maxLoopItems ? allItems.slice(0, maxLoopItems) : allItems
+  const batchSize = normalizePositiveInt(step.loopBatchSize)
+  const cooldownRange = step.loopCooldown
+  const scrollWait = step.scrollWait ?? [500, 1800]
+  const itemDelay = step.itemDelay ?? [800, 2000]
+  const limitText = maxLoopItems && allItems.length > itemsArr.length ? `，本次最多处理 ${itemsArr.length} 项` : ''
+  const batchText = batchSize ? `，每批 ${batchSize} 项` : ''
+  onLog(`找到 ${allItems.length} 个条目${limitText}${batchText}，开始循环...`)
   const scrollBehavior = step.scrollBehavior ?? 'none'
   const hasChildSteps = !!step.children?.length
   const childSteps = step.children ?? []
@@ -536,15 +583,14 @@ async function handleLoopItems(
   for (let i = 0; i < itemsArr.length; i++) {
     const item = itemsArr[i]
     if (signal.stopped) return
+    if (stopLoopIfNeeded(step, ctx)) return
     const itemText = getLoopItemText(item)
     onStep?.({ type: 'loop_progress', stepId: step.id, index: i + 1, total: itemsArr.length, itemText })
     if (!hasChildSteps) {
       const firstTarget = firstItem ? resolveLoopActionTarget(step, itemActions[0], item, firstItem) : item
-      ;(firstTarget as HTMLElement).scrollIntoView({ behavior: 'smooth', block: 'center' })
-      await sleep(400)
+      await scrollElementIntoViewIfNeeded(firstTarget as HTMLElement, scrollWait)
     } else if (scrollBehavior === 'item') {
-      (item as HTMLElement).scrollIntoView({ behavior: 'smooth', block: 'center' })
-      await sleep(400)
+      await scrollElementIntoViewIfNeeded(item as HTMLElement, scrollWait)
     }
     onLog(`  → 处理：${itemText.slice(0, 50)}`)
     if (hasChildSteps) {
@@ -577,9 +623,13 @@ async function handleLoopItems(
     if (hasChildSteps && scrollBehavior === 'bottom') {
       const container = findScrollContainer(item)
       container.scrollTop = container.scrollHeight
-      await sleep(300)
+      await humanDelay(...scrollWait)
     }
-    await humanDelay(...(step.itemDelay ?? [800, 2000]))
+    await humanDelay(...itemDelay)
+    if (batchSize && cooldownRange && i < itemsArr.length - 1 && (i + 1) % batchSize === 0) {
+      onLog(`  批次完成，冷却约 ${Math.round(rangeAverage(cooldownRange) / 1000)} 秒...`)
+      await humanDelay(...cooldownRange)
+    }
   }
 }
 

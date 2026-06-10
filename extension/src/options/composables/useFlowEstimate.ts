@@ -9,6 +9,23 @@ interface EstimateResult {
   perItem: number  // 每个循环项耗时 ms（0 表示无循环）
 }
 
+function avg(range?: [number, number]): number {
+  return range ? (range[0] + range[1]) / 2 : 0
+}
+
+function positiveInt(value: number | undefined): number | undefined {
+  if (value === undefined || !Number.isFinite(value)) return undefined
+  const normalized = Math.floor(value)
+  return normalized > 0 ? normalized : undefined
+}
+
+function loopActionSteps(step: FlowStep): FlowStep[] {
+  if (step.children?.length) return step.children
+  if (step.itemActions?.length) return step.itemActions
+  if (step.itemAction) return [step.itemAction]
+  return []
+}
+
 function estimateStepListMs(steps: FlowStep[], interStepMs: number): EstimateResult | null {
   let fixed   = 0
   let perItem = 0
@@ -17,13 +34,27 @@ function estimateStepListMs(steps: FlowStep[], interStepMs: number): EstimateRes
     if (step.type === 'call_flow') return null
 
     if (step.type === 'loop_items') {
-      const childResult = estimateStepListMs(step.children ?? [], interStepMs)
+      const actionSteps = loopActionSteps(step)
+      const childResult = estimateStepListMs(actionSteps, interStepMs)
       if (childResult === null) return null
       if (childResult.perItem > 0) return null  // 嵌套循环，放弃估算
-      const itemDelayMs = step.itemDelay
-        ? (step.itemDelay[0] + step.itemDelay[1]) / 2
+      const itemDelayMs = avg(step.itemDelay)
+      const scrollWaitMs = avg(step.scrollWait)
+      const maxItems = positiveInt(step.maxLoopItems)
+      const batchSize = positiveInt(step.loopBatchSize)
+      const cooldownMs = avg(step.loopCooldown)
+      const cooldownPerItem = batchSize && cooldownMs > 0
+        ? cooldownMs / batchSize
         : 0
-      perItem += childResult.fixed + itemDelayMs
+      const perLoopItemMs = childResult.fixed + itemDelayMs + scrollWaitMs
+      if (maxItems) {
+        const cooldownCount = batchSize && cooldownMs > 0
+          ? Math.max(0, Math.floor((maxItems - 1) / batchSize))
+          : 0
+        fixed += perLoopItemMs * maxItems + cooldownMs * cooldownCount
+      } else {
+        perItem += perLoopItemMs + cooldownPerItem
+      }
       if (step.foundDelay) fixed += (step.foundDelay[0] + step.foundDelay[1]) / 2
       continue
     }
