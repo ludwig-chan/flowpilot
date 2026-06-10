@@ -33,37 +33,30 @@ export function useFlowEditor(flowStore: FlowStore, editingFlow: Ref<LocalFlow |
 
   async function saveFlow() {
     if (!editingFlow.value) return
-    let flowId = editingFlow.value.id
 
     if (editingFlow.value.builtin) {
-      const forked = await flowStore.forkPresetNode(flowId)
-      if (forked && forked.kind === 'flow') {
-        flowId = forked.id
-        editingFlow.value.id = flowId
-        editingFlow.value.builtin = false
-        editingFlow.value.sourcePresetId = forked.sourcePresetId
-      }
+      const savedFlow = await flowStore.saveBuiltinPresetOverride(editingFlow.value)
+      if (savedFlow) editingFlow.value = savedFlow
+    } else {
+      await flowStore.update(editingFlow.value.id, {
+        name:           editingFlow.value.name,
+        steps:          editingFlow.value.steps,
+        stepDelayLevel: editingFlow.value.stepDelayLevel,
+        stepDelayRange: editingFlow.value.stepDelayRange,
+        waitTimeout:    editingFlow.value.waitTimeout,
+        trigger:        editingFlow.value.trigger,
+      })
     }
-
-    await flowStore.update(flowId, {
-      name:           editingFlow.value.name,
-      steps:          editingFlow.value.steps,
-      stepDelayLevel: editingFlow.value.stepDelayLevel,
-      stepDelayRange: editingFlow.value.stepDelayRange,
-      waitTimeout:    editingFlow.value.waitTimeout,
-      trigger:        editingFlow.value.trigger,
-      sourcePresetId: editingFlow.value.sourcePresetId,
-    })
     if (_toastTimer) clearTimeout(_toastTimer)
     saveToast.value = true
     _toastTimer = setTimeout(() => { saveToast.value = false }, 2000)
   }
 
   async function resetPresetCustomization() {
-    if (!editingFlow.value?.sourcePresetId) return
+    if (!editingFlow.value?.builtin || !editingFlow.value.customized) return
     if (!await showConfirm(`将「${editingFlow.value.name}」恢复为预设默认设置？\n当前自定义步骤和设置会被覆盖。`, '恢复默认')) return
 
-    const resetFlow = await flowStore.resetPresetCustomization(editingFlow.value.id)
+    const resetFlow = await flowStore.resetBuiltinPresetOverride(editingFlow.value.id)
     if (resetFlow) editingFlow.value = resetFlow
   }
 

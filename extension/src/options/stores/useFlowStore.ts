@@ -22,7 +22,7 @@ export interface LocalFlow {
   trigger?:         FlowTrigger           // 自动触发配置
   targetTabId?:     number                // 上次运行绑定的目标 Tab ID
   builtin?:         boolean               // 内置预设标记（只读）
-  sourcePresetId?:  string                // 来自内置预设的自定义副本
+  customized?:      boolean               // 内置预设已保存本地覆盖
 }
 
 export interface FlowFolder {
@@ -116,7 +116,6 @@ function cloneWithNewIds(nodes: FlowNode[], idMap = new Map<string, string>()): 
     return {
       id, kind: 'flow', name: (n as LocalFlow).name,
       steps: JSON.parse(JSON.stringify((n as LocalFlow).steps)),
-      sourcePresetId: (n as LocalFlow).sourcePresetId,
     } as LocalFlow
   })
 }
@@ -144,8 +143,47 @@ function migrate(raw: unknown[]): FlowNode[] {
       name: item.name,
       steps: item.steps ?? [],
       pinnedInMenu: item.pinnedInMenu as boolean | undefined,
-      sourcePresetId: item.sourcePresetId as string | undefined,
     } as LocalFlow
+  })
+}
+
+function migrateBuiltinPresetOverrides(raw: unknown): Record<string, LocalFlow> {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {}
+  const result: Record<string, LocalFlow> = {}
+  for (const [id, value] of Object.entries(raw as Record<string, unknown>)) {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) continue
+    const item = value as Record<string, unknown>
+    result[id] = {
+      kind:           'flow',
+      id,
+      name:           typeof item.name === 'string' ? item.name : '',
+      steps:          Array.isArray(item.steps) ? item.steps as FlowStep[] : [],
+      stepDelayLevel: item.stepDelayLevel as StepDelayLevel | undefined,
+      stepDelayRange: Array.isArray(item.stepDelayRange) ? item.stepDelayRange as [number, number] : undefined,
+      waitTimeout:    typeof item.waitTimeout === 'number' ? item.waitTimeout : undefined,
+      pinnedInMenu:   item.pinnedInMenu as boolean | undefined,
+      trigger:        item.trigger as FlowTrigger | undefined,
+    }
+  }
+  return result
+}
+
+function extractLegacyPresetCopies(nodes: FlowNode[], raw: unknown[], overrides: Record<string, LocalFlow>): FlowNode[] {
+  return nodes.flatMap((node, index): FlowNode[] => {
+    const rawItem = Array.isArray(raw) ? raw[index] as Record<string, unknown> | undefined : undefined
+    if (node.kind === 'folder') {
+      const rawChildren = Array.isArray(rawItem?.children) ? rawItem.children as unknown[] : []
+      return [{ ...node, children: extractLegacyPresetCopies(node.children, rawChildren, overrides) }]
+    }
+
+    const sourcePresetId = typeof rawItem?.sourcePresetId === 'string' ? rawItem.sourcePresetId : ''
+    if (!sourcePresetId) return [node]
+    overrides[sourcePresetId] = {
+      ...node,
+      id: sourcePresetId,
+      kind: 'flow',
+    }
+    return []
   })
 }
 
@@ -153,15 +191,23 @@ export const useFlowStore = defineStore('flows', () => {
   const tree    = ref<FlowNode[]>([])
   const loading = ref(false)
   const builtinPresetPinOverrides = ref<Record<string, boolean>>({})
+  const builtinPresetOverrides = ref<Record<string, LocalFlow>>({})
 
   async function load() {
     loading.value = true
-    const data = await chrome.storage.local.get({ builtFlows: [], builtinPresetPinOverrides: {} })
+    const data = await chrome.storage.local.get({ builtFlows: [], builtinPresetPinOverrides: {}, builtinPresetOverrides: {} })
     const raw = data.builtFlows
-    tree.value = migrate(Array.isArray(raw) ? raw : [])
+    const rawFlows = Array.isArray(raw) ? raw : []
+    const migratedOverrides = migrateBuiltinPresetOverrides(data.builtinPresetOverrides)
+    tree.value = extractLegacyPresetCopies(migrate(rawFlows), rawFlows, migratedOverrides)
     builtinPresetPinOverrides.value = typeof data.builtinPresetPinOverrides === 'object' && data.builtinPresetPinOverrides
       ? data.builtinPresetPinOverrides as Record<string, boolean>
       : {}
+    builtinPresetOverrides.value = migratedOverrides
+    if (JSON.stringify(rawFlows) !== JSON.stringify(tree.value)) {
+      await persist()
+      await persistBuiltinPresetOverrides()
+    }
     loading.value = false
   }
 
@@ -172,6 +218,12 @@ export const useFlowStore = defineStore('flows', () => {
   async function persistBuiltinPresetPinOverrides() {
     await chrome.storage.local.set({
       builtinPresetPinOverrides: JSON.parse(JSON.stringify(builtinPresetPinOverrides.value)),
+    })
+  }
+
+  async function persistBuiltinPresetOverrides() {
+    await chrome.storage.local.set({
+      builtinPresetOverrides: JSON.parse(JSON.stringify(builtinPresetOverrides.value)),
     })
   }
 
@@ -223,10 +275,6 @@ export const useFlowStore = defineStore('flows', () => {
     const idx = parent.findIndex(n => n.id === id)
     if (idx >= 0) parent.splice(idx, 1)
     await persist()
-  }
-
-  function findUserFlowBySourcePresetId(presetId: string): LocalFlow | null {
-    return allFlows().find(f => f.sourcePresetId === presetId) ?? null
   }
 
   /** 将节点移动到新的父级（newParentId 为 undefined 表示移至根目录） */
@@ -367,10 +415,15 @@ export const useFlowStore = defineStore('flows', () => {
         return { ...n, builtin: true, children: markBuiltin(n.children) } as FlowFolder
       }
       const override = builtinPresetPinOverrides.value[n.id]
+      const presetOverride = builtinPresetOverrides.value[n.id]
       return {
         ...n,
+        ...(presetOverride ? JSON.parse(JSON.stringify(presetOverride)) : {}),
+        id: n.id,
+        kind: 'flow',
         builtin: true,
-        pinnedInMenu: override ?? (n as LocalFlow).pinnedInMenu,
+        customized: !!presetOverride,
+        pinnedInMenu: override ?? presetOverride?.pinnedInMenu ?? (n as LocalFlow).pinnedInMenu,
       } as LocalFlow
     })
   }
@@ -383,38 +436,34 @@ export const useFlowStore = defineStore('flows', () => {
     return [...tree.value, ...presetNodes]
   })
 
-  /** 将内置预设节点 fork 到用户区（深拷贝 + 新 ID），返回新节点 */
-  async function forkPresetNode(presetId: string): Promise<FlowNode | null> {
-    const existing = findUserFlowBySourcePresetId(presetId)
-    if (existing) return existing
-
-    const presetNode = findNode(displayTree.value, presetId)
-    if (!presetNode || !presetNode.builtin) return null
-
-    const cloned = cloneWithNewIds([presetNode])[0]
-    if (cloned.kind === 'flow') cloned.sourcePresetId = presetId
-    tree.value.push(cloned)
-    await persist()
-    return cloned
-  }
-
-  async function resetPresetCustomization(id: string): Promise<LocalFlow | null> {
-    const customFlow = findNode(tree.value, id)
-    if (!customFlow || customFlow.kind !== 'flow' || !customFlow.sourcePresetId) return null
-
-    const presetNode = findNode(displayTree.value, customFlow.sourcePresetId)
+  async function saveBuiltinPresetOverride(flow: LocalFlow): Promise<LocalFlow | null> {
+    const presetNode = findNode(displayTree.value, flow.id)
     if (!presetNode || presetNode.kind !== 'flow' || !presetNode.builtin) return null
 
-    customFlow.name           = presetNode.name
-    customFlow.steps          = JSON.parse(JSON.stringify(presetNode.steps))
-    customFlow.stepDelayLevel = presetNode.stepDelayLevel
-    customFlow.stepDelayRange = presetNode.stepDelayRange
-    customFlow.waitTimeout    = presetNode.waitTimeout
-    customFlow.trigger        = presetNode.trigger
-    await persist()
-    return JSON.parse(JSON.stringify(customFlow)) as LocalFlow
+    builtinPresetOverrides.value[flow.id] = {
+      id:             flow.id,
+      kind:           'flow',
+      name:           flow.name,
+      steps:          JSON.parse(JSON.stringify(flow.steps)),
+      stepDelayLevel: flow.stepDelayLevel,
+      stepDelayRange: flow.stepDelayRange,
+      waitTimeout:    flow.waitTimeout,
+      pinnedInMenu:   flow.pinnedInMenu,
+      trigger:        flow.trigger,
+    }
+    await persistBuiltinPresetOverrides()
+    const updated = findNode(displayTree.value, flow.id)
+    return updated?.kind === 'flow' ? JSON.parse(JSON.stringify(updated)) as LocalFlow : null
   }
 
-  return { tree, loading, load, saveFlow, saveFolder, update, remove, togglePin, moveNode, getParentFolderId, findUserFlowBySourcePresetId, allFlows, allFolders, exportNode, exportSelected, importInto, renameNode, brokenFlowIds, displayTree, forkPresetNode, resetPresetCustomization }
+  async function resetBuiltinPresetOverride(id: string): Promise<LocalFlow | null> {
+    if (!builtinPresetOverrides.value[id]) return null
+    delete builtinPresetOverrides.value[id]
+    await persistBuiltinPresetOverrides()
+    const resetFlow = findNode(displayTree.value, id)
+    return resetFlow?.kind === 'flow' ? JSON.parse(JSON.stringify(resetFlow)) as LocalFlow : null
+  }
+
+  return { tree, loading, load, saveFlow, saveFolder, update, remove, togglePin, moveNode, getParentFolderId, allFlows, allFolders, exportNode, exportSelected, importInto, renameNode, brokenFlowIds, displayTree, saveBuiltinPresetOverride, resetBuiltinPresetOverride }
 })
 

@@ -51,24 +51,8 @@ export function useFlowTreeActions(flowStore: FlowStore, editingFlow: Ref<LocalF
   const editingNodeParentId = ref<string | undefined>(undefined)
 
   function handleEdit(id: string) {
-    let node = findNodeInTree(flowStore.tree, id)
-    // 如果是内置预设节点，先 fork 到用户区
-    if (!node) {
-      const displayNode = findNodeInTree(flowStore.displayTree, id)
-      if (displayNode?.builtin) {
-        // 异步 fork，然后编辑 fork 后的节点
-        flowStore.forkPresetNode(id).then(forked => {
-          if (!forked) return
-          editingNodeId.value       = forked.id
-          editingNodeName.value     = forked.name
-          editingNodeKind.value     = forked.kind
-          editingNodeParentId.value = flowStore.getParentFolderId(forked.id)
-          showEditModal.value       = true
-        })
-        return
-      }
-      return
-    }
+    const node = findNodeInTree(flowStore.tree, id)
+    if (!node || node.builtin) return
     editingNodeId.value       = id
     editingNodeName.value     = node.name
     editingNodeKind.value     = node.kind
@@ -77,10 +61,10 @@ export function useFlowTreeActions(flowStore: FlowStore, editingFlow: Ref<LocalF
   }
 
   async function restoreDefaultPreset(id: string) {
-    const node = findNodeInTree(flowStore.tree, id)
-    if (!node || node.kind !== 'flow' || !node.sourcePresetId) return
+    const node = findNodeInTree(flowStore.displayTree, id)
+    if (!node || node.kind !== 'flow' || !node.builtin || !(node as LocalFlow).customized) return
     if (!await showConfirm(`将「${node.name}」恢复为预设默认设置？\n当前自定义步骤和设置会被覆盖。`, '恢复默认')) return
-    const resetFlow = await flowStore.resetPresetCustomization(id)
+    const resetFlow = await flowStore.resetBuiltinPresetOverride(id)
     if (resetFlow && editingFlow.value?.id === id) editingFlow.value = JSON.parse(JSON.stringify(resetFlow))
   }
 

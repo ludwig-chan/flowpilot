@@ -23,11 +23,11 @@ const emit = defineEmits<{
     <div class="editor__header-row">
       <span class="editor__name-display">{{ flow.name }}</span>
       <span v-if="flow.builtin" class="editor__badge editor__badge--preset">预设</span>
-      <span v-else-if="flow.sourcePresetId" class="editor__badge editor__badge--custom">已自定义</span>
+      <span v-if="flow.builtin && flow.customized" class="editor__badge editor__badge--custom">已修改</span>
       <span v-if="estimatedTime" class="editor__est-time">⏱ {{ estimatedTime }}</span>
       <BaseButton title="设置" @click="emit('open-settings')">设置</BaseButton>
       <BaseButton
-        v-if="flow.sourcePresetId"
+        v-if="flow.builtin && flow.customized"
         title="恢复预设默认设置"
         @click="emit('restore-default')"
       >恢复默认</BaseButton>

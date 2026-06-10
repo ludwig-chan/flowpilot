@@ -78,7 +78,7 @@ function toggle(id: string) {
         <span class="tree-icon tree-icon--flow">▶</span>
         <span class="tree-name">{{ node.name }}</span>
         <span v-if="node.builtin" class="tree-badge tree-badge--preset">预设</span>
-        <span v-else-if="(node as LocalFlow).sourcePresetId" class="tree-badge tree-badge--custom">已自定义</span>
+        <span v-if="node.builtin && (node as LocalFlow).customized" class="tree-badge tree-badge--custom">已修改</span>
         <span
           v-if="brokenFlowIds?.has(node.id)"
           class="tree-warn"
@@ -90,13 +90,13 @@ function toggle(id: string) {
           :title="(node as LocalFlow).pinnedInMenu ? '取消钉选（从悬浮菜单移除）' : '钉选到悬浮菜单'"
           @click.stop="emit('pin', node.id)"
         >{{ (node as LocalFlow).pinnedInMenu ? '📌' : '📍' }}</BaseButton>
+        <BaseButton
+          v-if="node.builtin && (node as LocalFlow).customized"
+          class="tree-btn"
+          title="恢复预设默认设置"
+          @click.stop="emit('restore-default', node.id)"
+        >↺</BaseButton>
         <template v-if="!node.builtin">
-          <BaseButton
-            v-if="(node as LocalFlow).sourcePresetId"
-            class="tree-btn"
-            title="恢复预设默认设置"
-            @click.stop="emit('restore-default', node.id)"
-          >↺</BaseButton>
           <BaseButton class="tree-btn" @click.stop="emit('edit', node.id)" title="编辑">✏️</BaseButton>
           <BaseButton class="tree-btn tree-btn--del" @click.stop="emit('delete', node.id)" title="删除流程">🗑</BaseButton>
         </template>

@@ -63,10 +63,11 @@ function handleSaveBuiltFlow(msg: any, _s: any, sr: (r: unknown) => void): true 
 }
 
 function handleGetBuiltFlows(_m: any, _s: any, sr: (r: unknown) => void): true {
-  chrome.storage.local.get({ builtFlows: [], builtinPresetPinOverrides: {} }, (data) => {
-    const overrides = getBuiltinPresetPinOverrides(data.builtinPresetPinOverrides)
+  chrome.storage.local.get({ builtFlows: [], builtinPresetPinOverrides: {}, builtinPresetOverrides: {} }, (data) => {
+    const pinOverrides = getBuiltinPresetPinOverrides(data.builtinPresetPinOverrides)
+    const presetOverrides = getBuiltinPresetOverrides(data.builtinPresetOverrides)
     const userFlows = flattenFlows(Array.isArray(data.builtFlows) ? data.builtFlows as RawFlow[] : [])
-    const presetFlows = flattenFlows(getBuiltinPresetNodes(overrides))
+    const presetFlows = flattenFlows(getBuiltinPresetNodes(pinOverrides, presetOverrides))
     sr({ ok: true, flows: [...userFlows, ...presetFlows] })
   })
   return true
@@ -258,8 +259,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === MSG.ELEMENT_TRIGGER_FIRED) {
     const tabId = sender.tab?.id
     if (tabId) {
-      chrome.storage.local.get({ builtFlows: [] }, (data) => {
-        const flow = flattenFlows(Array.isArray(data.builtFlows) ? data.builtFlows as RawFlow[] : [])
+      chrome.storage.local.get({ builtFlows: [], builtinPresetPinOverrides: {}, builtinPresetOverrides: {} }, (data) => {
+        const pinOverrides = getBuiltinPresetPinOverrides(data.builtinPresetPinOverrides)
+        const presetOverrides = getBuiltinPresetOverrides(data.builtinPresetOverrides)
+        const userFlows = flattenFlows(Array.isArray(data.builtFlows) ? data.builtFlows as RawFlow[] : [])
+        const presetFlows = flattenFlows(getBuiltinPresetNodes(pinOverrides, presetOverrides))
+        const flow = [...userFlows, ...presetFlows]
           .find(f => f.id === message.flowId)
         if (!flow) return
         chrome.tabs.sendMessage(tabId, withRunMetadata({
@@ -379,7 +384,12 @@ function getBuiltinPresetPinOverrides(value: unknown): Record<string, boolean> {
   return value as Record<string, boolean>
 }
 
-function getBuiltinPresetNodes(overrides: Record<string, boolean>): RawFlow[] {
+function getBuiltinPresetOverrides(value: unknown): Record<string, Partial<RawFlow>> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {}
+  return value as Record<string, Partial<RawFlow>>
+}
+
+function getBuiltinPresetNodes(pinOverrides: Record<string, boolean>, presetOverrides: Record<string, Partial<RawFlow>>): RawFlow[] {
   const nodes = BUILTIN_PRESETS.flatMap(p =>
     JSON.parse(JSON.stringify(p.payload.nodes)) as RawFlow[]
   )
@@ -389,7 +399,14 @@ function getBuiltinPresetNodes(overrides: Record<string, boolean>): RawFlow[] {
       if (item.kind === 'folder' && item.children) {
         return { ...item, children: applyOverrides(item.children) }
       }
-      return { ...item, pinnedInMenu: overrides[item.id] ?? item.pinnedInMenu }
+      const presetOverride = presetOverrides[item.id] ?? {}
+      return {
+        ...item,
+        ...presetOverride,
+        id: item.id,
+        kind: 'flow',
+        pinnedInMenu: pinOverrides[item.id] ?? presetOverride.pinnedInMenu ?? item.pinnedInMenu,
+      }
     })
   }
 
@@ -402,8 +419,12 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   const url = tab.url
   if (url.startsWith('chrome://') || url.startsWith('chrome-extension://')) return
 
-  chrome.storage.local.get({ builtFlows: [] }, (data) => {
-    const flows = flattenFlows(Array.isArray(data.builtFlows) ? data.builtFlows as RawFlow[] : [])
+  chrome.storage.local.get({ builtFlows: [], builtinPresetPinOverrides: {}, builtinPresetOverrides: {} }, (data) => {
+    const pinOverrides = getBuiltinPresetPinOverrides(data.builtinPresetPinOverrides)
+    const presetOverrides = getBuiltinPresetOverrides(data.builtinPresetOverrides)
+    const userFlows = flattenFlows(Array.isArray(data.builtFlows) ? data.builtFlows as RawFlow[] : [])
+    const presetFlows = flattenFlows(getBuiltinPresetNodes(pinOverrides, presetOverrides))
+    const flows = [...userFlows, ...presetFlows]
 
     for (const flow of flows) {
       const trigger = flow.trigger
