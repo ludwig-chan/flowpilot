@@ -1,4 +1,5 @@
 import type { FlowStep } from '@shared/types/flow'
+import { STEP_DELAY_PRESETS } from '@shared/types/flow'
 import type { ResolveFn, RunChildStepFn, RunContext } from './types'
 import { MSG } from '@shared/types/message'
 import { toLocalTimeString } from '@shared/utils/time'
@@ -258,6 +259,15 @@ async function waitForLoopTargetToDisappear(item: Element, relativeSelector?: st
   })
 }
 
+async function applyLoopQueueStepDelay(action: FlowStep, ctx: RunContext): Promise<void> {
+  if (action.delay) {
+    await humanDelay(action.delay[0], action.delay[1])
+  } else if (ctx.delayLevel !== 'none') {
+    const range = ctx.delayLevel === 'custom' ? ctx.delayRange : STEP_DELAY_PRESETS[ctx.delayLevel]
+    if (range) await humanDelay(range[0], range[1])
+  }
+}
+
 async function executeLoopItemAction(
   action: FlowStep,
   target: Element,
@@ -365,7 +375,6 @@ async function executeLoopItemAction(
     default:
       ctx.onLog(`[跳过] 循环项内暂不支持动作：${action.type}`)
   }
-  if (action.delay) await humanDelay(action.delay[0], action.delay[1])
 }
 
 async function handleClick(step: FlowStep, _ctx: RunContext, resolve: ResolveFn): Promise<void> {
@@ -530,12 +539,14 @@ async function handleLoopItems(
         await runChild(child, { ...ctx, depth: ctx.depth + 1 })
       }
     } else {
-      for (const action of itemActions) {
+      for (let actionIdx = 0; actionIdx < itemActions.length; actionIdx++) {
+        const action = itemActions[actionIdx]
         if (signal.stopped) return
         const itemTarget = firstItem ? resolveLoopActionTarget(step, action, item, firstItem) : item
         if (action.selector && itemTarget === item) onLog('  未找到项内目标，回退对整项执行动作')
         onLog(`  执行动作：${action.label ?? action.type}`)
         await executeLoopItemAction(action, itemTarget, item, ctx, i + 1, runChild)
+        await applyLoopQueueStepDelay(action, ctx)
       }
     }
     if (hasChildSteps && scrollBehavior === 'bottom') {
