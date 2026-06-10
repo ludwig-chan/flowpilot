@@ -76,7 +76,7 @@ export default function Screenshots({ showToast }: ScreenshotsProps): React.JSX.
   })
   const [loading, setLoading] = useState(true)
   const [viewMode, setViewMode] = useState<ViewMode>('active')
-  const [layoutMode, setLayoutMode] = useState<LayoutMode>('table')
+  const [layoutMode] = useState<LayoutMode>('table')
   const [tagFilter, setTagFilter] = useState('all')
   const [newTagById, setNewTagById] = useState<Record<string, string>>({})
   const [preview, setPreview] = useState<{ index: number; image: ScreenshotImageResult } | null>(null)
@@ -433,21 +433,6 @@ export default function Screenshots({ showToast }: ScreenshotsProps): React.JSX.
             onClick={() => setViewMode('trash')}
           >
             回收站
-          </button>
-        </div>
-
-        <div className="segmented">
-          <button
-            className={layoutMode === 'table' ? 'active' : ''}
-            onClick={() => setLayoutMode('table')}
-          >
-            📋 列表
-          </button>
-          <button
-            className={layoutMode === 'card' ? 'active' : ''}
-            onClick={() => setLayoutMode('card')}
-          >
-            🖼️ 卡片
           </button>
         </div>
 
