@@ -199,6 +199,10 @@ function getLoopItemActions(step: FlowStep): FlowStep[] {
   }]
 }
 
+function getLoopItemText(item: Element): string {
+  return item.textContent?.replace(/\s+/g, ' ').trim().slice(0, 80) ?? ''
+}
+
 function dispatchDoubleClick(el: HTMLElement): void {
   simulateClick(el)
   const rect = el.getBoundingClientRect()
@@ -527,7 +531,8 @@ async function handleLoopItems(
   for (let i = 0; i < itemsArr.length; i++) {
     const item = itemsArr[i]
     if (signal.stopped) return
-    onStep?.({ type: 'loop_progress', stepId: step.id, index: i + 1, total: itemsArr.length })
+    const itemText = getLoopItemText(item)
+    onStep?.({ type: 'loop_progress', stepId: step.id, index: i + 1, total: itemsArr.length, itemText })
     if (!hasChildSteps) {
       const firstTarget = firstItem ? resolveLoopActionTarget(step, itemActions[0], item, firstItem) : item
       ;(firstTarget as HTMLElement).scrollIntoView({ behavior: 'smooth', block: 'center' })
@@ -536,7 +541,7 @@ async function handleLoopItems(
       (item as HTMLElement).scrollIntoView({ behavior: 'smooth', block: 'center' })
       await sleep(400)
     }
-    onLog(`  → 处理：${item.textContent?.trim().slice(0, 50)}`)
+    onLog(`  → 处理：${itemText.slice(0, 50)}`)
     if (hasChildSteps) {
       for (const child of childSteps) {
         if (signal.stopped) return
@@ -548,7 +553,18 @@ async function handleLoopItems(
         if (signal.stopped) return
         const itemTarget = firstItem ? resolveLoopActionTarget(step, action, item, firstItem) : item
         if (action.selector && itemTarget === item) onLog('  未找到项内目标，回退对整项执行动作')
-        onLog(`  执行动作：${action.label ?? action.type}`)
+        const actionLabel = action.label ?? action.type
+        onStep?.({
+          type: 'loop_progress',
+          stepId: step.id,
+          index: i + 1,
+          total: itemsArr.length,
+          itemText,
+          actionIndex: actionIdx + 1,
+          actionTotal: itemActions.length,
+          actionLabel,
+        })
+        onLog(`  执行动作：${actionLabel}`)
         await executeLoopItemAction(action, itemTarget, item, ctx, i + 1, runChild)
         await applyLoopQueueStepDelay(action, ctx)
       }

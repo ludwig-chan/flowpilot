@@ -8,7 +8,14 @@ export interface ProgressEntry {
   stepId:        string
   label:         string
   status:        'running' | 'done' | 'error'
-  loopProgress?: { index: number; total: number }
+  loopProgress?: {
+    index: number
+    total: number
+    itemText?: string
+    actionIndex?: number
+    actionTotal?: number
+    actionLabel?: string
+  }
   childStack?:   Record<number, string>
 }
 
@@ -67,7 +74,16 @@ export function useFlowProgress(bridge: Bridge) {
       }
     } else if (event.type === 'loop_progress') {
       const entry = [...entries.value].reverse().find(e => e.stepId === event.stepId && e.status === 'running')
-      if (entry) entry.loopProgress = { index: event.index, total: event.total }
+      if (entry) {
+        entry.loopProgress = {
+          index:       event.index,
+          total:       event.total,
+          itemText:    event.itemText,
+          actionIndex: event.actionIndex,
+          actionTotal: event.actionTotal,
+          actionLabel: event.actionLabel,
+        }
+      }
     }
   }
 

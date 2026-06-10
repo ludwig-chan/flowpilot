@@ -98,5 +98,14 @@ export const STEP_DELAY_PRESETS: Record<'low' | 'medium' | 'high', [number, numb
 export type StepEvent =
   | { type: 'step_start'; stepId: string; label: string; depth: number }
   | { type: 'step_done';  stepId: string; depth: number }
-  | { type: 'loop_progress'; stepId: string; index: number; total: number }
+  | {
+      type: 'loop_progress'
+      stepId: string
+      index: number
+      total: number
+      itemText?: string
+      actionIndex?: number
+      actionTotal?: number
+      actionLabel?: string
+    }
 

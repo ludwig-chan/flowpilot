@@ -25,6 +25,12 @@ function getChildRows(entry: ProgressEntry): [number, string][] {
     .map(([d, lbl]) => [Number(d), lbl] as [number, string])
     .sort((a, b) => a[0] - b[0])
 }
+
+function getLoopPercent(entry: ProgressEntry): number {
+  const progress = entry.loopProgress
+  if (!progress?.total) return 0
+  return Math.max(0, Math.min(100, Math.round((progress.index / progress.total) * 100)))
+}
 </script>
 
 <template>
@@ -64,9 +70,29 @@ function getChildRows(entry: ProgressEntry): [number, string][] {
           <span class="progress-entry__label">
             {{ entry.label }}
             <span v-if="entry.loopProgress" class="progress-entry__loop">
-              ({{ entry.loopProgress.index }}/{{ entry.loopProgress.total }})
+              {{ entry.loopProgress.index }}/{{ entry.loopProgress.total }} 项 · {{ getLoopPercent(entry) }}%
             </span>
           </span>
+        </div>
+        <div v-if="entry.loopProgress" class="progress-loop-detail">
+          <div class="progress-loop-detail__bar">
+            <span :style="{ width: getLoopPercent(entry) + '%' }"></span>
+          </div>
+          <div class="progress-loop-detail__row">
+            <span class="progress-loop-detail__label">当前项</span>
+            <span class="progress-loop-detail__value">
+              {{ entry.loopProgress.itemText || '正在定位列表项' }}
+            </span>
+          </div>
+          <div
+            v-if="entry.loopProgress.actionIndex && entry.loopProgress.actionTotal"
+            class="progress-loop-detail__row progress-loop-detail__row--action"
+          >
+            <span class="progress-loop-detail__label">当前动作</span>
+            <span class="progress-loop-detail__value">
+              {{ entry.loopProgress.actionIndex }}/{{ entry.loopProgress.actionTotal }} · {{ entry.loopProgress.actionLabel || '执行动作' }}
+            </span>
+          </div>
         </div>
         <div
           v-for="[d, lbl] in getChildRows(entry)"
@@ -137,6 +163,42 @@ function getChildRows(entry: ProgressEntry): [number, string][] {
 .progress-entry__label { flex: 1; }
 .progress-entry__loop  { color: #fab387; margin-left: 4px; font-size: 11px; }
 
+.progress-loop-detail {
+  margin: 1px 0 5px 20px;
+  color: #a6adc8;
+  font-size: 11px;
+  line-height: 1.5;
+}
+.progress-loop-detail__bar {
+  height: 3px;
+  margin: 2px 0 4px;
+  overflow: hidden;
+  background: #313244;
+  border-radius: 999px;
+  span {
+    display: block;
+    height: 100%;
+    background: #fab387;
+    transition: width 0.2s ease;
+  }
+}
+.progress-loop-detail__row {
+  display: flex;
+  min-width: 0;
+  gap: 6px;
+}
+.progress-loop-detail__row--action { color: #a6e3a1; }
+.progress-loop-detail__label {
+  flex-shrink: 0;
+  color: #6c7086;
+}
+.progress-loop-detail__value {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .progress-child {
   display: flex;
   align-items: baseline;
@@ -144,6 +206,10 @@ function getChildRows(entry: ProgressEntry): [number, string][] {
   font-size: 11px;
   color: #a6e3a1;
   padding: 1px 0;
+  line-height: 1.6;
+}
+.progress-child__arrow { color: #585b70; flex-shrink: 0; }
+.progress-child__label { flex: 1; }
 
 .progress-drawer__screenshot-hint {
   margin-top: 8px;
@@ -155,10 +221,6 @@ function getChildRows(entry: ProgressEntry): [number, string][] {
   font-size: 12px;
   line-height: 1.6;
 }
-  line-height: 1.6;
-}
-.progress-child__arrow { color: #585b70; flex-shrink: 0; }
-.progress-child__label { flex: 1; }
 
 @keyframes pulse { 0%, 100% { opacity: 1 } 50% { opacity: 0.4 } }
 </style>
