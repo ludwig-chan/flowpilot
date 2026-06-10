@@ -2,7 +2,7 @@ import { ref } from 'vue'
 import type { Ref } from 'vue'
 import type { LocalFlow } from '../stores/useFlowStore'
 import type { FlowStep, ActionType } from '@shared/types/flow'
-import type { SerializedElement, SerializedDomNode } from '@shared/types/dom'
+import type { SerializedElement } from '@shared/types/dom'
 import { useBridge } from './useBridge'
 import { showAlert } from '@shared/utils/dialog'
 import { useLoopEditor } from './useLoopEditor'
@@ -13,15 +13,11 @@ import { useEditorStore } from '../stores/useEditorStore'
 
 export function usePickerOrchestrator(
   editingFlow: Ref<LocalFlow | null>,
-  activeTabId: Ref<number | null>,
   requireTab: (cb: () => void) => void,
   pickedCssSelector: Ref<string>,
   pickMode: Ref<boolean>,
   scanDom: (scope?: string) => void,
   togglePickMode: (scope?: string) => void,
-  domScanning: Ref<boolean>,
-  domTree: Ref<SerializedDomNode[]>,
-  scopeCanonicalSelector: Ref<string | undefined>,
 ) {
   const bridge = useBridge()
   const es = useEditorStore()
@@ -35,19 +31,7 @@ export function usePickerOrchestrator(
     onLoopSave,
     onLoopClose,
     onLoopReselect:           _onLoopReselectRaw,
-    onLoopAddChild:            _onLoopAddChildRaw,
-    onLoopEditChild:           _onLoopEditChildRaw,
-    getLoopChildActionOpts,
-    showLoopCallFlowPicker,
-    onLoopAddCallFlow,
-    onLoopConfirmCallFlow,
-    onLoopAddCondition:        _onLoopAddConditionRaw,
-    onLoopAddDelay,
-    onLoopAddBranchChild:      _onLoopAddBranchChildRaw,
-    onLoopAddBranchCallFlow,
-    onLoopAddBranchCondition:  _onLoopAddBranchConditionRaw,
-    onLoopEditBranchChild,
-  } = useLoopEditor(editingFlow, scanDom, pickedCssSelector, scopeCanonicalSelector)
+  } = useLoopEditor(editingFlow, scanDom, pickedCssSelector)
 
   // ── useStepEditor ─────────────────────────────────────────────────
   const {
@@ -69,7 +53,6 @@ export function usePickerOrchestrator(
   const {
     showSmartLoopModal,
     smartLoopCandidates,
-    smartLoopPickedEl,
     onSmartLoopConfirm,
   } = useSmartLoop(editingFlow, (candidate) => {
     if (reselectingLoopList.value && es.editingLoopStep) {
@@ -132,7 +115,7 @@ export function usePickerOrchestrator(
       })
       return
     }
-    _onElementPickedBase(el, getLoopChildActionOpts, showPickerModal, pickMode, () => bridge.cancelPickElement())
+    _onElementPickedBase(el, showPickerModal, pickMode, () => bridge.cancelPickElement())
   }
 
   /** ActionPickerModal 点击「换元素」 → 保留动作状态，重新打开元素选择器 */
@@ -203,36 +186,6 @@ export function usePickerOrchestrator(
     reselectingLoopList.value = false
   }
 
-  /** EditLoopModal "添加操作" wrapper */
-  function onLoopAddChild(currentState: FlowStep) {
-    _onLoopAddChildRaw(currentState, openPickerInScope)
-  }
-
-  /** EditLoopModal 编辑子步骤 wrapper（支持条件类型，需传入 openConditionModal） */
-  function onLoopEditChild(childIdx: number, currentState: FlowStep, openConditionModal?: () => void) {
-    _onLoopEditChildRaw(childIdx, currentState, openConditionModal)
-  }
-
-  /** EditLoopModal "添加条件" wrapper（需传入 openConditionModal） */
-  function onLoopAddCondition(currentState: FlowStep, openConditionModal: () => void) {
-    _onLoopAddConditionRaw(currentState, openConditionModal)
-  }
-
-  /** 分支内添加元素 wrapper */
-  function onLoopAddBranchChild(condChildId: string, branch: 'if' | 'else', currentState: FlowStep) {
-    _onLoopAddBranchChildRaw(condChildId, branch, currentState, openPickerInScope)
-  }
-
-  /** 分支内添加条件 wrapper（需传入 openConditionModal） */
-  function onLoopAddBranchCondition(
-    condChildId: string,
-    branch: 'if' | 'else',
-    currentState: FlowStep,
-    openConditionModal: () => void,
-  ) {
-    _onLoopAddBranchConditionRaw(condChildId, branch, currentState, openConditionModal)
-  }
-
   /** ActionPickerModal 试一下 → 临时执行单个步骤 */
   async function onActionTry(step: FlowStep) {
     await bridge.runFlow([step])
@@ -258,17 +211,12 @@ export function usePickerOrchestrator(
     // useStepEditor
     editStep, cancelActionModal, onActionConfirm, editBranchStep,
     // useSmartLoop
-    showSmartLoopModal, smartLoopCandidates, smartLoopPickedEl,
+    showSmartLoopModal, smartLoopCandidates,
     openSmartLoopPicker, onSmartLoopConfirm, onSmartLoopCancel,
     // Wrappers
     onElementPicked, onActionRePick, openPicker, closePicker,
     scanPickerDom, togglePickerPickMode,
-    onLoopAddChild, onLoopEditChild, onActionTry, onTestAction,
-    // 循环嵌入流程
-    showLoopCallFlowPicker, onLoopAddCallFlow, onLoopConfirmCallFlow,
-    // 新增：循环内条件 / 延迟 / 分支
-    onLoopAddCondition, onLoopAddDelay,
-    onLoopAddBranchChild, onLoopAddBranchCallFlow, onLoopAddBranchCondition, onLoopEditBranchChild,
+    onActionTry, onTestAction,
     // element_branch
     addElementBranch,
   }

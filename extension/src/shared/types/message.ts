@@ -67,8 +67,6 @@ export interface ElementTriggerFiredMessage {
 export interface RepeatingCandidate {
   /** 所有列表项的 CSS 选择器，e.g. "table.grid > tbody > tr" */
   itemSelector:     string
-  /** 从列表项到目标元素的相对路径，e.g. "td:last-child > button" */
-  relativeSelector: string
   /** querySelectorAll(itemSelector) 实际找到的数量 */
   count:            number
   /** 重复元素的 tagName，e.g. "TR" */
@@ -92,7 +90,6 @@ export interface RequestSmartLoopFromSelectorMessage {
 /** Content Script → Options（经 background 转发）：返回重复结构候选列表 */
 export interface SmartLoopAnalyzedMessage {
   type:       'SMART_LOOP_ANALYZED'
-  element:    import('./dom').SerializedElement | null
   candidates: RepeatingCandidate[]
 }
 

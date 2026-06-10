@@ -1,12 +1,9 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import type { SerializedElement } from '@shared/types/dom'
 import type { RepeatingCandidate } from '@shared/types/message'
-import BaseInput from '@shared/components/BaseInput.vue'
 
 const props = defineProps<{
-  candidates:    RepeatingCandidate[]
-  pickedElement: SerializedElement | null
+  candidates: RepeatingCandidate[]
 }>()
 
 const emit = defineEmits<{
@@ -33,21 +30,6 @@ function tagIcon(tagName: string): string {
 
 <template>
   <BaseModal title="🔁 选择列表" width="520px" max-height="85vh" :z-index="1070" @close="emit('cancel')">
-
-      <!-- 已选目标元素 -->
-      <div class="slp-section">
-        <div class="slp-label">已选目标元素</div>
-        <div v-if="pickedElement" class="slp-picked">
-          <span class="slp-picked__label">{{ pickedElement.label || '（无标签）' }}</span>
-          <code class="slp-picked__css" :title="pickedElement.selector.cssSelector">
-            {{ pickedElement.selector.cssSelector }}
-          </code>
-        </div>
-        <div v-else class="slp-empty slp-empty--compact">
-          未找到目标元素，请换一个元素重试
-        </div>
-      </div>
-
       <!-- 候选结构列表 -->
       <div class="slp-section slp-section--scroll">
         <div class="slp-label">
@@ -76,14 +58,6 @@ function tagIcon(tagName: string): string {
                 <span class="slp-candidate__badge">共 {{ c.count }} 项</span>
               </div>
               <code class="slp-candidate__sel" :title="c.itemSelector">{{ c.itemSelector }}</code>
-              <div class="slp-candidate__rel">
-                <template v-if="c.relativeSelector">
-                  目标路径：<code>{{ c.relativeSelector }}</code>
-                </template>
-                <template v-else>
-                  <em>目标即为列表项本身</em>
-                </template>
-              </div>
             </div>
 
             <span v-if="selectedIdx === idx" class="slp-candidate__check">✓</span>
@@ -115,18 +89,8 @@ function tagIcon(tagName: string): string {
   font-size: 11px; color: $color-text-muted; font-weight: 600; margin-bottom: 8px;
 }
 
-.slp-picked {
-  display: flex; flex-direction: column; gap: 3px;
-  &__label { font-size: 12px; color: $color-text; }
-  &__css {
-    font-family: 'Cascadia Code', monospace; font-size: 11px; color: $color-blue;
-    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block;
-  }
-}
-
 .slp-empty {
   font-size: 12px; color: $color-text-muted-2; text-align: center; padding: 16px 0;
-  &--compact { padding: 4px 0; text-align: left; }
 }
 
 .slp-candidates {
@@ -157,11 +121,6 @@ function tagIcon(tagName: string): string {
   &__sel {
     font-family: 'Cascadia Code', monospace; font-size: 10px; color: $color-green;
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block;
-  }
-  &__rel {
-    font-size: 11px; color: $color-text-muted;
-    code { font-family: 'Cascadia Code', monospace; font-size: 10px; color: $color-blue; }
-    em   { font-style: italic; }
   }
   &__check { color: $color-blue; font-weight: 700; flex-shrink: 0; align-self: center; font-size: 14px; }
 }

@@ -2,7 +2,6 @@ import { ref, onUnmounted } from 'vue'
 import type { Ref } from 'vue'
 import type { LocalFlow } from '../stores/useFlowStore'
 import type { RepeatingCandidate } from '@shared/types/message'
-import type { SerializedElement } from '@shared/types/dom'
 import { type BridgeEvent } from './useExtensionBridge'
 import { useBridge } from './useBridge'
 
@@ -13,7 +12,6 @@ export function useSmartLoop(
   const bridge = useBridge()
   const showSmartLoopModal   = ref(false)
   const smartLoopCandidates  = ref<RepeatingCandidate[]>([])
-  const smartLoopPickedEl    = ref<SerializedElement | null>(null)
 
   function onSmartLoopConfirm(candidate: RepeatingCandidate) {
     showSmartLoopModal.value = false
@@ -23,7 +21,6 @@ export function useSmartLoop(
 
   const _handler = (evt: BridgeEvent) => {
     if (evt.type === 'SMART_LOOP_ANALYZED') {
-      smartLoopPickedEl.value   = evt.element
       smartLoopCandidates.value = evt.candidates
       showSmartLoopModal.value  = true
     }
@@ -34,7 +31,6 @@ export function useSmartLoop(
   return {
     showSmartLoopModal,
     smartLoopCandidates,
-    smartLoopPickedEl,
     onSmartLoopConfirm,
   }
 }

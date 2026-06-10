@@ -48,27 +48,19 @@ const {
 
 const {
   domTree, domFilter, domScanning, domMutated, domTabTitle,
-  pickMode, pickedCssSelector, scopeCanonicalSelector, scanDom, togglePickMode,
+  pickMode, pickedCssSelector, scanDom, togglePickMode,
 } = useDomPicker(activeTabId)
 
 const {
   showPickerModal,
   editLoopStep, onLoopSave, onLoopClose, onLoopReselect,
-  onLoopEditChild:           _onLoopEditChildRaw,
   editStep, cancelActionModal, onActionConfirm, editBranchStep,
-  showSmartLoopModal, smartLoopCandidates, smartLoopPickedEl,
+  showSmartLoopModal, smartLoopCandidates,
   openSmartLoopPicker, onSmartLoopConfirm, onSmartLoopCancel,
   onElementPicked, onActionRePick, openPicker, closePicker, scanPickerDom, togglePickerPickMode,
-  onLoopAddChild, onActionTry, onTestAction,
-  showLoopCallFlowPicker, onLoopAddCallFlow, onLoopConfirmCallFlow,
-  onLoopAddCondition:        _onLoopAddConditionRaw,
-  onLoopAddDelay,
-  onLoopAddBranchChild,
-  onLoopAddBranchCallFlow,
-  onLoopAddBranchCondition:  _onLoopAddBranchConditionRaw,
-  onLoopEditBranchChild,
+  onActionTry, onTestAction,
   addElementBranch,
-} = usePickerOrchestrator(editingFlow, activeTabId, requireTab, pickedCssSelector, pickMode, scanDom, togglePickMode, domScanning, domTree, scopeCanonicalSelector)
+} = usePickerOrchestrator(editingFlow, requireTab, pickedCssSelector, pickMode, scanDom, togglePickMode)
 
 const {
   removeStep, addDelayStep, editDelayStep, onDelayConfirm,
@@ -104,23 +96,6 @@ const { dragSrcIdx, dragInsertIdx, branchDropTarget, onHandleMouseDown, onDragSt
 
 const validFlowIds = computed(() => new Set(flowStore.allFlows().map(f => f.id)))
 function isBrokenRef(flowRef?: string) { return !!flowRef && !validFlowIds.value.has(flowRef) }
-
-function onLoopCallFlowConfirm(id: string) {
-  const name = flowStore.allFlows().find(f => f.id === id)?.name ?? id
-  onLoopConfirmCallFlow(id, name)
-}
-
-// 循环条件相关包装器（注入 showConditionModal 开启回调）
-function loopOpenCondition() { showConditionModal.value = true }
-function onLoopEditChild(childIdx: number, currentState: FlowStep) {
-  _onLoopEditChildRaw(childIdx, currentState, loopOpenCondition)
-}
-function onLoopAddCondition(currentState: FlowStep) {
-  _onLoopAddConditionRaw(currentState, loopOpenCondition)
-}
-function onLoopAddBranchCondition(condChildId: string, branch: 'if' | 'else', currentState: FlowStep) {
-  _onLoopAddBranchConditionRaw(condChildId, branch, currentState, loopOpenCondition)
-}
 
 function handleEdit(step: FlowStep, i: number) {
   if (step.type === 'element_branch') return
@@ -162,13 +137,9 @@ provide(STEP_EDITOR_MODALS_KEY, {
   pickMode, pickedCssSelector, scanDom: scanPickerDom, togglePickMode: togglePickerPickMode,
   // usePickerOrchestrator
   showPickerModal, closePicker, onElementPicked, onTestAction,
-  showSmartLoopModal, smartLoopCandidates, smartLoopPickedEl, onSmartLoopConfirm, onSmartLoopCancel,
+  showSmartLoopModal, smartLoopCandidates, onSmartLoopConfirm, onSmartLoopCancel,
   onLoopSave, onLoopClose, onLoopReselect,
-  onLoopEditChild, onLoopAddChild, onLoopAddCallFlow,
-  onLoopAddCondition, onLoopAddDelay,
-  onLoopAddBranchChild, onLoopAddBranchCallFlow, onLoopAddBranchCondition, onLoopEditBranchChild,
   onActionConfirm, onActionTry, onActionRePick, cancelActionModal,
-  showLoopCallFlowPicker, onLoopCallFlowConfirm,
   // useConditionEditor
   showConditionModal, conditionModalStep, conditionModalIdx, conditionAvailableVars, onConditionConfirm,
   // useFlowEditor

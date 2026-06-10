@@ -21,27 +21,15 @@ export interface StepEditorModalContext {
   onTestAction: (css: string, actionType: string, value?: string) => void
   showSmartLoopModal: Ref<boolean>
   smartLoopCandidates: Ref<RepeatingCandidate[]>
-  smartLoopPickedEl: Ref<SerializedElement | null>
   onSmartLoopConfirm: (candidate: RepeatingCandidate) => void
   onSmartLoopCancel: () => void
   onLoopSave: (editedStep: FlowStep) => void
   onLoopClose: () => void
   onLoopReselect: (currentState: FlowStep) => void
-  onLoopEditChild:         (childIdx: number, currentState: FlowStep) => void
-  onLoopAddChild:          (currentState: FlowStep) => void
-  onLoopAddCallFlow:       (currentState: FlowStep) => void
-  onLoopAddCondition:      (currentState: FlowStep) => void
-  onLoopAddDelay:          (currentState: FlowStep) => void
-  onLoopAddBranchChild:    (condChildId: string, branch: 'if' | 'else', currentState: FlowStep) => void
-  onLoopAddBranchCallFlow: (condChildId: string, branch: 'if' | 'else', currentState: FlowStep) => void
-  onLoopAddBranchCondition:(condChildId: string, branch: 'if' | 'else', currentState: FlowStep) => void
-  onLoopEditBranchChild:   (condChildId: string, branch: 'if' | 'else', childIdx: number, currentState: FlowStep) => void
   onActionConfirm: (step: FlowStep) => void
   onActionTry: (step: FlowStep) => void
   onActionRePick: (type: ActionType, value: string | undefined) => void
   cancelActionModal: () => void
-  showLoopCallFlowPicker: Ref<boolean>
-  onLoopCallFlowConfirm: (id: string) => void
   // ── useConditionEditor ────────────────────────────────────────────
   showConditionModal: Ref<boolean>
   conditionModalStep: Ref<FlowStep | null>

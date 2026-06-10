@@ -17,19 +17,16 @@ import { STEP_EDITOR_MODALS_KEY } from './stepEditorContext'
 const es = useEditorStore()
 const flowStore = useFlowStore()
 const bridge = useBridge()
-const { editingFlow, buildingLoopChildren } = storeToRefs(es)
+const { editingFlow } = storeToRefs(es)
 
 const ctx = inject(STEP_EDITOR_MODALS_KEY)!
 const {
   domTree, domFilter, domScanning, domMutated, domTabTitle,
   pickMode, pickedCssSelector, scanDom, togglePickMode,
   showPickerModal, closePicker, onElementPicked, onTestAction,
-  showSmartLoopModal, smartLoopCandidates, smartLoopPickedEl, onSmartLoopConfirm, onSmartLoopCancel,
-  onLoopSave, onLoopClose, onLoopReselect, onLoopEditChild,
-  onLoopAddChild, onLoopAddCallFlow, onLoopAddCondition, onLoopAddDelay,
-  onLoopAddBranchChild, onLoopAddBranchCallFlow, onLoopAddBranchCondition, onLoopEditBranchChild,
+  showSmartLoopModal, smartLoopCandidates, onSmartLoopConfirm, onSmartLoopCancel,
+  onLoopSave, onLoopClose, onLoopReselect,
   onActionConfirm, onActionTry, onActionRePick, cancelActionModal,
-  showLoopCallFlowPicker, onLoopCallFlowConfirm,
   showConditionModal, conditionModalStep, conditionModalIdx, conditionAvailableVars, onConditionConfirm,
   showSettingsModal, onSettingsConfirm, saveToast,
   showCallFlowPicker, confirmCallFlow, showDelayModal, delayEditTarget, onDelayConfirm,
@@ -45,11 +42,6 @@ function onCancelSmartLoop() {
   onSmartLoopCancel()
 }
 
-function onFinishBuildingLoop() {
-  showPickerModal.value = false
-  es.buildingLoopChildren = false
-  es.returnToLoop()
-}
 </script>
 
 <template>
@@ -64,7 +56,6 @@ function onFinishBuildingLoop() {
       :dom-tab-title="domTabTitle"
       :pick-mode="pickMode"
       :picked-css-selector="pickedCssSelector"
-      :building-mode="buildingLoopChildren"
       @close="closePicker"
       @scan="scanDom"
       @toggle-pick="togglePickMode"
@@ -73,14 +64,12 @@ function onFinishBuildingLoop() {
       @test-action="onTestAction"
       @hover="(css: string) => bridge.requestHighlight(css)"
       @update:dom-filter="domFilter = $event"
-      @finish-building="onFinishBuildingLoop"
     />
 
     <!-- 智能循环选择器模态框 -->
     <SmartLoopPickerModal
       v-if="showSmartLoopModal"
       :candidates="smartLoopCandidates"
-      :picked-element="smartLoopPickedEl"
       @confirm="onSmartLoopConfirm"
       @cancel="onCancelSmartLoop"
       @hover-candidate="(sel: string) => bridge.highlightLoopCandidates(sel)"
@@ -94,15 +83,6 @@ function onFinishBuildingLoop() {
       @save="onLoopSave"
       @close="onLoopClose"
       @reselect="onLoopReselect"
-      @edit-child="onLoopEditChild"
-      @add-child="onLoopAddChild"
-      @add-call-flow="onLoopAddCallFlow"
-      @add-condition="onLoopAddCondition"
-      @add-delay="onLoopAddDelay"
-      @add-branch-child="onLoopAddBranchChild"
-      @add-branch-call-flow="onLoopAddBranchCallFlow"
-      @add-branch-condition="onLoopAddBranchCondition"
-      @edit-branch-child="onLoopEditBranchChild"
     />
 
     <!-- 条件配置模态框 -->
@@ -140,14 +120,6 @@ function onFinishBuildingLoop() {
       :flow="editingFlow"
       @close="showSettingsModal = false"
       @confirm="onSettingsConfirm"
-    />
-
-    <!-- 嵌入流程选择（循环子步骤） -->
-    <CallFlowPickerModal
-      v-if="showLoopCallFlowPicker"
-      :flows="flowStore.allFlows().filter(f => f.id !== editingFlow?.id)"
-      @confirm="onLoopCallFlowConfirm"
-      @cancel="showLoopCallFlowPicker = false"
     />
 
     <!-- 嵌入流程选择 -->

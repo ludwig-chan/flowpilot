@@ -72,42 +72,6 @@ export function useConditionEditor(
       }
     }
 
-    // ── Loop 上下文：写入 editingLoopStep ──────────────────────────────
-    if (es.editingLoopStep) {
-      const branchCtx = es.addingToLoopBranch
-      if (branchCtx) {
-        // 写入条件子步骤的 if/else 分支
-        const cond = es.editingLoopStep.children?.find(c => c.id === branchCtx.condChildId)
-        if (cond) {
-          const arr = branchCtx.branch === 'if'
-            ? (cond.children     = cond.children     ?? [])
-            : (cond.elseChildren = cond.elseChildren ?? [])
-          arr.push(makeCondStep())
-        }
-        es.addingToLoopBranch = null
-      } else {
-        // 写入 loop 顶层 children
-        const loopChildren = (es.editingLoopStep.children = es.editingLoopStep.children ?? [])
-        const idx = es.editingLoopChild
-        if (idx !== null && loopChildren[idx]) {
-          // 编辑模式
-          const s = loopChildren[idx]
-          s.label          = data.label
-          s.conditions     = data.conditions
-          s.conditionLogic = data.logic
-          s.value          = compatValue
-          s.selector       = compatSelector
-        } else {
-          loopChildren.push(makeCondStep())
-        }
-        es.editingLoopChild = null
-      }
-      conditionModalStep.value = null
-      conditionModalIdx.value  = null
-      es.showEditLoopModal = true
-      return
-    }
-
     // ── 普通流程上下文 ────────────────────────────────────────────────
     if (!editingFlow.value) return
     // 分支内添加条件判断子步骤

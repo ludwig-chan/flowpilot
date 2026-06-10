@@ -14,22 +14,12 @@ export const useEditorStore = defineStore('editor', () => {
   // ── Loop 编辑共享状态 ────────────────────────────────────────────
   const showEditLoopModal    = ref(false)
   const editingLoopStep      = ref<FlowStep | null>(null)
-  const editingLoopChild      = ref<number | null>(null)
-  const addingToLoopChild     = ref(false)
-  const addingToLoopBranch    = ref<{ condChildId: string; branch: 'if' | 'else' } | null>(null)
-  /** 构建模式：智能循环确认后，正在列表项内部挑选子步骤目标元素*/
-  const buildingLoopChildren  = ref(false)
-
-  function returnToLoop() {
-    showEditLoopModal.value = true
-  }
 
   // ── Action Modal 共享状态 ────────────────────────────────────────
   const showActionModal        = ref(false)
   const actionModalEl          = ref<SerializedElement | null>(null)
   const actionModalOverrideSel = ref<string | undefined>(undefined)
   const actionModalIsRelative  = ref(false)
-  const actionModalContext     = ref<'single' | { itemSel: string }>('single')
 
   const editingStepIdx            = ref<number | null>(null)
   const editingInitialType        = ref<ActionType | undefined>(undefined)
@@ -49,7 +39,6 @@ export const useEditorStore = defineStore('editor', () => {
     opts: {
       overrideSel?: string
       isRelative?: boolean
-      context?: 'single' | { itemSel: string }
       initialType?: ActionType
       initialValue?: string
       initialWaitTimeout?: number
@@ -60,7 +49,6 @@ export const useEditorStore = defineStore('editor', () => {
     actionModalEl.value          = el
     actionModalOverrideSel.value = opts.overrideSel
     actionModalIsRelative.value  = opts.isRelative ?? false
-    actionModalContext.value     = opts.context ?? 'single'
     if (opts.initialType !== undefined)        editingInitialType.value        = opts.initialType
     if (opts.initialValue !== undefined)       editingInitialValue.value       = opts.initialValue
     if (opts.initialWaitTimeout !== undefined) editingInitialWaitTimeout.value = opts.initialWaitTimeout
@@ -85,7 +73,6 @@ export const useEditorStore = defineStore('editor', () => {
     actionModalEl.value             = null
     actionModalOverrideSel.value    = undefined
     actionModalIsRelative.value     = false
-    actionModalContext.value        = 'single'
     editingStepIdx.value            = null
     editingInitialType.value        = undefined
     editingInitialValue.value       = undefined
@@ -99,27 +86,17 @@ export const useEditorStore = defineStore('editor', () => {
     // loop modal
     showEditLoopModal.value         = false
     editingLoopStep.value           = null
-    editingLoopChild.value          = null
-    addingToLoopChild.value         = false
-    addingToLoopBranch.value        = null
-    buildingLoopChildren.value      = false
   }
 
   return {
     // loop
     showEditLoopModal,
     editingLoopStep,
-    editingLoopChild,
-    addingToLoopChild,
-    addingToLoopBranch,
-    buildingLoopChildren,
-    returnToLoop,
     // action modal
     showActionModal,
     actionModalEl,
     actionModalOverrideSel,
     actionModalIsRelative,
-    actionModalContext,
     editingStepIdx,
     editingInitialType,
     editingInitialValue,

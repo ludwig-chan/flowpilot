@@ -3,7 +3,6 @@ import type { LocalFlow } from '../stores/useFlowStore'
 import type { FlowStep, ActionType } from '@shared/types/flow'
 import type { SerializedElement } from '@shared/types/dom'
 import { useEditorStore } from '../stores/useEditorStore'
-import { genId } from '@shared/utils/genId'
 
 export function useStepEditor(
   editingFlow: Ref<LocalFlow | null>,
@@ -13,7 +12,6 @@ export function useStepEditor(
   /** ElementPickerModal 选中元素后 → 打开 ActionPickerModal */
   function onElementPicked(
     el: SerializedElement,
-    getLoopChildOpts: (el: SerializedElement) => { overrideSel?: string; isRelative: boolean },
     openPickerModal: Ref<boolean>,
     pickMode: Ref<boolean>,
     cancelPickElement: () => void,
@@ -21,22 +19,12 @@ export function useStepEditor(
     openPickerModal.value = false
     if (pickMode.value) { pickMode.value = false; cancelPickElement() }
 
-    let overrideSel: string | undefined = undefined
-    let isRelative = false
-    const context: 'single' | { itemSel: string } = 'single'
-
-    if (es.editingStepIdx === null && es.editingBranchStep === null && es.editingLoopChild === null && !es.addingToLoopChild) {
+    if (es.editingStepIdx === null && es.editingBranchStep === null) {
       es.editingInitialType  = undefined
       es.editingInitialValue = undefined
     }
 
-    if (es.addingToLoopChild) {
-      const opts = getLoopChildOpts(el)
-      isRelative  = opts.isRelative
-      overrideSel = opts.overrideSel
-    }
-
-    es.openActionModal(el, { overrideSel, isRelative, context })
+    es.openActionModal(el)
   }
 
   /** 编辑已有步骤 → 预填开启 ActionPickerModal */
@@ -55,7 +43,6 @@ export function useStepEditor(
     }
     es.openActionModal(el, {
       isRelative:         step.relativeSelector ?? false,
-      context:            'single',
       initialType:        step.type,
       initialValue:       step.value,
       initialWaitTimeout: step.waitTimeout,
@@ -80,60 +67,12 @@ export function useStepEditor(
 
   /** 关闭 ActionPickerModal，清理编辑状态 */
   function cancelActionModal() {
-    const wasLoopChild    = es.editingLoopChild !== null
-    const wasAddingToLoop = es.addingToLoopChild
     es.resetAll()
-    if (wasLoopChild || wasAddingToLoop) es.returnToLoop()
   }
 
   /** ActionPickerModal 确认 → 将步骤写入流程（新建）或替换现有步骤（编辑） */
   function onActionConfirm(step: FlowStep) {
     es.showActionModal = false
-
-    // 编辑/添加条件分支内子步骤（loop 上下文）
-    if (es.addingToLoopBranch && es.editingLoopStep) {
-      const { condChildId, branch } = es.addingToLoopBranch
-      const cond = es.editingLoopStep.children?.find(c => c.id === condChildId)
-      if (cond) {
-        const arr = branch === 'if'
-          ? (cond.children     = cond.children     ?? [])
-          : (cond.elseChildren = cond.elseChildren ?? [])
-        const idx = es.editingLoopChild
-        if (idx !== null && arr[idx]) {
-          const origId = arr[idx].id
-          arr[idx] = { ...step, id: origId }
-        } else {
-          arr.push(step)
-        }
-      }
-      es.addingToLoopBranch = null
-      es.addingToLoopChild  = false
-      es.editingLoopChild   = null
-      es.clearEditState()
-      es.returnToLoop()
-      return
-    }
-
-    // 编辑循环步骤的子步骤
-    if (es.editingLoopChild !== null && es.editingLoopStep) {
-      const idx    = es.editingLoopChild
-      const origId = es.editingLoopStep.children![idx].id
-      es.editingLoopStep.children![idx] = { ...step, id: origId }
-      es.editingLoopChild = null
-      es.clearEditState()
-      es.returnToLoop()
-      return
-    }
-
-    // 为循环步骤添加新子步骤
-    if (es.addingToLoopChild && es.editingLoopStep) {
-      es.editingLoopStep.children = [...(es.editingLoopStep.children ?? []), step]
-      es.addingToLoopChild = false
-      es.clearEditState()
-      // 构建模式下不回到 EditLoopModal，由上层 orchestrator 重新打开 scoped 选择器
-      if (!es.buildingLoopChildren) es.returnToLoop()
-      return
-    }
 
     if (!editingFlow.value) return
 
@@ -162,18 +101,7 @@ export function useStepEditor(
         else condStep.elseChildren = [...(condStep.elseChildren ?? []), step]
       }
       es.addingToBranch = null
-    } else if (es.actionModalContext === 'single') {
-      editingFlow.value.steps.push(step)
-    } else {
-      const { itemSel } = es.actionModalContext
-      editingFlow.value.steps.push({
-        id:                genId('step'),
-        type:              'loop_items',
-        label:             `循环列表：${itemSel.slice(0, 40)}`,
-        selector:          { cssSelector: itemSel },
-        children:          [step],
-      })
-    }
+    } else editingFlow.value.steps.push(step)
     es.actionModalEl             = null
     es.editingInitialWaitTimeout = undefined
     es.editingInitialFoundDelay  = undefined
@@ -201,7 +129,6 @@ export function useStepEditor(
     }
     es.openActionModal(el, {
       isRelative:         childStep.relativeSelector ?? false,
-      context:            'single',
       initialType:        childStep.type,
       initialValue:       childStep.value,
       initialWaitTimeout: childStep.waitTimeout,

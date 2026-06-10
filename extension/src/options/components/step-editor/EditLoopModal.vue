@@ -9,15 +9,6 @@ const emit = defineEmits<{
   (e: 'save',                 step: FlowStep): void
   (e: 'close'):                                void
   (e: 'reselect',             currentState: FlowStep): void
-  (e: 'edit-child',           childIdx: number, currentState: FlowStep): void
-  (e: 'add-child',            currentState: FlowStep): void
-  (e: 'add-call-flow',        currentState: FlowStep): void
-  (e: 'add-condition',        currentState: FlowStep): void
-  (e: 'add-delay',            currentState: FlowStep): void
-  (e: 'add-branch-child',     condChildId: string, branch: 'if' | 'else', currentState: FlowStep): void
-  (e: 'add-branch-call-flow', condChildId: string, branch: 'if' | 'else', currentState: FlowStep): void
-  (e: 'add-branch-condition', condChildId: string, branch: 'if' | 'else', currentState: FlowStep): void
-  (e: 'edit-branch-child',    condChildId: string, branch: 'if' | 'else', childIdx: number, currentState: FlowStep): void
 }>()
 
 function autoLabel(step: FlowStep): string {
