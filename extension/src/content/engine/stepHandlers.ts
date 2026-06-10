@@ -125,6 +125,63 @@ function downloadFallback(dataUrl: string, filename: string, onLog: (s: string) 
 
 // ─── 步骤处理器 ────────────────────────────────────────────────────────────────
 
+function isDynamicId(id: string): boolean {
+  return id.split(/[-_]/).some(seg => seg.length >= 5 && /[a-z]/i.test(seg) && /[0-9]/.test(seg))
+}
+
+function selectorSegment(el: Element): string {
+  let seg = el.tagName.toLowerCase()
+  if (el.id && !isDynamicId(el.id)) return `${seg}#${CSS.escape(el.id)}`
+
+  const classes = [...el.classList]
+    .filter(cls => cls && !/\d{4,}/.test(cls))
+    .slice(0, 2)
+  if (classes.length) seg += classes.map(cls => `.${CSS.escape(cls)}`).join('')
+
+  const siblings = el.parentElement ? [...el.parentElement.children] : []
+  const sameTag = siblings.filter(s => s.tagName === el.tagName)
+  if (sameTag.length > 1) seg += `:nth-child(${siblings.indexOf(el) + 1})`
+
+  return seg
+}
+
+function buildRelativeSelector(root: Element, target: Element): string | null {
+  if (root === target) return ':scope'
+  if (!root.contains(target)) return null
+
+  const parts: string[] = []
+  let cur: Element | null = target
+  while (cur && cur !== root) {
+    parts.unshift(selectorSegment(cur))
+    cur = cur.parentElement
+  }
+  return parts.length ? `:scope > ${parts.join(' > ')}` : null
+}
+
+function queryWithinItem(item: Element, relativeSelector?: string | null): Element | null {
+  const rel = relativeSelector?.trim()
+  if (!rel) return null
+  if (rel === ':scope') return item
+  try { return item.querySelector(rel) } catch { return null }
+}
+
+function resolveLoopClickTarget(step: FlowStep, item: Element, firstItem: Element): Element {
+  const savedTarget = queryWithinItem(item, step.itemTargetRelativeSelector)
+  if (savedTarget) return savedTarget
+
+  const targetSelector = step.itemTargetSelector?.cssSelector
+  if (!targetSelector) return item
+
+  let firstTarget: Element | null = null
+  try { firstTarget = document.querySelector(targetSelector) } catch { return item }
+  if (!firstTarget || !firstItem.contains(firstTarget)) return item
+
+  if (item === firstItem) return firstTarget
+
+  const relative = buildRelativeSelector(firstItem, firstTarget)
+  return queryWithinItem(item, relative) ?? item
+}
+
 async function handleClick(step: FlowStep, _ctx: RunContext, resolve: ResolveFn): Promise<void> {
   const el = await resolve(step.selector!) as HTMLElement
   simulateClick(el)
@@ -265,13 +322,18 @@ async function handleLoopItems(
   onLog(`找到 ${itemsArr.length} 个条目，开始循环...`)
   const scrollBehavior = step.scrollBehavior ?? 'none'
   const hasChildSteps = !!step.children?.length
+  const firstItem = itemsArr[0]
+  const hasItemTarget = !!step.itemTargetSelector || !!step.itemTargetRelativeSelector
 
   for (let i = 0; i < itemsArr.length; i++) {
     const item = itemsArr[i]
     if (signal.stopped) return
     onStep?.({ type: 'loop_progress', stepId: step.id, index: i + 1, total: itemsArr.length })
+    const clickTarget = !hasChildSteps && firstItem
+      ? resolveLoopClickTarget(step, item, firstItem)
+      : item
     if (!hasChildSteps) {
-      (item as HTMLElement).scrollIntoView({ behavior: 'smooth', block: 'center' })
+      (clickTarget as HTMLElement).scrollIntoView({ behavior: 'smooth', block: 'center' })
       await sleep(400)
     } else if (scrollBehavior === 'item') {
       (item as HTMLElement).scrollIntoView({ behavior: 'smooth', block: 'center' })
@@ -284,7 +346,8 @@ async function handleLoopItems(
         await runChild(child, { ...ctx, depth: ctx.depth + 1 })
       }
     } else {
-      simulateClick(item as HTMLElement)
+      if (hasItemTarget && clickTarget === item) onLog('  未找到项内目标，回退点击整项')
+      simulateClick(clickTarget as HTMLElement)
     }
     if (hasChildSteps && scrollBehavior === 'bottom') {
       const container = findScrollContainer(item)

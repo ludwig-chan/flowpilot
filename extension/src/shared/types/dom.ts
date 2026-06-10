@@ -97,6 +97,7 @@ export interface DomScanResultMessage {
   tabTitle: string
   tabUrl:   string
   tree:     SerializedDomNode[]
+  scopeCanonicalSelector?: string
 }
 
 /** 元素拾取结果 */

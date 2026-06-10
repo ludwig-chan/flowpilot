@@ -9,6 +9,7 @@ const emit = defineEmits<{
   (e: 'save',                 step: FlowStep): void
   (e: 'close'):                                void
   (e: 'reselect',             currentState: FlowStep): void
+  (e: 'reselect-target',      currentState: FlowStep): void
 }>()
 
 function autoLabel(step: FlowStep): string {
@@ -39,6 +40,26 @@ function onSave() {
         </code>
         <BaseButton class="elm-resel-btn" @click="emit('reselect', currentState())">重新选择</BaseButton>
       </div>
+    </div>
+
+    <div class="elm-section">
+      <label class="elm-label">项内点击目标</label>
+      <div class="elm-selector-row">
+        <code class="elm-selector-val" :title="step.itemTargetRelativeSelector || step.itemTargetSelector?.cssSelector">
+          {{ step.itemTargetRelativeSelector || step.itemTargetSelector?.cssSelector || '默认点击整项' }}
+        </code>
+        <BaseButton
+          class="elm-resel-btn"
+          :disabled="!step.selector?.cssSelector"
+          @click="emit('reselect-target', currentState())"
+        >选择第一项内元素</BaseButton>
+        <BaseButton
+          v-if="step.itemTargetSelector || step.itemTargetRelativeSelector"
+          class="elm-resel-btn"
+          @click="step.itemTargetSelector = undefined; step.itemTargetRelativeSelector = undefined"
+        >清除</BaseButton>
+      </div>
+      <p class="elm-hint">选择头像、按钮等第一项内的元素后，循环会在每一项里点击对应元素。</p>
     </div>
 
     <template #footer>
@@ -77,6 +98,13 @@ function onSave() {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.elm-hint {
+  margin: 8px 0 0;
+  font-size: 11px;
+  color: $color-text-muted;
+  line-height: 1.5;
 }
 
 .elm-resel-btn {

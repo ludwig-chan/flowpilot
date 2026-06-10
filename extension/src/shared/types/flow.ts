@@ -55,6 +55,8 @@ export interface FlowStep {
   flowRef?: string          // call_flow: 引用的已保存流程 ID
   itemDelay?: [number, number] // loop_items: 每项处理完后的随机延迟 [min, max] ms
   scrollBehavior?: 'none' | 'item' | 'bottom' // loop_items: 每项处理前/后的滚动行为
+  itemTargetSelector?: SelectorStrategy // loop_items: 从第一项中选择的点击目标模板
+  itemTargetRelativeSelector?: string // loop_items: 模板目标相对列表项的 CSS 路径
   elseChildren?: FlowStep[] // condition: else 分支步骤
   conditions?:      ConditionItem[]   // condition: 多条件列表
   conditionLogic?:  ConditionLogic    // condition: 条件连接方式，默认 'and'

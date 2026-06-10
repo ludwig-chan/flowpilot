@@ -48,19 +48,19 @@ const {
 
 const {
   domTree, domFilter, domScanning, domMutated, domTabTitle,
-  pickMode, pickedCssSelector, scanDom, togglePickMode,
+  pickMode, pickedCssSelector, scopeCanonicalSelector, scanDom, togglePickMode,
 } = useDomPicker(activeTabId)
 
 const {
   showPickerModal,
-  editLoopStep, onLoopSave, onLoopClose, onLoopReselect,
+  editLoopStep, onLoopSave, onLoopClose, onLoopReselect, onLoopTargetReselect,
   editStep, cancelActionModal, onActionConfirm, editBranchStep,
   showSmartLoopModal, smartLoopCandidates,
   openSmartLoopPicker, onSmartLoopConfirm, onSmartLoopCancel,
   onElementPicked, onActionRePick, openPicker, closePicker, scanPickerDom, togglePickerPickMode,
   onActionTry, onTestAction,
   addElementBranch,
-} = usePickerOrchestrator(editingFlow, requireTab, pickedCssSelector, pickMode, scanDom, togglePickMode)
+} = usePickerOrchestrator(editingFlow, requireTab, pickedCssSelector, pickMode, scopeCanonicalSelector, scanDom, togglePickMode)
 
 const {
   removeStep, addDelayStep, editDelayStep, onDelayConfirm,
@@ -138,7 +138,7 @@ provide(STEP_EDITOR_MODALS_KEY, {
   // usePickerOrchestrator
   showPickerModal, closePicker, onElementPicked, onTestAction,
   showSmartLoopModal, smartLoopCandidates, onSmartLoopConfirm, onSmartLoopCancel,
-  onLoopSave, onLoopClose, onLoopReselect,
+  onLoopSave, onLoopClose, onLoopReselect, onLoopTargetReselect,
   onActionConfirm, onActionTry, onActionRePick, cancelActionModal,
   // useConditionEditor
   showConditionModal, conditionModalStep, conditionModalIdx, conditionAvailableVars, onConditionConfirm,

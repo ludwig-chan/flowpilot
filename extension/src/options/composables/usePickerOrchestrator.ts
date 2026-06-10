@@ -16,6 +16,7 @@ export function usePickerOrchestrator(
   requireTab: (cb: () => void) => void,
   pickedCssSelector: Ref<string>,
   pickMode: Ref<boolean>,
+  scopeCanonicalSelector: Ref<string | undefined>,
   scanDom: (scope?: string) => void,
   togglePickMode: (scope?: string) => void,
 ) {
@@ -76,6 +77,17 @@ export function usePickerOrchestrator(
   // ── Smart Loop 模式标志 ───────────────────────────────────────────
   const smartLoopMode = ref(false)
   const reselectingLoopList = ref(false)
+  const selectingLoopTarget = ref(false)
+
+  function toItemRelativeSelector(cssSelector: string): string | undefined {
+    const scope = scopeCanonicalSelector.value
+    if (!scope) return undefined
+    if (cssSelector === scope) return ':scope'
+    const prefix = `${scope} > `
+    return cssSelector.startsWith(prefix)
+      ? `:scope > ${cssSelector.slice(prefix.length)}`
+      : undefined
+  }
 
   // ── ActionPickerModal 确认 ──────────────────────────────────────────
   function onActionConfirm(step: FlowStep) {
@@ -86,6 +98,16 @@ export function usePickerOrchestrator(
 
   /** ElementPickerModal 选中元素后 → 打开 ActionPickerModal（或直接创建 element_branch 步骤） */
   function onElementPicked(el: SerializedElement) {
+    if (selectingLoopTarget.value && es.editingLoopStep) {
+      selectingLoopTarget.value = false
+      showPickerModal.value = false
+      pickerScope.value = undefined
+      if (pickMode.value) { pickMode.value = false; bridge.cancelPickElement() }
+      es.editingLoopStep.itemTargetSelector = el.selector
+      es.editingLoopStep.itemTargetRelativeSelector = toItemRelativeSelector(el.selector.cssSelector)
+      es.showEditLoopModal = true
+      return
+    }
     if (reselectingLoopList.value) {
       showPickerModal.value = false
       if (pickMode.value) { pickMode.value = false; bridge.cancelPickElement() }
@@ -152,11 +174,14 @@ export function usePickerOrchestrator(
   }
 
   function closePicker() {
+    const shouldRestoreLoopModal = selectingLoopTarget.value && !!es.editingLoopStep
     showPickerModal.value = false
     pickedCssSelector.value = ''
     pickerScope.value = undefined
+    selectingLoopTarget.value = false
     reselectingLoopList.value = false
     if (pickMode.value) { pickMode.value = false; bridge.cancelPickElement() }
+    if (shouldRestoreLoopModal) es.showEditLoopModal = true
   }
 
   function openPickerInScope(scope?: string) {
@@ -175,6 +200,16 @@ export function usePickerOrchestrator(
   function onLoopReselect(currentState: FlowStep) {
     reselectingLoopList.value = true
     _onLoopReselectRaw(currentState, openPickerInScope)
+  }
+
+  function onLoopTargetReselect(currentState: FlowStep) {
+    if (!currentState.selector?.cssSelector) return
+    selectingLoopTarget.value = true
+    es.editingLoopStep = currentState
+    es.showEditLoopModal = false
+    pickedCssSelector.value = ''
+    openPickerInScope(currentState.selector.cssSelector)
+    scanDom(currentState.selector.cssSelector)
   }
 
   function onSmartLoopCancel() {
@@ -207,7 +242,7 @@ export function usePickerOrchestrator(
     showPickerModal,
     // useLoopEditor
     editingLoopStepIdx,
-    editLoopStep, onLoopSave, onLoopClose, onLoopReselect,
+    editLoopStep, onLoopSave, onLoopClose, onLoopReselect, onLoopTargetReselect,
     // useStepEditor
     editStep, cancelActionModal, onActionConfirm, editBranchStep,
     // useSmartLoop

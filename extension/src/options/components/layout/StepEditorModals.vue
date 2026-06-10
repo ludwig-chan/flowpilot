@@ -25,7 +25,7 @@ const {
   pickMode, pickedCssSelector, scanDom, togglePickMode,
   showPickerModal, closePicker, onElementPicked, onTestAction,
   showSmartLoopModal, smartLoopCandidates, onSmartLoopConfirm, onSmartLoopCancel,
-  onLoopSave, onLoopClose, onLoopReselect,
+  onLoopSave, onLoopClose, onLoopReselect, onLoopTargetReselect,
   onActionConfirm, onActionTry, onActionRePick, cancelActionModal,
   showConditionModal, conditionModalStep, conditionModalIdx, conditionAvailableVars, onConditionConfirm,
   showSettingsModal, onSettingsConfirm, saveToast,
@@ -83,6 +83,7 @@ function onCancelSmartLoop() {
       @save="onLoopSave"
       @close="onLoopClose"
       @reselect="onLoopReselect"
+      @reselect-target="onLoopTargetReselect"
     />
 
     <!-- 条件配置模态框 -->
