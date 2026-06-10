@@ -31,7 +31,48 @@
                 "cssSelector": "canvas#resume",
                 "iframeSelector": "body > div:nth-child(18) > div:nth-child(1) > div > div > div > div > div:nth-child(1) > div:nth-child(1) > iframe"
               },
-              "type": "save_canvas"
+              "type": "save_canvas",
+              "value": "screenshot"
+            },
+            {
+              "id": "step_1781083017008_2w5",
+              "type": "get_text",
+              "label": "获取姓名",
+              "selector": {
+                "cssSelector": "div#container > div:nth-child(1) > div > div:nth-child(2) > div:nth-child(2) > div:nth-child(2) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > span > span > span",
+                "text": "隆孝存"
+              },
+              "value": "name"
+            },
+            {
+              "id": "step_1781083065554_rh8",
+              "type": "get_text",
+              "label": "获取年龄",
+              "selector": {
+                "cssSelector": "div#container > div:nth-child(1) > div > div:nth-child(2) > div:nth-child(2) > div:nth-child(2) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:nth-child(3)",
+                "text": "42岁"
+              },
+              "value": "age"
+            },
+            {
+              "id": "step_1781083107448_ec5",
+              "type": "get_text",
+              "label": "获取工龄",
+              "selector": {
+                "cssSelector": "div#container > div:nth-child(1) > div > div:nth-child(2) > div:nth-child(2) > div:nth-child(2) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:nth-child(4)",
+                "text": "10年以上"
+              },
+              "value": "workyear"
+            },
+            {
+              "id": "step_1781083133299_p3n",
+              "type": "get_text",
+              "label": "获取学历",
+              "selector": {
+                "cssSelector": "div#container > div:nth-child(1) > div > div:nth-child(2) > div:nth-child(2) > div:nth-child(2) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:nth-child(2) > div:nth-child(1) > div > div:nth-child(2) > ul > li:nth-child(3) > span",
+                "text": "中专/中技 · 中专/中技"
+              },
+              "value": "school"
             },
             {
               "id": "step_1780650539280_v9e",
