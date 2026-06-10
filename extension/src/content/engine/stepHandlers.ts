@@ -151,11 +151,12 @@ function queryWithinItem(item: Element, relativeSelector?: string | null): Eleme
   try { return item.querySelector(rel) } catch { return null }
 }
 
-function resolveLoopItemTarget(step: FlowStep, item: Element, firstItem: Element): Element {
-  const savedTarget = queryWithinItem(item, step.itemTargetRelativeSelector)
+function resolveLoopActionTarget(loopStep: FlowStep, action: FlowStep, item: Element, firstItem: Element): Element {
+  const relativeSelector = action.selector?.relativeSelector || loopStep.itemTargetRelativeSelector
+  const savedTarget = queryWithinItem(item, relativeSelector)
   if (savedTarget) return savedTarget
 
-  const targetSelector = step.itemTargetSelector?.cssSelector
+  const targetSelector = action.selector?.cssSelector || loopStep.itemTargetSelector?.cssSelector
   if (!targetSelector) return item
 
   let firstTarget: Element | null = null
@@ -166,6 +167,34 @@ function resolveLoopItemTarget(step: FlowStep, item: Element, firstItem: Element
 
   const relative = buildRelativeSelector(firstItem, firstTarget)
   return queryWithinItem(item, relative) ?? item
+}
+
+function getLoopItemActions(step: FlowStep): FlowStep[] {
+  if (step.itemActions?.length) return step.itemActions
+  if (step.itemAction) {
+    return [{
+      ...step.itemAction,
+      selector: step.itemAction.selector ?? step.itemTargetSelector,
+    }]
+  }
+  if (step.itemTargetSelector || step.itemTargetRelativeSelector) {
+    return [{
+      id: `${step.id}_item_action`,
+      type: 'click',
+      label: '点击',
+      selector: step.itemTargetSelector
+        ? {
+            ...step.itemTargetSelector,
+            relativeSelector: step.itemTargetRelativeSelector || step.itemTargetSelector.relativeSelector,
+          }
+        : undefined,
+    }]
+  }
+  return [{
+    id: `${step.id}_item_action`,
+    type: 'click',
+    label: '点击',
+  }]
 }
 
 function dispatchDoubleClick(el: HTMLElement): void {
@@ -230,19 +259,12 @@ async function waitForLoopTargetToDisappear(item: Element, relativeSelector?: st
 }
 
 async function executeLoopItemAction(
-  loopStep: FlowStep,
+  action: FlowStep,
   target: Element,
   item: Element,
   ctx: RunContext,
   index: number,
 ): Promise<void> {
-  const action = loopStep.itemAction ?? {
-    ...loopStep,
-    id: `${loopStep.id}_item_action`,
-    type: 'click',
-    label: '点击',
-    selector: loopStep.itemTargetSelector ?? loopStep.selector,
-  }
   const el = target as HTMLElement
   if (action.foundDelay) await humanDelay(action.foundDelay[0], action.foundDelay[1])
 
@@ -308,7 +330,7 @@ async function executeLoopItemAction(
     case 'wait_appear':
       break
     case 'wait_disappear':
-      await waitForLoopTargetToDisappear(item, loopStep.itemTargetRelativeSelector, action.waitTimeout ?? ctx.waitTimeout)
+      await waitForLoopTargetToDisappear(item, action.selector?.relativeSelector, action.waitTimeout ?? ctx.waitTimeout)
       break
     case 'scroll_to':
       el.scrollIntoView({ behavior: 'smooth', block: 'center' })
@@ -331,6 +353,7 @@ async function executeLoopItemAction(
     default:
       ctx.onLog(`[跳过] 循环项内暂不支持动作：${action.type}`)
   }
+  if (action.delay) await humanDelay(action.delay[0], action.delay[1])
 }
 
 async function handleClick(step: FlowStep, _ctx: RunContext, resolve: ResolveFn): Promise<void> {
@@ -474,18 +497,15 @@ async function handleLoopItems(
   const scrollBehavior = step.scrollBehavior ?? 'none'
   const hasChildSteps = !!step.children?.length
   const firstItem = itemsArr[0]
-  const hasItemTarget = !!step.itemTargetSelector || !!step.itemTargetRelativeSelector
-  const hasItemAction = !!step.itemAction
+  const itemActions = getLoopItemActions(step)
 
   for (let i = 0; i < itemsArr.length; i++) {
     const item = itemsArr[i]
     if (signal.stopped) return
     onStep?.({ type: 'loop_progress', stepId: step.id, index: i + 1, total: itemsArr.length })
-    const itemTarget = !hasChildSteps && firstItem
-      ? resolveLoopItemTarget(step, item, firstItem)
-      : item
     if (!hasChildSteps) {
-      (itemTarget as HTMLElement).scrollIntoView({ behavior: 'smooth', block: 'center' })
+      const firstTarget = firstItem ? resolveLoopActionTarget(step, itemActions[0], item, firstItem) : item
+      ;(firstTarget as HTMLElement).scrollIntoView({ behavior: 'smooth', block: 'center' })
       await sleep(400)
     } else if (scrollBehavior === 'item') {
       (item as HTMLElement).scrollIntoView({ behavior: 'smooth', block: 'center' })
@@ -498,9 +518,13 @@ async function handleLoopItems(
         await runChild(child, { ...ctx, depth: ctx.depth + 1 })
       }
     } else {
-      if (hasItemTarget && itemTarget === item) onLog('  未找到项内目标，回退对整项执行动作')
-      if (hasItemAction) onLog(`  执行动作：${step.itemAction?.label ?? step.itemAction?.type}`)
-      await executeLoopItemAction(step, itemTarget, item, ctx, i + 1)
+      for (const action of itemActions) {
+        if (signal.stopped) return
+        const itemTarget = firstItem ? resolveLoopActionTarget(step, action, item, firstItem) : item
+        if (action.selector && itemTarget === item) onLog('  未找到项内目标，回退对整项执行动作')
+        onLog(`  执行动作：${action.label ?? action.type}`)
+        await executeLoopItemAction(action, itemTarget, item, ctx, i + 1)
+      }
     }
     if (hasChildSteps && scrollBehavior === 'bottom') {
       const container = findScrollContainer(item)

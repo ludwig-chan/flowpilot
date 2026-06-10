@@ -46,8 +46,8 @@ export function usePickerOrchestrator(
 
   function makeLoopClickLabel(name: string, count?: number) {
     return count !== undefined
-      ? `逐项点击列表：${name}（${count} 项）`
-      : `逐项点击列表：${name}`
+      ? `逐项操作列表：${name}（${count} 项）`
+      : `逐项操作列表：${name}`
   }
 
   // ── useSmartLoop（确认候选后创建/更新逐项点击列表步骤）────────────────────
@@ -79,6 +79,8 @@ export function usePickerOrchestrator(
   const reselectingLoopList = ref(false)
   const selectingLoopTarget = ref(false)
   const configuringLoopItemAction = ref(false)
+  const selectingLoopTargetIdx = ref<number | null>(null)
+  const configuringLoopItemActionIdx = ref<number | null>(null)
 
   function toItemRelativeSelector(cssSelector: string): string | undefined {
     const scope = scopeCanonicalSelector.value
@@ -94,17 +96,41 @@ export function usePickerOrchestrator(
     return el.selector.relativeSelector || toItemRelativeSelector(el.selector.cssSelector)
   }
 
-  function makeLoopTargetElement(step: FlowStep): SerializedElement | null {
-    const selector = step.itemTargetSelector
+  function normalizeLoopItemActions(step: FlowStep): FlowStep[] {
+    if (step.itemActions?.length) return step.itemActions
+    if (step.itemAction || step.itemTargetSelector || step.itemTargetRelativeSelector) {
+      return [{
+        ...(step.itemAction ?? {
+          id:    genId('step'),
+          type:  'click',
+          label: '点击',
+        } as FlowStep),
+        selector: step.itemAction?.selector ?? step.itemTargetSelector,
+      }]
+    }
+    return []
+  }
+
+  function ensureLoopItemActions(step: FlowStep): FlowStep[] {
+    if (!step.itemActions) step.itemActions = normalizeLoopItemActions(step)
+    step.itemAction = undefined
+    step.itemTargetSelector = undefined
+    step.itemTargetRelativeSelector = undefined
+    return step.itemActions
+  }
+
+  function makeLoopTargetElement(step: FlowStep, actionIdx: number): SerializedElement | null {
+    const action = normalizeLoopItemActions(step)[actionIdx]
+    const selector = action?.selector
     if (!selector) return null
     return {
       kind:       'click',
       confidence: 'high',
-      label:      step.itemAction?.label || selector.text || selector.ariaLabel || selector.cssSelector,
+      label:      action.label || selector.text || selector.ariaLabel || selector.cssSelector,
       matchCount: 1,
       selector:   {
         ...selector,
-        relativeSelector: step.itemTargetRelativeSelector || selector.relativeSelector,
+        relativeSelector: selector.relativeSelector,
       },
     }
   }
@@ -119,8 +145,9 @@ export function usePickerOrchestrator(
     es.editingInitialLabel = undefined
   }
 
-  function openLoopActionModal(el: SerializedElement, action?: FlowStep) {
+  function openLoopActionModal(el: SerializedElement, actionIdx: number, action?: FlowStep) {
     configuringLoopItemAction.value = true
+    configuringLoopItemActionIdx.value = actionIdx
     es.openActionModal(el, {
       initialType:        action?.type ?? 'click',
       initialValue:       action?.value,
@@ -132,11 +159,15 @@ export function usePickerOrchestrator(
 
   // ── ActionPickerModal 确认 ──────────────────────────────────────────
   function onActionConfirm(step: FlowStep) {
-    if (configuringLoopItemAction.value && es.editingLoopStep) {
+    if (configuringLoopItemAction.value && es.editingLoopStep && configuringLoopItemActionIdx.value !== null) {
+      const actions = ensureLoopItemActions(es.editingLoopStep)
+      const actionIdx = configuringLoopItemActionIdx.value
+      const previous = actions[actionIdx]
       configuringLoopItemAction.value = false
-      es.editingLoopStep.itemAction = {
+      configuringLoopItemActionIdx.value = null
+      actions[actionIdx] = {
         ...step,
-        selector: es.editingLoopStep.itemTargetSelector ?? step.selector,
+        selector: previous?.selector ?? step.selector,
       }
       clearActionModalState()
       es.showEditLoopModal = true
@@ -148,6 +179,7 @@ export function usePickerOrchestrator(
   function cancelActionModal() {
     if (configuringLoopItemAction.value && es.editingLoopStep) {
       configuringLoopItemAction.value = false
+      configuringLoopItemActionIdx.value = null
       clearActionModalState()
       es.showEditLoopModal = true
       return
@@ -160,19 +192,28 @@ export function usePickerOrchestrator(
   /** ElementPickerModal 选中元素后 → 打开 ActionPickerModal（或直接创建 element_branch 步骤） */
   function onElementPicked(el: SerializedElement) {
     if (selectingLoopTarget.value && es.editingLoopStep) {
+      const actions = ensureLoopItemActions(es.editingLoopStep)
+      const actionIdx = selectingLoopTargetIdx.value ?? actions.length
+      const previous = actions[actionIdx]
+      const relativeSelector = getItemTargetRelativeSelector(el)
+      const selector = { ...el.selector, relativeSelector }
       selectingLoopTarget.value = false
+      selectingLoopTargetIdx.value = null
       showPickerModal.value = false
       pickerScope.value = undefined
       if (pickMode.value) { pickMode.value = false; bridge.cancelPickElement() }
-      es.editingLoopStep.itemTargetSelector = el.selector
-      es.editingLoopStep.itemTargetRelativeSelector = getItemTargetRelativeSelector(el)
+      actions[actionIdx] = {
+        ...(previous ?? {
+          id:    genId('step'),
+          type:  'click',
+          label: '点击',
+        } as FlowStep),
+        selector,
+      }
       openLoopActionModal({
         ...el,
-        selector: {
-          ...el.selector,
-          relativeSelector: es.editingLoopStep.itemTargetRelativeSelector,
-        },
-      }, es.editingLoopStep.itemAction)
+        selector,
+      }, actionIdx, actions[actionIdx])
       return
     }
     if (reselectingLoopList.value) {
@@ -213,6 +254,7 @@ export function usePickerOrchestrator(
       es.editingInitialType = type
       es.editingInitialValue = value
       es.showActionModal = false
+      selectingLoopTargetIdx.value = configuringLoopItemActionIdx.value
       selectingLoopTarget.value = true
       pickedCssSelector.value = ''
       openPickerInScope(es.editingLoopStep.selector.cssSelector)
@@ -256,7 +298,9 @@ export function usePickerOrchestrator(
     pickedCssSelector.value = ''
     pickerScope.value = undefined
     selectingLoopTarget.value = false
+    selectingLoopTargetIdx.value = null
     configuringLoopItemAction.value = false
+    configuringLoopItemActionIdx.value = null
     reselectingLoopList.value = false
     if (pickMode.value) { pickMode.value = false; bridge.cancelPickElement() }
     if (shouldRestoreLoopModal) es.showEditLoopModal = true
@@ -280,9 +324,10 @@ export function usePickerOrchestrator(
     _onLoopReselectRaw(currentState, openPickerInScope)
   }
 
-  function onLoopTargetReselect(currentState: FlowStep) {
+  function onLoopTargetReselect(currentState: FlowStep, actionIdx?: number) {
     if (!currentState.selector?.cssSelector) return
     selectingLoopTarget.value = true
+    selectingLoopTargetIdx.value = actionIdx ?? ensureLoopItemActions(currentState).length
     es.editingLoopStep = currentState
     es.showEditLoopModal = false
     pickedCssSelector.value = ''
@@ -290,12 +335,12 @@ export function usePickerOrchestrator(
     scanDom(currentState.selector.cssSelector)
   }
 
-  function onLoopActionConfigure(currentState: FlowStep) {
-    const el = makeLoopTargetElement(currentState)
+  function onLoopActionConfigure(currentState: FlowStep, actionIdx: number) {
+    const el = makeLoopTargetElement(currentState, actionIdx)
     if (!el) return
     es.editingLoopStep = currentState
     es.showEditLoopModal = false
-    openLoopActionModal(el, currentState.itemAction)
+    openLoopActionModal(el, actionIdx, normalizeLoopItemActions(currentState)[actionIdx])
   }
 
   function onSmartLoopCancel() {

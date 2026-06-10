@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import type { FlowStep } from '@shared/types/flow'
 
 const props = defineProps<{
@@ -9,13 +10,13 @@ const emit = defineEmits<{
   (e: 'save',                 step: FlowStep): void
   (e: 'close'):                                void
   (e: 'reselect',             currentState: FlowStep): void
-  (e: 'reselect-target',      currentState: FlowStep): void
-  (e: 'configure-action',     currentState: FlowStep): void
+  (e: 'reselect-target',      currentState: FlowStep, actionIdx?: number): void
+  (e: 'configure-action',     currentState: FlowStep, actionIdx: number): void
 }>()
 
 function autoLabel(step: FlowStep): string {
   const selector = step.selector?.cssSelector
-  return selector ? `逐项点击列表：${selector.slice(0, 40)}` : '逐项点击列表'
+  return selector ? `逐项操作列表：${selector.slice(0, 40)}` : '逐项操作列表'
 }
 
 function currentState(): FlowStep {
@@ -23,6 +24,7 @@ function currentState(): FlowStep {
     ...props.step,
     label:    autoLabel(props.step),
     children: props.step.children ?? [],
+    itemActions: normalizedItemActions(),
   }
 }
 
@@ -34,6 +36,58 @@ function clearItemTarget() {
   props.step.itemTargetSelector = undefined
   props.step.itemTargetRelativeSelector = undefined
   props.step.itemAction = undefined
+  props.step.itemActions = []
+}
+
+function legacyItemAction(): FlowStep | null {
+  if (!props.step.itemAction && !props.step.itemTargetSelector && !props.step.itemTargetRelativeSelector) return null
+  return {
+    ...(props.step.itemAction ?? {
+      id:    `${props.step.id}_item_action`,
+      type:  'click',
+      label: '点击',
+    } as FlowStep),
+    selector: props.step.itemAction?.selector ?? props.step.itemTargetSelector,
+  }
+}
+
+function normalizedItemActions(): FlowStep[] {
+  if (props.step.itemActions?.length) return props.step.itemActions
+  const legacy = legacyItemAction()
+  return legacy ? [legacy] : []
+}
+
+const itemActions = computed(() => normalizedItemActions())
+
+function ensureItemActions(): FlowStep[] {
+  if (!props.step.itemActions) props.step.itemActions = normalizedItemActions()
+  props.step.itemAction = undefined
+  props.step.itemTargetSelector = undefined
+  props.step.itemTargetRelativeSelector = undefined
+  return props.step.itemActions
+}
+
+function actionTargetLabel(action: FlowStep): string {
+  return action.selector?.relativeSelector || action.selector?.cssSelector || '默认整项'
+}
+
+function addItemAction() {
+  const idx = ensureItemActions().length
+  emit('reselect-target', currentState(), idx)
+}
+
+function removeItemAction(idx: number) {
+  ensureItemActions().splice(idx, 1)
+}
+
+function reselectItemActionTarget(idx: number) {
+  ensureItemActions()
+  emit('reselect-target', currentState(), idx)
+}
+
+function configureItemAction(idx: number) {
+  ensureItemActions()
+  emit('configure-action', currentState(), idx)
 }
 </script>
 
@@ -51,36 +105,51 @@ function clearItemTarget() {
 
     <div class="elm-section">
       <label class="elm-label">项内目标与动作</label>
-      <div class="elm-item-row">
-        <div class="elm-inline-field elm-inline-field--target">
-          <span class="elm-inline-label">目标</span>
-          <code class="elm-selector-val" :title="step.itemTargetRelativeSelector || step.itemTargetSelector?.cssSelector">
-            {{ step.itemTargetRelativeSelector || step.itemTargetSelector?.cssSelector || '默认整项' }}
-          </code>
-          <BaseButton
-            class="elm-resel-btn"
-            :disabled="!step.selector?.cssSelector"
-            @click="emit('reselect-target', currentState())"
-          >选元素</BaseButton>
-          <BaseButton
-            v-if="step.itemTargetSelector || step.itemTargetRelativeSelector"
-            class="elm-resel-btn"
-            @click="clearItemTarget"
-          >清除</BaseButton>
-        </div>
-        <div class="elm-inline-field elm-inline-field--action">
-          <span class="elm-inline-label">动作</span>
-          <code class="elm-action-val" :title="step.itemAction?.label || step.itemAction?.type || '点击'">
-            {{ step.itemAction?.label || '点击' }}
-          </code>
-          <BaseButton
-            class="elm-resel-btn"
-            :disabled="!step.itemTargetSelector && !step.itemTargetRelativeSelector"
-            @click="emit('configure-action', currentState())"
-          >选择动作</BaseButton>
+      <div v-if="itemActions.length" class="elm-action-list">
+        <div v-for="(action, idx) in itemActions" :key="action.id || idx" class="elm-item-row">
+          <div class="elm-inline-field elm-inline-field--target">
+            <span class="elm-inline-label">目标 {{ idx + 1 }}</span>
+            <code class="elm-selector-val" :title="actionTargetLabel(action)">
+              {{ actionTargetLabel(action) }}
+            </code>
+            <BaseButton
+              class="elm-resel-btn"
+              :disabled="!step.selector?.cssSelector"
+              @click="reselectItemActionTarget(idx)"
+            >选元素</BaseButton>
+          </div>
+          <div class="elm-inline-field elm-inline-field--action">
+            <span class="elm-inline-label">动作</span>
+            <code class="elm-action-val" :title="action.label || action.type">
+              {{ action.label || action.type }}
+            </code>
+            <BaseButton
+              class="elm-resel-btn"
+              @click="configureItemAction(idx)"
+            >选择动作</BaseButton>
+            <BaseButton
+              class="elm-resel-btn"
+              @click="removeItemAction(idx)"
+            >删除</BaseButton>
+          </div>
         </div>
       </div>
-      <p class="elm-hint">选择第一项内的元素后，循环会在每一项里找到对应元素，并执行所选动作。</p>
+      <div v-else class="elm-empty-actions">
+        <span>尚未配置项内动作，默认点击整项。</span>
+      </div>
+      <div class="elm-action-toolbar">
+        <BaseButton
+          class="elm-resel-btn"
+          :disabled="!step.selector?.cssSelector"
+          @click="addItemAction"
+        >添加项内动作</BaseButton>
+        <BaseButton
+          v-if="itemActions.length"
+          class="elm-resel-btn"
+          @click="clearItemTarget"
+        >清空动作</BaseButton>
+      </div>
+      <p class="elm-hint">每一项会按上面的顺序执行：例如先点头像，再点昵称，然后进入下一项。</p>
     </div>
 
     <template #footer>
@@ -115,6 +184,27 @@ function clearItemTarget() {
   grid-template-columns: minmax(0, 1fr) minmax(210px, 0.52fr);
   gap: 10px;
   align-items: center;
+}
+
+.elm-action-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.elm-empty-actions {
+  padding: 8px 10px;
+  border: 1px dashed #45475a;
+  border-radius: 6px;
+  color: $color-text-muted;
+  font-size: 11px;
+}
+
+.elm-action-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
 }
 
 .elm-inline-field {
