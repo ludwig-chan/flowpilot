@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import DataTable, { type Column } from '../components/DataTable'
+import ImageLightbox from '../components/ImageLightbox'
 
 type ViewMode = 'active' | 'trash'
 type LayoutMode = 'table' | 'card'
@@ -113,17 +114,6 @@ export default function Screenshots({ showToast }: ScreenshotsProps): React.JSX.
       return true
     })
   }, [data.screenshots, tagFilter, viewMode])
-
-  useEffect(() => {
-    if (!preview) return
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') { setPreview(null); return }
-      if (e.key === 'ArrowLeft')  { e.preventDefault(); navigatePreview('prev'); return }
-      if (e.key === 'ArrowRight') { e.preventDefault(); navigatePreview('next'); return }
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [preview, filteredScreenshots])
 
   const screenshotColumns = useMemo<Column<ScreenshotItem>[]>(() => [
     {
@@ -615,41 +605,15 @@ export default function Screenshots({ showToast }: ScreenshotsProps): React.JSX.
         </div>
       )}
 
-      {preview && (
-        <div className="screenshot-lightbox" onClick={() => setPreview(null)}>
-          <button className="screenshot-lightbox-close" onClick={() => setPreview(null)}>
-            ×
-          </button>
-          <span className="screenshot-lightbox-counter">
-            {preview.index + 1} / {filteredScreenshots.length}
-          </span>
-          <button
-            className="screenshot-lightbox-arrow screenshot-lightbox-arrow-left"
-            onClick={(e) => { e.stopPropagation(); navigatePreview('prev') }}
-            disabled={previewLoading}
-            title="上一张 (←)"
-          >
-            ◀
-          </button>
-          {previewLoading ? (
-            <div className="screenshot-lightbox-loading">加载中...</div>
-          ) : (
-            <img
-              src={preview.image.dataUrl}
-              alt={preview.image.filename}
-              onClick={(event) => event.stopPropagation()}
-            />
-          )}
-          <button
-            className="screenshot-lightbox-arrow screenshot-lightbox-arrow-right"
-            onClick={(e) => { e.stopPropagation(); navigatePreview('next') }}
-            disabled={previewLoading}
-            title="下一张 (→)"
-          >
-            ▶
-          </button>
-        </div>
-      )}
+      <ImageLightbox
+        image={preview ? { src: preview.image.dataUrl, alt: preview.image.filename } : null}
+        loading={previewLoading}
+        index={preview?.index}
+        total={filteredScreenshots.length}
+        onClose={() => setPreview(null)}
+        onPrev={() => navigatePreview('prev')}
+        onNext={() => navigatePreview('next')}
+      />
 
       {ocrDialog && (
         <div className="ocr-dialog-overlay" onClick={() => setOcrDialog(null)}>
