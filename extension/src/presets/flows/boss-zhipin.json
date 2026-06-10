@@ -49,7 +49,35 @@
           "id": "bf_1780650562538_qeap8",
           "kind": "flow",
           "name": "依次点击",
-          "steps": []
+          "steps": [
+            {
+              "children": [],
+              "id": "step_1781074507704_qm3tp",
+              "itemActions": [
+                {
+                  "id": "step_1781074525404_5o0",
+                  "label": "点击：08:01\n                 吴亮鸿 装配工程师",
+                  "selector": {
+                    "cssSelector": "div#_406151-0",
+                    "relativeSelector": ":scope > div:nth-child(1) > div:nth-child(1)",
+                    "text": "08:01\n                 吴亮鸿 装配工程师     我对您发布的这个职位很感兴趣，能否见面详聊呢？"
+                  },
+                  "type": "click"
+                },
+                {
+                  "id": "step_1781076716622_u1j5u",
+                  "type": "call_flow",
+                  "label": "嵌入流程：查看详情",
+                  "flowRef": "bf_1780635596137_sll6d"
+                }
+              ],
+              "label": "逐项操作列表：div#container > div:nth-child(1) > div >",
+              "selector": {
+                "cssSelector": "div#container > div:nth-child(1) > div > div:nth-child(2) > div:nth-child(2) > div:nth-child(1) > div:nth-child(2) > div > div:nth-child(2) > div"
+              },
+              "type": "loop_items"
+            }
+          ]
         },
         {
           "kind": "flow",
