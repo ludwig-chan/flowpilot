@@ -102,7 +102,7 @@ async function saveViaBridge(
   dataUrl: string,
   filename: string,
   ctx: RunContext,
-): Promise<{ ok: boolean; path?: string; error?: string }> {
+): Promise<{ ok: boolean; id?: string; filename?: string; path?: string; error?: string }> {
   try {
     const saved = await chrome.runtime.sendMessage({
       type: MSG.SAVE_SCREENSHOT,
@@ -110,7 +110,7 @@ async function saveViaBridge(
       runId: ctx.runId, runStartedAt: ctx.runStartedAt,
       flowId: ctx.flowId, flowName: ctx.flowName,
       sourceUrl: location.href, sourceTitle: document.title,
-    }) as { ok: boolean; path?: string; error?: string } | undefined
+    }) as { ok: boolean; id?: string; filename?: string; path?: string; error?: string } | undefined
     return saved ?? { ok: false, error: '桥接服务未响应' }
   } catch (err) {
     return { ok: false, error: (err as Error).message }
@@ -361,6 +361,11 @@ async function executeLoopItemAction(
       const saved = await saveViaBridge(dataUrl, filename, ctx)
       if (saved.ok) {
         ctx.screenshotCount++
+        const varKey = action.value?.trim()
+        if (varKey) {
+          ctx.variables[varKey] = saved.id ?? saved.path ?? filename
+          ctx.onLog(`  截图变量 → {{${varKey}}}`)
+        }
         ctx.onLog(`  已保存 → ${saved.path ?? filename}（${Math.round(dataUrl.length * 0.75 / 1024)} KB）`)
       } else {
         ctx.onLog(`  [降级] 本地截图服务失败：${saved.error ?? '本地截图服务未返回保存结果'}`)
@@ -649,6 +654,11 @@ async function handleSaveCanvas(
 
   if (saved.ok) {
     ctx.screenshotCount++
+    const varKey = step.value?.trim()
+    if (varKey) {
+      ctx.variables[varKey] = saved.id ?? saved.path ?? filename
+      onLog(`  截图变量 → {{${varKey}}}`)
+    }
     onLog(`  已保存 → ${saved.path ?? filename}（${Math.round(dataUrl.length * 0.75 / 1024)} KB）`)
   } else {
     onLog(`  [降级] 本地截图服务失败：${saved.error ?? '本地截图服务未返回保存结果'}`)

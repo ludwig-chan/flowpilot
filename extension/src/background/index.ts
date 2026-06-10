@@ -193,14 +193,14 @@ function handleSaveScreenshot(msg: any, _s: any, sr: (r: unknown) => void): true
         }),
       }, 30_000)
       const body = await res.json().catch(() => ({ ok: false, error: `HTTP ${res.status}` })) as
-        { ok?: boolean; path?: string; error?: string }
+        { ok?: boolean; id?: string; filename?: string; path?: string; error?: string }
 
       if (!res.ok || !body.ok) {
         sr({ ok: false, error: body.error ?? `HTTP ${res.status}` })
         return
       }
 
-      sr({ ok: true, path: body.path })
+      sr({ ok: true, id: body.id, filename: body.filename, path: body.path })
     } catch (err) {
       sr({ ok: false, error: (err as Error).message })
     }

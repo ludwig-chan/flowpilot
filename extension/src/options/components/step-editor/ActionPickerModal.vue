@@ -9,6 +9,7 @@ interface ActionOption {
   type:              ActionType
   label:             string
   needValue:         boolean
+  valueLabel?:       string
   valuePlaceholder?: string
 }
 
@@ -46,7 +47,7 @@ const ACTION_GROUPS: ActionGroup[] = [
   {
     label: '数据 & 等待',
     options: [
-      { type: 'get_text',       label: '📋 获取文字', needValue: true,  valuePlaceholder: '存入变量名（如 myVar）' },
+      { type: 'get_text',       label: '📋 获取文字', needValue: true,  valueLabel: '变量名', valuePlaceholder: '如 title、name、status' },
       { type: 'wait_appear',    label: '⏳ 等待出现', needValue: false },
       { type: 'wait_disappear', label: '🕐 等待消失', needValue: false },
     ],
@@ -55,7 +56,7 @@ const ACTION_GROUPS: ActionGroup[] = [
     label: '页面',
     options: [
       { type: 'scroll_to',          label: '📜 滚动到',    needValue: false },
-      { type: 'save_canvas',        label: '📷 截图',      needValue: false },
+      { type: 'save_canvas',        label: '📷 截图',      needValue: true, valueLabel: '变量名', valuePlaceholder: '如 screenshot、cardImage' },
     ],
   },
 ]
@@ -166,7 +167,7 @@ function tryAction() {
           </select>
         </div>
         <div v-if="currentOpt.needValue" class="action-modal__value-row">
-          <span class="action-modal__value-label">值</span>
+          <span class="action-modal__value-label">{{ currentOpt.valueLabel || '值' }}</span>
           <BaseInput
             v-model="inputValue"
             :placeholder="currentOpt.valuePlaceholder"

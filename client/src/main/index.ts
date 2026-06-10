@@ -144,7 +144,7 @@ function saveScreenshotFile(
   dataUrl: string,
   filename: string,
   metadata: ScreenshotSaveMetadata = {}
-): { id: string; path: string } {
+): { id: string; filename: string; path: string } {
   if (!dataUrl.startsWith('data:image/png;base64,')) {
     throw new Error('仅支持 PNG data URL')
   }
@@ -154,7 +154,7 @@ function saveScreenshotFile(
   const base64 = dataUrl.replace(/^data:image\/png;base64,/, '')
   writeFileSync(filePath, Buffer.from(base64, 'base64'))
   const item = recordScreenshot(filePath, savedFilename, metadata)
-  return { id: item.id, path: filePath }
+  return { id: item.id, filename: item.filename, path: filePath }
 }
 
 function setCorsHeaders(res: ServerResponse, origin?: string): void {
@@ -256,7 +256,7 @@ function createScreenshotBridgeServer(): Server {
         if (mainWindow && !mainWindow.isDestroyed()) {
           mainWindow.webContents.send('screenshots-updated')
         }
-        sendJson(res, 200, { ok: true, id: saved.id, path: saved.path }, originValue)
+        sendJson(res, 200, { ok: true, id: saved.id, filename: saved.filename, path: saved.path }, originValue)
       } catch (err) {
         const message = (err as Error).message
         sendJson(res, message === '请求体过大' ? 413 : 400, { ok: false, error: message }, originValue)
