@@ -78,13 +78,7 @@ async function executeStep(step: FlowStep, ctx: RunContext): Promise<void> {
 
   // 元素查找器（闭包捕获 step / ctx / effectiveTimeout，包装为 ResolveFn）
   const resolveEl = async (strategy: SelectorStrategy): Promise<Element> => {
-    const isRelative = step.relativeSelector && ctx.context
-    const root: ParentNode = isRelative ? ctx.context! : document
-    const timeout = isRelative ? undefined : effectiveTimeout
-    let el = await resolveElementByStrategy(strategy, root, timeout)
-    if (!el && isRelative && ctx.context) {
-      try { if (ctx.context.matches(strategy.cssSelector)) el = ctx.context } catch { /* ignore */ }
-    }
+    const el = await resolveElementByStrategy(strategy, document, effectiveTimeout)
     if (!el) throw new Error(`等待元素超时（${effectiveTimeout}ms）：${strategy.cssSelector}`)
     if (step.foundDelay) await humanDelay(step.foundDelay[0], step.foundDelay[1])
     return el

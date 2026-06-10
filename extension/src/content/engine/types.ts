@@ -18,7 +18,6 @@ export interface RunContext {
   delayLevel: StepDelayLevel
   delayRange?: [number, number]
   depth: number
-  context?: Element
   signal: { stopped: boolean }
   flowCache?: Map<string, CachedFlow>
   runId: string

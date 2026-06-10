@@ -101,8 +101,6 @@ function onCancelSmartLoop() {
     <ActionPickerModal
       v-if="es.showActionModal && es.actionModalEl"
       :element="es.actionModalEl!"
-      :override-sel="es.actionModalOverrideSel"
-      :is-relative="es.actionModalIsRelative"
       :initial-type="es.editingInitialType"
       :initial-value="es.editingInitialValue"
       :initial-wait-timeout="es.editingInitialWaitTimeout"

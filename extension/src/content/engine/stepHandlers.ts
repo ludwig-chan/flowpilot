@@ -62,7 +62,7 @@ async function executeBranch(
     onLog(`  执行${condMet ? '成立' : '否则'}分支 (${branchSteps.length} 步)...`)
     for (const child of branchSteps) {
       if (signal.stopped) return
-      await runChild(child, { ...ctx, context: undefined, depth: ctx.depth + 1 })
+      await runChild(child, { ...ctx, depth: ctx.depth + 1 })
     }
   } else {
     onLog(`  条件${condMet ? '成立' : '不成立'}，无对应分支，跳过`)
@@ -281,7 +281,7 @@ async function handleLoopItems(
     if (hasChildSteps) {
       for (const child of step.children) {
         if (signal.stopped) return
-        await runChild(child, { ...ctx, context: item as Element, depth: ctx.depth + 1 })
+        await runChild(child, { ...ctx, depth: ctx.depth + 1 })
       }
     } else {
       simulateClick(item as HTMLElement)
@@ -343,7 +343,7 @@ async function handleCallFlow(
   onLog(`→ 嵌入执行：${subFlow.name}`)
   for (const s of subFlow.steps) {
     if (signal.stopped) return
-    await runChild(s, { ...ctx, context: undefined, depth: ctx.depth + 1 })
+    await runChild(s, { ...ctx, depth: ctx.depth + 1 })
   }
 }
 

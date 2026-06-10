@@ -42,7 +42,6 @@ export function useStepEditor(
       selector:   step.selector,
     }
     es.openActionModal(el, {
-      isRelative:         step.relativeSelector ?? false,
       initialType:        step.type,
       initialValue:       step.value,
       initialWaitTimeout: step.waitTimeout,
@@ -128,7 +127,6 @@ export function useStepEditor(
       selector:   childStep.selector,
     }
     es.openActionModal(el, {
-      isRelative:         childStep.relativeSelector ?? false,
       initialType:        childStep.type,
       initialValue:       childStep.value,
       initialWaitTimeout: childStep.waitTimeout,

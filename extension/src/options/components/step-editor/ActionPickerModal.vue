@@ -64,8 +64,6 @@ const ACTION_OPTIONS = ACTION_GROUPS.flatMap(g => g.options)
 
 const props = defineProps<{
   element:             SerializedElement
-  overrideSel?:        string
-  isRelative?:         boolean
   initialType?:        ActionType
   initialValue?:       string
   initialLabel?:       string
@@ -96,7 +94,7 @@ const showAdvanced      = ref(!!(props.initialWaitTimeout || props.initialFoundD
 
 const currentOpt = computed(() => ACTION_OPTIONS.find(o => o.type === selectedType.value)!)
 
-const displaySel = computed(() => props.overrideSel ?? props.element.selector.cssSelector)
+const displaySel = computed(() => props.element.selector.cssSelector)
 const autoLabel  = computed(() => {
   const action = currentOpt.value.label.replace(/^\S+\s*/, '')
   const quoted = props.element.label.match(/"(.+)"/)
@@ -110,17 +108,13 @@ const autoLabel  = computed(() => {
 })
 
 function buildStep(): FlowStep {
-  const sel   = props.overrideSel
-    ? { ...props.element.selector, cssSelector: props.overrideSel }
-    : props.element.selector
   const [fdMin, fdMax] = stepFoundDelay.value
   return {
     id:               `step_${Date.now()}_${Math.random().toString(36).slice(2, 5)}`,
     type:             selectedType.value,
     label:            stepLabel.value.trim() || autoLabel.value,
-    selector:         sel,
+    selector:         props.element.selector,
     value:            inputValue.value.trim() || undefined,
-    relativeSelector: props.isRelative || undefined,
     waitTimeout:      stepWaitTimeout.value || undefined,
     foundDelay:       ((fdMin ?? 0) > 0 || (fdMax ?? 0) > 0) ? [fdMin ?? 0, fdMax ?? 0] : undefined,
   }
@@ -144,7 +138,6 @@ function tryAction() {
       <div class="action-modal__sel">
         <span class="action-modal__sel-label">选中元素：</span>
         <code class="action-modal__sel-code" :title="displaySel">{{ displaySel }}</code>
-        <span v-if="isRelative" class="action-modal__rel-badge">相对路径</span>
         <BaseButton
           class="action-modal__repick-btn"
           title="重新选择元素"
@@ -238,11 +231,6 @@ function tryAction() {
     overflow-x: auto; white-space: nowrap; flex: 1; min-width: 0;
     scrollbar-width: thin; scrollbar-color: $color-surface-2 transparent;
   }
-  &__rel-badge {
-    font-size: 10px; background: $color-focus-bg; color: $color-blue;
-    padding: 1px 6px; border-radius: 99px; flex-shrink: 0;
-  }
-
   &__repick-btn { font-size: 11px; padding: 2px 8px; flex-shrink: 0; }
 
   &__body {

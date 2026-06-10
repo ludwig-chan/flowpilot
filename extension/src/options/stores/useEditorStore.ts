@@ -18,8 +18,6 @@ export const useEditorStore = defineStore('editor', () => {
   // ── Action Modal 共享状态 ────────────────────────────────────────
   const showActionModal        = ref(false)
   const actionModalEl          = ref<SerializedElement | null>(null)
-  const actionModalOverrideSel = ref<string | undefined>(undefined)
-  const actionModalIsRelative  = ref(false)
 
   const editingStepIdx            = ref<number | null>(null)
   const editingInitialType        = ref<ActionType | undefined>(undefined)
@@ -37,8 +35,6 @@ export const useEditorStore = defineStore('editor', () => {
   function openActionModal(
     el: SerializedElement,
     opts: {
-      overrideSel?: string
-      isRelative?: boolean
       initialType?: ActionType
       initialValue?: string
       initialWaitTimeout?: number
@@ -46,9 +42,7 @@ export const useEditorStore = defineStore('editor', () => {
       initialLabel?: string
     } = {},
   ) {
-    actionModalEl.value          = el
-    actionModalOverrideSel.value = opts.overrideSel
-    actionModalIsRelative.value  = opts.isRelative ?? false
+    actionModalEl.value = el
     if (opts.initialType !== undefined)        editingInitialType.value        = opts.initialType
     if (opts.initialValue !== undefined)       editingInitialValue.value       = opts.initialValue
     if (opts.initialWaitTimeout !== undefined) editingInitialWaitTimeout.value = opts.initialWaitTimeout
@@ -71,8 +65,6 @@ export const useEditorStore = defineStore('editor', () => {
     // action modal
     showActionModal.value           = false
     actionModalEl.value             = null
-    actionModalOverrideSel.value    = undefined
-    actionModalIsRelative.value     = false
     editingStepIdx.value            = null
     editingInitialType.value        = undefined
     editingInitialValue.value       = undefined
@@ -95,8 +87,6 @@ export const useEditorStore = defineStore('editor', () => {
     // action modal
     showActionModal,
     actionModalEl,
-    actionModalOverrideSel,
-    actionModalIsRelative,
     editingStepIdx,
     editingInitialType,
     editingInitialValue,
