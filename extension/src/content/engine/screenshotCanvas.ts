@@ -217,20 +217,23 @@ export async function screenshotCanvas(
         // 路径①b：外层滚动容器分块（canvas 是虚拟渲染器，随外层滚动重绘内容）
         const clientH       = outerScrollEl.clientHeight
         const totalH        = outerScrollEl.scrollHeight
-        const steps         = Math.ceil(totalH / clientH)
         const origScrollTop = outerScrollEl.scrollTop
         const iframeRect0   = iframeEl!.getBoundingClientRect()
         const canvasRect0   = canvas.getBoundingClientRect()
         const cssW          = canvasRect0.width
         const cssH          = canvasRect0.height
+        const maxScrollTop  = Math.max(0, totalH - clientH)
+        const maxSteps      = Math.ceil(totalH / Math.max(1, Math.min(clientH, window.innerHeight))) + 20
 
-        onLog(`  [方案B路径①b] 外层容器 clientH=${Math.round(clientH)} totalH=${Math.round(totalH)} steps=${steps} dpr=${dpr}`)
+        onLog(`  [方案B路径①b] 外层容器 clientH=${Math.round(clientH)} totalH=${Math.round(totalH)} maxScrollTop=${Math.round(maxScrollTop)} dpr=${dpr}`)
         onLog(`  [方案B路径①b] canvas 固定裁剪坐标 @(${Math.round(iframeRect0.left + canvasRect0.left)},${Math.round(iframeRect0.top + canvasRect0.top)}) 尺寸=${Math.round(cssW)}×${Math.round(cssH)}`)
 
         const out    = document.createElement('canvas')
         out.width    = Math.round(cssW   * dpr)
         out.height   = Math.round(totalH * dpr)
         const outCtx = out.getContext('2d')!
+        outCtx.fillStyle = '#ffffff'
+        outCtx.fillRect(0, 0, out.width, out.height)
 
         // 等待 scrollTop 稳定（处理 CSS smooth-scroll 动画，最多 800ms）
         const waitScrollStable = (target: number): Promise<number> =>
@@ -248,11 +251,14 @@ export async function screenshotCanvas(
             setTimeout(poll, 50)
           })
 
-        for (let step = 0; step < steps; step++) {
-          const targetScrollTop = Math.min(step * clientH, totalH - clientH)
-          const actualScrollTop = await waitScrollStable(targetScrollTop)
+        let step = 0
+        let targetScrollTop = 0
+        let coveredUntil = 0
+
+        while (step < maxSteps) {
+          const requestedScrollTop = Math.min(Math.max(0, targetScrollTop), maxScrollTop)
+          const actualScrollTop = await waitScrollStable(requestedScrollTop)
           await waitForScrollRender()
-          const tileH           = Math.min(clientH, totalH - actualScrollTop)
           const iframeRect      = iframeEl!.getBoundingClientRect()
           const canvasRect      = canvas.getBoundingClientRect()
           const absLeft         = iframeRect.left + canvasRect.left
@@ -260,15 +266,22 @@ export async function screenshotCanvas(
           const srcLeft         = Math.max(absLeft, 0)
           const srcTop          = Math.max(absTop, 0)
           const srcRight        = Math.min(absLeft + cssW, window.innerWidth)
-          const srcBottom       = Math.min(absTop + tileH, window.innerHeight)
+          const destX           = srcLeft - absLeft
+          const destY           = Math.max(0, actualScrollTop + (srcTop - absTop))
+          const remainingH      = Math.max(0, totalH - destY)
+          const srcBottom       = Math.min(absTop + cssH, window.innerHeight, srcTop + remainingH)
           const visibleW        = Math.max(0, srcRight - srcLeft)
           const visibleH        = Math.max(0, srcBottom - srcTop)
-          const destX           = srcLeft - absLeft
-          const destY           = actualScrollTop + (srcTop - absTop)
+          const overlap         = Math.min(120, Math.max(40, Math.floor(Math.max(visibleH, 1) * 0.15)))
+          const nextScrollTop   = Math.min(maxScrollTop, Math.max(actualScrollTop + 1, destY + visibleH - overlap))
 
-          onLog(`  [方案B路径①b] 步骤${step + 1}/${steps} scrollTop=${Math.round(actualScrollTop)} absTop=${Math.round(absTop)} tileH=${Math.round(tileH)}`)
+          step++
+          onLog(`  [方案B路径①b] 步骤${step} target=${Math.round(requestedScrollTop)} actual=${Math.round(actualScrollTop)} absTop=${Math.round(absTop)} visibleH=${Math.round(visibleH)} destY=${Math.round(destY)} next=${Math.round(nextScrollTop)} overlap=${Math.round(overlap)}`)
           if (visibleW <= 0 || visibleH <= 0) {
-            onLog(`  [方案B路径①b] 步骤${step + 1} canvas 不在视口内，跳过`); continue
+            if (requestedScrollTop >= maxScrollTop) break
+            targetScrollTop = Math.min(maxScrollTop, requestedScrollTop + Math.max(1, Math.floor(clientH / 2)))
+            onLog(`  [方案B路径①b] 步骤${step} canvas 不在视口内，推进到 ${Math.round(targetScrollTop)}`)
+            continue
           }
 
           const img = await captureVisibleTabAsImage()
@@ -279,10 +292,19 @@ export async function screenshotCanvas(
             Math.round(destX    * dpr), Math.round(destY    * dpr),
             Math.round(visibleW * dpr), Math.round(visibleH * dpr),
           )
+
+          coveredUntil = Math.max(coveredUntil, destY + visibleH)
+          if (coveredUntil >= totalH - 1 || requestedScrollTop >= maxScrollTop) break
+          if (nextScrollTop <= requestedScrollTop) {
+            onLog(`  [方案B路径①b] 检测到滚动推进不足，停止以避免死循环 coveredUntil=${Math.round(coveredUntil)}`)
+            break
+          }
+          targetScrollTop = nextScrollTop
         }
+        if (step >= maxSteps) onLog(`  [方案B路径①b] 达到最大步数 ${maxSteps}，提前结束`)
         outerScrollEl.scrollTop = origScrollTop
         dataUrl = out.toDataURL('image/png')
-        onLog(`  [方案B路径①b] 拼接完成，输出约 ${Math.round(dataUrl.length * 0.75 / 1024)} KB`)
+        onLog(`  [方案B路径①b] 拼接完成，覆盖到 ${Math.round(coveredUntil)}/${Math.round(totalH)}，输出约 ${Math.round(dataUrl.length * 0.75 / 1024)} KB`)
 
       } else {
         // 路径②：无滚动容器 → window.scrollTo 分块（主页面超长 canvas）
