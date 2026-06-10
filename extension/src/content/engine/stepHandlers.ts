@@ -6,7 +6,7 @@ import { toLocalTimeString } from '@shared/utils/time'
 import { screenshotCanvas } from './screenshotCanvas'
 import { screenshotElement } from './screenshotElement'
 import { waitForElementToDisappear } from './domResolver'
-import { humanDelay, simulateClick, findScrollContainer, sleep, randomPosInRect } from './eventSimulator'
+import { humanDelay, simulateClickAsync, dispatchDoubleClickAsync, dispatchRightClickAsync, dispatchHoverAsync, findScrollContainer, sleep, randomPosInRect } from './eventSimulator'
 import { interpolate, evalCondition, evalMultiCondition } from './conditionEval'
 
 // ─── 内部工具 ──────────────────────────────────────────────────────────────────
@@ -242,45 +242,7 @@ function stopLoopIfNeeded(step: FlowStep, ctx: RunContext): boolean {
   return true
 }
 
-function dispatchDoubleClick(el: HTMLElement): void {
-  simulateClick(el)
-  const rect = el.getBoundingClientRect()
-  const { x, y } = randomPosInRect(rect)
-  el.dispatchEvent(new MouseEvent('dblclick', {
-    bubbles: true, cancelable: true, detail: 2,
-    clientX: x, clientY: y,
-    screenX: window.screenX + x, screenY: window.screenY + y,
-    view: window, button: 0, buttons: 0,
-  }))
-}
-
-function dispatchRightClick(el: HTMLElement): void {
-  const rect = el.getBoundingClientRect()
-  const { x, y } = randomPosInRect(rect)
-  const opts: MouseEventInit = {
-    bubbles: true, cancelable: true,
-    clientX: x, clientY: y,
-    screenX: window.screenX + x, screenY: window.screenY + y,
-    view: window, button: 2, buttons: 2,
-  }
-  el.dispatchEvent(new MouseEvent('mousedown',   opts))
-  el.dispatchEvent(new MouseEvent('mouseup',     opts))
-  el.dispatchEvent(new MouseEvent('contextmenu', opts))
-}
-
-function dispatchHover(el: HTMLElement): void {
-  const rect = el.getBoundingClientRect()
-  const { x, y } = randomPosInRect(rect)
-  const opts: MouseEventInit = {
-    bubbles: true, cancelable: true,
-    clientX: x, clientY: y,
-    screenX: window.screenX + x, screenY: window.screenY + y,
-    view: window,
-  }
-  el.dispatchEvent(new MouseEvent('mouseenter', { ...opts, bubbles: false }))
-  el.dispatchEvent(new MouseEvent('mouseover',  opts))
-  el.dispatchEvent(new MouseEvent('mousemove',  opts))
-}
+// dispatchDoubleClick / dispatchRightClick / dispatchHover 已由 eventSimulator.ts 的 async 版本替代
 
 async function waitForLoopTargetToDisappear(item: Element, relativeSelector?: string, timeout = 10000): Promise<void> {
   if (!relativeSelector) return
@@ -325,16 +287,16 @@ async function executeLoopItemAction(
 
   switch (action.type) {
     case 'click':
-      simulateClick(el)
+      await simulateClickAsync(el)
       break
     case 'double_click':
-      dispatchDoubleClick(el)
+      await dispatchDoubleClickAsync(el)
       break
     case 'right_click':
-      dispatchRightClick(el)
+      await dispatchRightClickAsync(el)
       break
     case 'hover':
-      dispatchHover(el)
+      await dispatchHoverAsync(el)
       break
     case 'focus':
       el.focus()
@@ -430,7 +392,7 @@ async function executeLoopItemAction(
 
 async function handleClick(step: FlowStep, _ctx: RunContext, resolve: ResolveFn): Promise<void> {
   const el = await resolve(step.selector!) as HTMLElement
-  simulateClick(el)
+  await simulateClickAsync(el)
 }
 
 async function handleFocus(step: FlowStep, _ctx: RunContext, resolve: ResolveFn): Promise<void> {
@@ -479,45 +441,17 @@ async function handleGetText(step: FlowStep, ctx: RunContext, resolve: ResolveFn
 
 async function handleHover(step: FlowStep, _ctx: RunContext, resolve: ResolveFn): Promise<void> {
   const el = await resolve(step.selector!) as HTMLElement
-  const rect = el.getBoundingClientRect()
-  const { x, y } = randomPosInRect(rect)
-  const opts: MouseEventInit = {
-    bubbles: true, cancelable: true,
-    clientX: x, clientY: y,
-    screenX: window.screenX + x, screenY: window.screenY + y,
-    view: window,
-  }
-  el.dispatchEvent(new MouseEvent('mouseenter', { ...opts, bubbles: false }))
-  el.dispatchEvent(new MouseEvent('mouseover',  opts))
-  el.dispatchEvent(new MouseEvent('mousemove',  opts))
+  await dispatchHoverAsync(el)
 }
 
 async function handleDoubleClick(step: FlowStep, _ctx: RunContext, resolve: ResolveFn): Promise<void> {
   const el = await resolve(step.selector!) as HTMLElement
-  simulateClick(el)
-  const rect = el.getBoundingClientRect()
-  const { x, y } = randomPosInRect(rect)
-  el.dispatchEvent(new MouseEvent('dblclick', {
-    bubbles: true, cancelable: true, detail: 2,
-    clientX: x, clientY: y,
-    screenX: window.screenX + x, screenY: window.screenY + y,
-    view: window, button: 0, buttons: 0,
-  }))
+  await dispatchDoubleClickAsync(el)
 }
 
 async function handleRightClick(step: FlowStep, _ctx: RunContext, resolve: ResolveFn): Promise<void> {
   const el = await resolve(step.selector!) as HTMLElement
-  const rect = el.getBoundingClientRect()
-  const { x, y } = randomPosInRect(rect)
-  const opts: MouseEventInit = {
-    bubbles: true, cancelable: true,
-    clientX: x, clientY: y,
-    screenX: window.screenX + x, screenY: window.screenY + y,
-    view: window, button: 2, buttons: 2,
-  }
-  el.dispatchEvent(new MouseEvent('mousedown',   opts))
-  el.dispatchEvent(new MouseEvent('mouseup',     opts))
-  el.dispatchEvent(new MouseEvent('contextmenu', opts))
+  await dispatchRightClickAsync(el)
 }
 
 async function handlePressKey(step: FlowStep, _ctx: RunContext, resolve: ResolveFn): Promise<void> {
