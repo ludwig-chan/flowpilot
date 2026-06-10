@@ -83,6 +83,30 @@ export function filterNodesByIds(nodes: FlowNode[], ids: Set<string>): FlowNode[
   return result
 }
 
+/** 递归剥离 builtin/customized/targetTabId 等内部标记，使导出数据干净可导入 */
+function stripBuiltinMarkers(nodes: FlowNode[]): FlowNode[] {
+  return nodes.map(n => {
+    if (n.kind === 'folder') {
+      return {
+        id: n.id, kind: 'folder', name: n.name,
+        children: stripBuiltinMarkers(n.children),
+      } as FlowFolder
+    }
+    const flow = n as LocalFlow
+    return {
+      id:             flow.id,
+      kind:           'flow',
+      name:           flow.name,
+      steps:          flow.steps,
+      stepDelayLevel: flow.stepDelayLevel,
+      stepDelayRange: flow.stepDelayRange,
+      waitTimeout:    flow.waitTimeout,
+      pinnedInMenu:   flow.pinnedInMenu,
+      trigger:        flow.trigger,
+    } as LocalFlow
+  })
+}
+
 function collectFlowRefs(steps: FlowStep[], refs: Set<string>) {
   for (const step of steps) {
     if (step.type === 'call_flow' && step.flowRef) refs.add(step.flowRef)
@@ -336,9 +360,9 @@ export const useFlowStore = defineStore('flows', () => {
   }
 
   function exportNode(id: string): ExportPayload | null {
-    const node = findNode(tree.value, id)
+    const node = findNode(displayTree.value, id)
     if (!node) return null
-    return { version: 1, exportedAt: toLocalTimeString(), nodes: [JSON.parse(JSON.stringify(node))] }
+    return { version: 1, exportedAt: toLocalTimeString(), nodes: stripBuiltinMarkers([JSON.parse(JSON.stringify(node))]) }
   }
 
   async function importInto(payload: ExportPayload, parentId?: string): Promise<number> {
@@ -357,13 +381,13 @@ export const useFlowStore = defineStore('flows', () => {
     while (queue.length > 0) {
       const id = queue.shift()
       if (!id) continue
-      const node = findNode(tree.value, id)
+      const node = findNode(displayTree.value, id)
       if (!node || node.kind !== 'flow') continue
 
       const refs = new Set<string>()
       collectFlowRefs(node.steps, refs)
       for (const refId of refs) {
-        if (expanded.has(refId) || !findNode(tree.value, refId)) continue
+        if (expanded.has(refId) || !findNode(displayTree.value, refId)) continue
         expanded.add(refId)
         queue.push(refId)
       }
@@ -377,7 +401,7 @@ export const useFlowStore = defineStore('flows', () => {
     return {
       version:    1,
       exportedAt: toLocalTimeString(),
-      nodes:      filterNodesByIds(tree.value, expandedIds),
+      nodes:      stripBuiltinMarkers(filterNodesByIds(displayTree.value, expandedIds)),
     }
   }
 

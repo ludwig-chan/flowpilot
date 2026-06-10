@@ -78,7 +78,7 @@ const {
     <!-- 导出弹窗 -->
     <ExportModal
       :visible="showExportModal"
-      :tree="flowStore.tree"
+      :tree="flowStore.displayTree"
       @export="handleExportSelected"
       @close="showExportModal = false"
     />

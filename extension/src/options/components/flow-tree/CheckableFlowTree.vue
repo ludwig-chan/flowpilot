@@ -55,8 +55,9 @@ function handleChange(node: FlowNode, checked: boolean) {
           <BaseButton class="cft-arrow" @click.stop="toggle(node.id)">
             {{ collapsed.has(node.id) ? '▶' : '▼' }}
           </BaseButton>
-          <span class="cft-icon">📁</span>
+          <span class="cft-icon">{{ node.builtin ? '📦' : '📁' }}</span>
           <span class="cft-name">{{ node.name }}</span>
+          <span v-if="node.builtin" class="cft-badge cft-badge--preset">预设</span>
           <span class="cft-count">{{ (node as FlowFolder).children.length }}</span>
         </div>
         <CheckableFlowTree
@@ -81,6 +82,8 @@ function handleChange(node: FlowNode, checked: boolean) {
         <span class="cft-arrow-placeholder" />
         <span class="cft-icon cft-icon--flow">▶</span>
         <span class="cft-name">{{ node.name }}</span>
+        <span v-if="node.builtin" class="cft-badge cft-badge--preset">预设</span>
+        <span v-if="node.builtin && (node as LocalFlow).customized" class="cft-badge cft-badge--custom">已修改</span>
         <span class="cft-count">{{ (node as LocalFlow).steps.length }} 步</span>
       </div>
 
@@ -107,4 +110,7 @@ function handleChange(node: FlowNode, checked: boolean) {
 .cft-icon--flow   { font-size: 10px; color: #a6e3a1; }
 .cft-name         { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; color: #cdd6f4; }
 .cft-count        { font-size: 11px; color: #6c7086; flex-shrink: 0; }
+.cft-badge        { font-size: 10px; padding: 1px 5px; border-radius: 3px; flex-shrink: 0; }
+.cft-badge--preset { background: #45475a; color: #bac2de; }
+.cft-badge--custom { background: #28435f; color: #89b4fa; }
 </style>
