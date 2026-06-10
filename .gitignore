@@ -7,6 +7,8 @@ client/node_modules/
 client/resources/extension/
 extension/dist/
 extension/node_modules/
+server/dist/
+server/*.log
 
 # 打包文件
 web/flowpilot.zip

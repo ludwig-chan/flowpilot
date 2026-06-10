@@ -58,7 +58,7 @@ const {
   editStep, cancelActionModal, onActionConfirm, editBranchStep,
   showSmartLoopModal, smartLoopCandidates, smartLoopPickedEl,
   openSmartLoopPicker, onSmartLoopConfirm,
-  onElementPicked, onActionRePick, openPicker, closePicker,
+  onElementPicked, onActionRePick, openPicker, closePicker, scanPickerDom, togglePickerPickMode,
   onLoopAddChild, onActionTry, onTestAction,
   showLoopCallFlowPicker, onLoopAddCallFlow, onLoopConfirmCallFlow,
   onLoopAddCondition:        _onLoopAddConditionRaw,
@@ -68,7 +68,7 @@ const {
   onLoopAddBranchCondition:  _onLoopAddBranchConditionRaw,
   onLoopEditBranchChild,
   addElementBranch,
-} = usePickerOrchestrator(editingFlow, activeTabId, requireTab, pickedCssSelector, pickMode, scanDom, domScanning, domTree, scopeCanonicalSelector)
+} = usePickerOrchestrator(editingFlow, activeTabId, requireTab, pickedCssSelector, pickMode, scanDom, togglePickMode, domScanning, domTree, scopeCanonicalSelector)
 
 const {
   removeStep, addDelayStep, editDelayStep, onDelayConfirm,
@@ -159,7 +159,7 @@ onUnmounted(() => bridge.off(mutationHandler))
 provide(STEP_EDITOR_MODALS_KEY, {
   // useDomPicker
   domTree, domFilter, domScanning, domMutated, domTabTitle,
-  pickMode, pickedCssSelector, scanDom, togglePickMode,
+  pickMode, pickedCssSelector, scanDom: scanPickerDom, togglePickMode: togglePickerPickMode,
   // usePickerOrchestrator
   showPickerModal, closePicker, onElementPicked, onTestAction,
   showSmartLoopModal, smartLoopCandidates, smartLoopPickedEl, onSmartLoopConfirm,

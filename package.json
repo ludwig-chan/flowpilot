@@ -6,6 +6,9 @@
     "build:ext": "cd extension && npm run build",
     "deploy:ext": "cd extension && npm run deploy",
     "build:client": "cd client && npm run build:win",
+    "dev:server": "cd server && npm run dev",
+    "build:server": "cd server && npm run build",
+    "start:server": "cd server && npm run start",
     "release": "node release.mjs"
   }
 }

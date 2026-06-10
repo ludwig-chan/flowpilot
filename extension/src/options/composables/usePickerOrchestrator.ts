@@ -18,6 +18,7 @@ export function usePickerOrchestrator(
   pickedCssSelector: Ref<string>,
   pickMode: Ref<boolean>,
   scanDom: (scope?: string) => void,
+  togglePickMode: (scope?: string) => void,
   domScanning: Ref<boolean>,
   domTree: Ref<SerializedDomNode[]>,
   scopeCanonicalSelector: Ref<string | undefined>,
@@ -25,6 +26,7 @@ export function usePickerOrchestrator(
   const bridge = useBridge()
   const es = useEditorStore()
   const showPickerModal = ref(false)
+  const pickerScope = ref<string | undefined>(undefined)
 
   // ── useLoopEditor ─────────────────────────────────────────────────
   const {
@@ -136,6 +138,7 @@ export function usePickerOrchestrator(
   async function openPicker() {
     if (!editingFlow.value) { await showAlert('请先打开一个流程'); return }
     requireTab(() => {
+      pickerScope.value = undefined
       pickedCssSelector.value = ''
       showPickerModal.value = true
       scanDom()
@@ -163,18 +166,32 @@ export function usePickerOrchestrator(
   function closePicker() {
     showPickerModal.value = false
     pickedCssSelector.value = ''
+    pickerScope.value = undefined
     reselectingLoopList.value = false
     if (pickMode.value) { pickMode.value = false; bridge.cancelPickElement() }
   }
 
+  function openPickerInScope(scope?: string) {
+    pickerScope.value = scope
+    showPickerModal.value = true
+  }
+
+  function scanPickerDom() {
+    scanDom(pickerScope.value)
+  }
+
+  function togglePickerPickMode() {
+    togglePickMode(pickerScope.value)
+  }
+
   function onLoopReselect(currentState: FlowStep) {
     reselectingLoopList.value = true
-    _onLoopReselectRaw(currentState, () => { showPickerModal.value = true })
+    _onLoopReselectRaw(currentState, openPickerInScope)
   }
 
   /** EditLoopModal "添加操作" wrapper */
   function onLoopAddChild(currentState: FlowStep) {
-    _onLoopAddChildRaw(currentState, () => { showPickerModal.value = true })
+    _onLoopAddChildRaw(currentState, openPickerInScope)
   }
 
   /** EditLoopModal 编辑子步骤 wrapper（支持条件类型，需传入 openConditionModal） */
@@ -189,7 +206,7 @@ export function usePickerOrchestrator(
 
   /** 分支内添加元素 wrapper */
   function onLoopAddBranchChild(condChildId: string, branch: 'if' | 'else', currentState: FlowStep) {
-    _onLoopAddBranchChildRaw(condChildId, branch, currentState, () => { showPickerModal.value = true })
+    _onLoopAddBranchChildRaw(condChildId, branch, currentState, openPickerInScope)
   }
 
   /** 分支内添加条件 wrapper（需传入 openConditionModal） */
@@ -231,6 +248,7 @@ export function usePickerOrchestrator(
     openSmartLoopPicker, onSmartLoopConfirm,
     // Wrappers
     onElementPicked, onActionRePick, openPicker, closePicker,
+    scanPickerDom, togglePickerPickMode,
     onLoopAddChild, onLoopEditChild, onActionTry, onTestAction,
     // 循环嵌入流程
     showLoopCallFlowPicker, onLoopAddCallFlow, onLoopConfirmCallFlow,

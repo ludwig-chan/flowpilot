@@ -9,7 +9,7 @@ import { genId } from '@shared/utils/genId'
 
 export function useLoopEditor(
   editingFlow: Ref<LocalFlow | null>,
-  scanDom: () => void,
+  scanDom: (scope?: string) => void,
   pickedCssSelector: Ref<string>,
   scopeCanonicalSelector: Ref<string | undefined>,
 ) {
@@ -50,14 +50,15 @@ export function useLoopEditor(
   }
 
   /** EditLoopModal "添加操作" → 保存当前状态，打开元素选择器 */
-  function onLoopAddChild(currentState: FlowStep, openPickerModal: () => void) {
+  function onLoopAddChild(currentState: FlowStep, openPickerModal: (scope?: string) => void) {
     es.editingLoopStep    = currentState
     es.addingToLoopChild  = true
     es.addingToLoopBranch = null
     es.showEditLoopModal  = false
     pickedCssSelector.value = ''
-    openPickerModal()
-    scanDom()
+    const scope = currentState.selector?.cssSelector
+    openPickerModal(scope)
+    scanDom(scope)
   }
 
   /** EditLoopModal 编辑子步骤 → 打开 ActionPickerModal / CallFlowPicker / ConditionModal */
@@ -214,15 +215,16 @@ export function useLoopEditor(
     condChildId: string,
     branch: 'if' | 'else',
     currentState: FlowStep,
-    openPickerModal: () => void,
+    openPickerModal: (scope?: string) => void,
   ) {
     es.editingLoopStep    = currentState
     es.addingToLoopBranch = { condChildId, branch }
     es.addingToLoopChild  = true
     es.showEditLoopModal  = false
     pickedCssSelector.value = ''
-    openPickerModal()
-    scanDom()
+    const scope = currentState.selector?.cssSelector
+    openPickerModal(scope)
+    scanDom(scope)
   }
 
   /** EditLoopModal 分支内嵌入流程 */
