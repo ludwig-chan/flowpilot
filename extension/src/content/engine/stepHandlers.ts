@@ -125,24 +125,10 @@ function downloadFallback(dataUrl: string, filename: string, onLog: (s: string) 
 
 // ─── 步骤处理器 ────────────────────────────────────────────────────────────────
 
-function isDynamicId(id: string): boolean {
-  return id.split(/[-_]/).some(seg => seg.length >= 5 && /[a-z]/i.test(seg) && /[0-9]/.test(seg))
-}
-
 function selectorSegment(el: Element): string {
-  let seg = el.tagName.toLowerCase()
-  if (el.id && !isDynamicId(el.id)) return `${seg}#${CSS.escape(el.id)}`
-
-  const classes = [...el.classList]
-    .filter(cls => cls && !/\d{4,}/.test(cls))
-    .slice(0, 2)
-  if (classes.length) seg += classes.map(cls => `.${CSS.escape(cls)}`).join('')
-
   const siblings = el.parentElement ? [...el.parentElement.children] : []
-  const sameTag = siblings.filter(s => s.tagName === el.tagName)
-  if (sameTag.length > 1) seg += `:nth-child(${siblings.indexOf(el) + 1})`
-
-  return seg
+  const idx = siblings.indexOf(el) + 1
+  return `${el.tagName.toLowerCase()}:nth-child(${idx})`
 }
 
 function buildRelativeSelector(root: Element, target: Element): string | null {

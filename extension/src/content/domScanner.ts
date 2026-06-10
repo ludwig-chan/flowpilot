@@ -65,6 +65,10 @@ export function buildSerializedTree(scope?: string): SerializedDomNode[] {
   const MAX_DEPTH = 30
   const MAX_NODES = 5000
   let nodeCount = 0
+  let scopeRoot: Element | null = null
+  if (scope) {
+    try { scopeRoot = document.querySelector(scope) } catch { /* 非法选择器，回退到 body */ }
+  }
 
   const walk = (el: Element, depth: number, iframeEl: HTMLIFrameElement | null = null): SerializedDomNode | null => {
     if (EXCLUDE_TAGS.has(el.tagName)) return null
@@ -84,7 +88,7 @@ export function buildSerializedTree(scope?: string): SerializedDomNode[] {
       tag:      tagLower,
       id:       el.id ?? '',
       classes:  typeof el.className === 'string' ? el.className : '',
-      item:     serializeElement(el, iframeEl),
+      item:     serializeElement(el, iframeEl, scopeRoot ?? undefined),
       children: [],
       w:       cr.width  > 0 ? Math.round(cr.width)  : undefined,
       h:       cr.height > 0 ? Math.round(cr.height) : undefined,
@@ -131,9 +135,7 @@ export function buildSerializedTree(scope?: string): SerializedDomNode[] {
 
   // 确定扫描起始点：有 scope → 从 scope 元素开始；否则从 body 开始
   let startEls: Element[] = []
-  if (scope) {
-    try { const el = document.querySelector(scope); if (el) startEls = [el] } catch { /* 非法选择器，回退到 body */ }
-  }
+  if (scopeRoot) startEls = [scopeRoot]
   if (startEls.length === 0 && document.body) {
     startEls = Array.from(document.body.children)
   }
@@ -145,7 +147,11 @@ export function buildSerializedTree(scope?: string): SerializedDomNode[] {
 }
 
 // ─── 元素序列化（可操作性分类，不含 Element 引用） ───────────────────────────
-export function serializeElement(el: Element, iframeEl: HTMLIFrameElement | null = null): SerializedElement | null {
+export function serializeElement(
+  el: Element,
+  iframeEl: HTMLIFrameElement | null = null,
+  scopeRoot?: Element,
+): SerializedElement | null {
   if (EXCLUDE_TAGS.has(el.tagName)) return null
 
   const tag       = el.tagName.toLowerCase()
@@ -184,7 +190,7 @@ export function serializeElement(el: Element, iframeEl: HTMLIFrameElement | null
 
   if (hidden) confidence = 'low'
 
-  const selector = buildSelector(el, iframeEl)
+  const selector = buildSelector(el, iframeEl, scopeRoot)
   if (!selector) return null
 
   const matchCount = (() => {
@@ -216,11 +222,16 @@ function buildLabel(el: Element): string {
   return `${tag}${idPart}${clsPart}${desc ? `  "${desc}"` : ''}`
 }
 
-export function buildSelector(el: Element, iframeEl: HTMLIFrameElement | null = null): SelectorStrategy | null {
+export function buildSelector(
+  el: Element,
+  iframeEl: HTMLIFrameElement | null = null,
+  scopeRoot?: Element,
+): SelectorStrategy | null {
   const cssSelector = getCssSelector(el)
   if (!cssSelector) return null
   return {
     cssSelector,
+    relativeSelector: scopeRoot ? getRelativeSelector(scopeRoot, el) ?? undefined : undefined,
     iframeSelector: iframeEl ? getCssSelector(iframeEl) : undefined,
     ariaLabel:  el.getAttribute('aria-label') ?? undefined,
     role:       el.getAttribute('role') ?? undefined,
@@ -251,4 +262,19 @@ export function getCssSelector(el: Element): string {
     cur = cur.parentElement
   }
   return parts.join(' > ')
+}
+
+export function getRelativeSelector(root: Element, target: Element): string | null {
+  if (root === target) return ':scope'
+  if (!root.contains(target)) return null
+
+  const parts: string[] = []
+  let cur: Element | null = target
+  while (cur && cur !== root) {
+    const siblings = cur.parentElement ? [...cur.parentElement.children] : []
+    const idx = siblings.indexOf(cur) + 1
+    parts.unshift(`${cur.tagName.toLowerCase()}:nth-child(${idx})`)
+    cur = cur.parentElement
+  }
+  return parts.length ? `:scope > ${parts.join(' > ')}` : null
 }

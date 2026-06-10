@@ -89,8 +89,8 @@ export function handlePickElement(scope?: string): void {
   const onClick = (e: MouseEvent) => {
     e.preventDefault(); e.stopImmediatePropagation()
     if (!cur) { cleanup(); return }
-    const serialized = serializeElement(cur, curIframe)
-    const cssSelector = serialized?.selector.cssSelector ?? buildSelector(cur, curIframe)?.cssSelector ?? ''
+    const serialized = serializeElement(cur, curIframe, rootEl ?? undefined)
+    const cssSelector = serialized?.selector.cssSelector ?? buildSelector(cur, curIframe, rootEl ?? undefined)?.cssSelector ?? ''
     cleanup()
     if (serialized) {
       chrome.runtime.sendMessage({ type: MSG.ELEMENT_PICKED, element: serialized, cssSelector }).catch(() => {})

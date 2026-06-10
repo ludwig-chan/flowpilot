@@ -5,6 +5,7 @@ export interface SelectorStrategy {
   role?:           string
   dataTestId?:     string
   cssSelector:     string       // 内部路径（iframe 内则是 iframe 文档内的路径）
+  relativeSelector?: string     // 相对某个上下文根节点的路径，主要用于 loop_items 项内模板
   iframeSelector?: string       // 如果元素在 iframe 内，指向该 iframe 元素的顶层路径
 }
 

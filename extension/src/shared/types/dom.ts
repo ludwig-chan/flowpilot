@@ -15,6 +15,7 @@ export interface SerializedElement {
     role?:       string
     dataTestId?: string
     text?:       string
+    relativeSelector?: string
   }
 }
 

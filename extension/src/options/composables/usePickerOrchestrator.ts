@@ -89,6 +89,10 @@ export function usePickerOrchestrator(
       : undefined
   }
 
+  function getItemTargetRelativeSelector(el: SerializedElement): string | undefined {
+    return el.selector.relativeSelector || toItemRelativeSelector(el.selector.cssSelector)
+  }
+
   // ── ActionPickerModal 确认 ──────────────────────────────────────────
   function onActionConfirm(step: FlowStep) {
     _onActionConfirmBase(step)
@@ -104,7 +108,7 @@ export function usePickerOrchestrator(
       pickerScope.value = undefined
       if (pickMode.value) { pickMode.value = false; bridge.cancelPickElement() }
       es.editingLoopStep.itemTargetSelector = el.selector
-      es.editingLoopStep.itemTargetRelativeSelector = toItemRelativeSelector(el.selector.cssSelector)
+      es.editingLoopStep.itemTargetRelativeSelector = getItemTargetRelativeSelector(el)
       es.showEditLoopModal = true
       return
     }
