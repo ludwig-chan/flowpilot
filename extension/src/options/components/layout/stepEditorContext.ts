@@ -27,6 +27,7 @@ export interface StepEditorModalContext {
   onLoopClose: () => void
   onLoopReselect: (currentState: FlowStep) => void
   onLoopTargetReselect: (currentState: FlowStep) => void
+  onLoopActionConfigure: (currentState: FlowStep) => void
   onActionConfirm: (step: FlowStep) => void
   onActionTry: (step: FlowStep) => void
   onActionRePick: (type: ActionType, value: string | undefined) => void

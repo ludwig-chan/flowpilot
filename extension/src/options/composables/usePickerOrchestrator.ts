@@ -39,7 +39,7 @@ export function usePickerOrchestrator(
     onElementPicked: _onElementPickedBase,
     editStep,
     onActionRePick: _onActionRePickBase,
-    cancelActionModal,
+    cancelActionModal: _cancelActionModalBase,
     onActionConfirm: _onActionConfirmBase,
     editBranchStep,
   } = useStepEditor(editingFlow)
@@ -78,6 +78,7 @@ export function usePickerOrchestrator(
   const smartLoopMode = ref(false)
   const reselectingLoopList = ref(false)
   const selectingLoopTarget = ref(false)
+  const configuringLoopItemAction = ref(false)
 
   function toItemRelativeSelector(cssSelector: string): string | undefined {
     const scope = scopeCanonicalSelector.value
@@ -93,9 +94,65 @@ export function usePickerOrchestrator(
     return el.selector.relativeSelector || toItemRelativeSelector(el.selector.cssSelector)
   }
 
+  function makeLoopTargetElement(step: FlowStep): SerializedElement | null {
+    const selector = step.itemTargetSelector
+    if (!selector) return null
+    return {
+      kind:       'click',
+      confidence: 'high',
+      label:      step.itemAction?.label || selector.text || selector.ariaLabel || selector.cssSelector,
+      matchCount: 1,
+      selector:   {
+        ...selector,
+        relativeSelector: step.itemTargetRelativeSelector || selector.relativeSelector,
+      },
+    }
+  }
+
+  function clearActionModalState() {
+    es.showActionModal = false
+    es.actionModalEl = null
+    es.editingInitialType = undefined
+    es.editingInitialValue = undefined
+    es.editingInitialWaitTimeout = undefined
+    es.editingInitialFoundDelay = undefined
+    es.editingInitialLabel = undefined
+  }
+
+  function openLoopActionModal(el: SerializedElement, action?: FlowStep) {
+    configuringLoopItemAction.value = true
+    es.openActionModal(el, {
+      initialType:        action?.type ?? 'click',
+      initialValue:       action?.value,
+      initialWaitTimeout: action?.waitTimeout,
+      initialFoundDelay:  action?.foundDelay,
+      initialLabel:       action?.label,
+    })
+  }
+
   // ── ActionPickerModal 确认 ──────────────────────────────────────────
   function onActionConfirm(step: FlowStep) {
+    if (configuringLoopItemAction.value && es.editingLoopStep) {
+      configuringLoopItemAction.value = false
+      es.editingLoopStep.itemAction = {
+        ...step,
+        selector: es.editingLoopStep.itemTargetSelector ?? step.selector,
+      }
+      clearActionModalState()
+      es.showEditLoopModal = true
+      return
+    }
     _onActionConfirmBase(step)
+  }
+
+  function cancelActionModal() {
+    if (configuringLoopItemAction.value && es.editingLoopStep) {
+      configuringLoopItemAction.value = false
+      clearActionModalState()
+      es.showEditLoopModal = true
+      return
+    }
+    _cancelActionModalBase()
   }
 
   // ── Wrappers ──────────────────────────────────────────────────────
@@ -109,7 +166,13 @@ export function usePickerOrchestrator(
       if (pickMode.value) { pickMode.value = false; bridge.cancelPickElement() }
       es.editingLoopStep.itemTargetSelector = el.selector
       es.editingLoopStep.itemTargetRelativeSelector = getItemTargetRelativeSelector(el)
-      es.showEditLoopModal = true
+      openLoopActionModal({
+        ...el,
+        selector: {
+          ...el.selector,
+          relativeSelector: es.editingLoopStep.itemTargetRelativeSelector,
+        },
+      }, es.editingLoopStep.itemAction)
       return
     }
     if (reselectingLoopList.value) {
@@ -146,6 +209,16 @@ export function usePickerOrchestrator(
 
   /** ActionPickerModal 点击「换元素」 → 保留动作状态，重新打开元素选择器 */
   function onActionRePick(type: ActionType, value: string | undefined) {
+    if (configuringLoopItemAction.value && es.editingLoopStep?.selector?.cssSelector) {
+      es.editingInitialType = type
+      es.editingInitialValue = value
+      es.showActionModal = false
+      selectingLoopTarget.value = true
+      pickedCssSelector.value = ''
+      openPickerInScope(es.editingLoopStep.selector.cssSelector)
+      scanDom(es.editingLoopStep.selector.cssSelector)
+      return
+    }
     _onActionRePickBase(type, value, showPickerModal, pickedCssSelector)
   }
 
@@ -183,6 +256,7 @@ export function usePickerOrchestrator(
     pickedCssSelector.value = ''
     pickerScope.value = undefined
     selectingLoopTarget.value = false
+    configuringLoopItemAction.value = false
     reselectingLoopList.value = false
     if (pickMode.value) { pickMode.value = false; bridge.cancelPickElement() }
     if (shouldRestoreLoopModal) es.showEditLoopModal = true
@@ -216,6 +290,14 @@ export function usePickerOrchestrator(
     scanDom(currentState.selector.cssSelector)
   }
 
+  function onLoopActionConfigure(currentState: FlowStep) {
+    const el = makeLoopTargetElement(currentState)
+    if (!el) return
+    es.editingLoopStep = currentState
+    es.showEditLoopModal = false
+    openLoopActionModal(el, currentState.itemAction)
+  }
+
   function onSmartLoopCancel() {
     showSmartLoopModal.value = false
     bridge.clearLoopHighlights()
@@ -246,7 +328,7 @@ export function usePickerOrchestrator(
     showPickerModal,
     // useLoopEditor
     editingLoopStepIdx,
-    editLoopStep, onLoopSave, onLoopClose, onLoopReselect, onLoopTargetReselect,
+    editLoopStep, onLoopSave, onLoopClose, onLoopReselect, onLoopTargetReselect, onLoopActionConfigure,
     // useStepEditor
     editStep, cancelActionModal, onActionConfirm, editBranchStep,
     // useSmartLoop

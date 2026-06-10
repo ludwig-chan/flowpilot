@@ -11,8 +11,9 @@ type FlowStore = ReturnType<typeof useFlowStore>
 
 export const stepTypeLabels: Record<string, string> = {
   click: '点击', input: '输入', select: '选择', focus: '聚焦',
+  double_click: '双击', right_click: '右键', hover: '悬停', clear: '清空', check: '勾选',
   get_text: '获取文字', wait_appear: '等待出现', wait_disappear: '等待消失',
-  scroll_to: '滚动到', navigate: '导航', loop_items: '逐项点击列表', condition: '条件判断', element_branch: '元素分支',
+  scroll_to: '滚动到', navigate: '导航', loop_items: '逐项操作列表', condition: '条件判断', element_branch: '元素分支',
   delay: '等待', press_key: '按键', call_flow: '嵌入流程', save_canvas: '截图',
 }
 

@@ -151,7 +151,7 @@ function queryWithinItem(item: Element, relativeSelector?: string | null): Eleme
   try { return item.querySelector(rel) } catch { return null }
 }
 
-function resolveLoopClickTarget(step: FlowStep, item: Element, firstItem: Element): Element {
+function resolveLoopItemTarget(step: FlowStep, item: Element, firstItem: Element): Element {
   const savedTarget = queryWithinItem(item, step.itemTargetRelativeSelector)
   if (savedTarget) return savedTarget
 
@@ -166,6 +166,171 @@ function resolveLoopClickTarget(step: FlowStep, item: Element, firstItem: Elemen
 
   const relative = buildRelativeSelector(firstItem, firstTarget)
   return queryWithinItem(item, relative) ?? item
+}
+
+function dispatchDoubleClick(el: HTMLElement): void {
+  simulateClick(el)
+  const rect = el.getBoundingClientRect()
+  const { x, y } = randomPosInRect(rect)
+  el.dispatchEvent(new MouseEvent('dblclick', {
+    bubbles: true, cancelable: true, detail: 2,
+    clientX: x, clientY: y,
+    screenX: window.screenX + x, screenY: window.screenY + y,
+    view: window, button: 0, buttons: 0,
+  }))
+}
+
+function dispatchRightClick(el: HTMLElement): void {
+  const rect = el.getBoundingClientRect()
+  const { x, y } = randomPosInRect(rect)
+  const opts: MouseEventInit = {
+    bubbles: true, cancelable: true,
+    clientX: x, clientY: y,
+    screenX: window.screenX + x, screenY: window.screenY + y,
+    view: window, button: 2, buttons: 2,
+  }
+  el.dispatchEvent(new MouseEvent('mousedown',   opts))
+  el.dispatchEvent(new MouseEvent('mouseup',     opts))
+  el.dispatchEvent(new MouseEvent('contextmenu', opts))
+}
+
+function dispatchHover(el: HTMLElement): void {
+  const rect = el.getBoundingClientRect()
+  const { x, y } = randomPosInRect(rect)
+  const opts: MouseEventInit = {
+    bubbles: true, cancelable: true,
+    clientX: x, clientY: y,
+    screenX: window.screenX + x, screenY: window.screenY + y,
+    view: window,
+  }
+  el.dispatchEvent(new MouseEvent('mouseenter', { ...opts, bubbles: false }))
+  el.dispatchEvent(new MouseEvent('mouseover',  opts))
+  el.dispatchEvent(new MouseEvent('mousemove',  opts))
+}
+
+async function waitForLoopTargetToDisappear(item: Element, relativeSelector?: string, timeout = 10000): Promise<void> {
+  if (!relativeSelector) return
+  if (!queryWithinItem(item, relativeSelector)) return
+
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      observer.disconnect()
+      reject(new Error(`等待项内元素消失超时：${relativeSelector}`))
+    }, timeout)
+
+    const observer = new MutationObserver(() => {
+      if (queryWithinItem(item, relativeSelector)) return
+      clearTimeout(timer)
+      observer.disconnect()
+      resolve()
+    })
+
+    observer.observe(item, { childList: true, subtree: true })
+  })
+}
+
+async function executeLoopItemAction(
+  loopStep: FlowStep,
+  target: Element,
+  item: Element,
+  ctx: RunContext,
+  index: number,
+): Promise<void> {
+  const action = loopStep.itemAction ?? {
+    ...loopStep,
+    id: `${loopStep.id}_item_action`,
+    type: 'click',
+    label: '点击',
+    selector: loopStep.itemTargetSelector ?? loopStep.selector,
+  }
+  const el = target as HTMLElement
+  if (action.foundDelay) await humanDelay(action.foundDelay[0], action.foundDelay[1])
+
+  switch (action.type) {
+    case 'click':
+      simulateClick(el)
+      break
+    case 'double_click':
+      dispatchDoubleClick(el)
+      break
+    case 'right_click':
+      dispatchRightClick(el)
+      break
+    case 'hover':
+      dispatchHover(el)
+      break
+    case 'focus':
+      el.focus()
+      break
+    case 'input':
+      el.focus()
+      writeToElement(el, interpolate(action.value ?? '', ctx.variables), 'insertText')
+      break
+    case 'clear':
+      el.focus()
+      writeToElement(el, '', 'deleteContentBackward')
+      break
+    case 'select':
+      ;(el as HTMLSelectElement).value = interpolate(action.value ?? '', ctx.variables)
+      el.dispatchEvent(new Event('change', { bubbles: true }))
+      break
+    case 'check': {
+      const input = el as HTMLInputElement
+      const val = action.value?.trim().toLowerCase()
+      const targetChecked = val === 'true' ? true : val === 'false' ? false : !input.checked
+      if (input.checked !== targetChecked) input.click()
+      ctx.onLog(`  勾选状态：${input.checked} → ${targetChecked}`)
+      break
+    }
+    case 'press_key': {
+      const key = action.value ?? 'Enter'
+      const opts: KeyboardEventInit = { key, code: key, bubbles: true, cancelable: true }
+      el.dispatchEvent(new KeyboardEvent('keydown',  opts))
+      el.dispatchEvent(new KeyboardEvent('keypress', opts))
+      el.dispatchEvent(new KeyboardEvent('keyup',    opts))
+      if (key === 'Enter') {
+        const form = el.closest?.('form') as HTMLFormElement | null
+        form?.requestSubmit?.()
+      }
+      break
+    }
+    case 'get_text': {
+      const raw = target.textContent?.trim() ?? ''
+      const varKey = action.value?.trim()
+      if (varKey) {
+        ctx.variables[varKey] = raw
+        ctx.onLog(`  获取文本 「${raw.slice(0, 40)}${raw.length > 40 ? '…' : ''}」 → {{${varKey}}}`)
+      } else {
+        ctx.onLog(`  获取文本 「${raw.slice(0, 40)}${raw.length > 40 ? '…' : ''}」（未指定变量名）`)
+      }
+      break
+    }
+    case 'wait_appear':
+      break
+    case 'wait_disappear':
+      await waitForLoopTargetToDisappear(item, loopStep.itemTargetRelativeSelector, action.waitTimeout ?? ctx.waitTimeout)
+      break
+    case 'scroll_to':
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      break
+    case 'save_canvas': {
+      const dataUrl = await screenshotElement(el, ctx.onLog)
+      if (!dataUrl) { ctx.onLog('  [跳过] 截图失败，无法保存'); return }
+      const ts = toLocalTimeString().replace(/:/g, '-')
+      const filename = `screenshot-${ts}-item-${index}.png`
+      const saved = await saveViaBridge(dataUrl, filename, ctx)
+      if (saved.ok) {
+        ctx.screenshotCount++
+        ctx.onLog(`  已保存 → ${saved.path ?? filename}（${Math.round(dataUrl.length * 0.75 / 1024)} KB）`)
+      } else {
+        ctx.onLog(`  [降级] 本地截图服务失败：${saved.error ?? '本地截图服务未返回保存结果'}`)
+        downloadFallback(dataUrl, filename, ctx.onLog)
+      }
+      break
+    }
+    default:
+      ctx.onLog(`[跳过] 循环项内暂不支持动作：${action.type}`)
+  }
 }
 
 async function handleClick(step: FlowStep, _ctx: RunContext, resolve: ResolveFn): Promise<void> {
@@ -310,16 +475,17 @@ async function handleLoopItems(
   const hasChildSteps = !!step.children?.length
   const firstItem = itemsArr[0]
   const hasItemTarget = !!step.itemTargetSelector || !!step.itemTargetRelativeSelector
+  const hasItemAction = !!step.itemAction
 
   for (let i = 0; i < itemsArr.length; i++) {
     const item = itemsArr[i]
     if (signal.stopped) return
     onStep?.({ type: 'loop_progress', stepId: step.id, index: i + 1, total: itemsArr.length })
-    const clickTarget = !hasChildSteps && firstItem
-      ? resolveLoopClickTarget(step, item, firstItem)
+    const itemTarget = !hasChildSteps && firstItem
+      ? resolveLoopItemTarget(step, item, firstItem)
       : item
     if (!hasChildSteps) {
-      (clickTarget as HTMLElement).scrollIntoView({ behavior: 'smooth', block: 'center' })
+      (itemTarget as HTMLElement).scrollIntoView({ behavior: 'smooth', block: 'center' })
       await sleep(400)
     } else if (scrollBehavior === 'item') {
       (item as HTMLElement).scrollIntoView({ behavior: 'smooth', block: 'center' })
@@ -332,8 +498,9 @@ async function handleLoopItems(
         await runChild(child, { ...ctx, depth: ctx.depth + 1 })
       }
     } else {
-      if (hasItemTarget && clickTarget === item) onLog('  未找到项内目标，回退点击整项')
-      simulateClick(clickTarget as HTMLElement)
+      if (hasItemTarget && itemTarget === item) onLog('  未找到项内目标，回退对整项执行动作')
+      if (hasItemAction) onLog(`  执行动作：${step.itemAction?.label ?? step.itemAction?.type}`)
+      await executeLoopItemAction(step, itemTarget, item, ctx, i + 1)
     }
     if (hasChildSteps && scrollBehavior === 'bottom') {
       const container = findScrollContainer(item)

@@ -53,7 +53,7 @@ const {
 
 const {
   showPickerModal,
-  editLoopStep, onLoopSave, onLoopClose, onLoopReselect, onLoopTargetReselect,
+  editLoopStep, onLoopSave, onLoopClose, onLoopReselect, onLoopTargetReselect, onLoopActionConfigure,
   editStep, cancelActionModal, onActionConfirm, editBranchStep,
   showSmartLoopModal, smartLoopCandidates,
   openSmartLoopPicker, onSmartLoopConfirm, onSmartLoopCancel,
@@ -138,7 +138,7 @@ provide(STEP_EDITOR_MODALS_KEY, {
   // usePickerOrchestrator
   showPickerModal, closePicker, onElementPicked, onTestAction,
   showSmartLoopModal, smartLoopCandidates, onSmartLoopConfirm, onSmartLoopCancel,
-  onLoopSave, onLoopClose, onLoopReselect, onLoopTargetReselect,
+  onLoopSave, onLoopClose, onLoopReselect, onLoopTargetReselect, onLoopActionConfigure,
   onActionConfirm, onActionTry, onActionRePick, cancelActionModal,
   // useConditionEditor
   showConditionModal, conditionModalStep, conditionModalIdx, conditionAvailableVars, onConditionConfirm,

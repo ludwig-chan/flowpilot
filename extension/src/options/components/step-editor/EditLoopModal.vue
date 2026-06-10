@@ -10,6 +10,7 @@ const emit = defineEmits<{
   (e: 'close'):                                void
   (e: 'reselect',             currentState: FlowStep): void
   (e: 'reselect-target',      currentState: FlowStep): void
+  (e: 'configure-action',     currentState: FlowStep): void
 }>()
 
 function autoLabel(step: FlowStep): string {
@@ -28,6 +29,12 @@ function currentState(): FlowStep {
 function onSave() {
   emit('save', currentState())
 }
+
+function clearItemTarget() {
+  props.step.itemTargetSelector = undefined
+  props.step.itemTargetRelativeSelector = undefined
+  props.step.itemAction = undefined
+}
 </script>
 
 <template>
@@ -43,7 +50,7 @@ function onSave() {
     </div>
 
     <div class="elm-section">
-      <label class="elm-label">项内点击目标</label>
+      <label class="elm-label">项内目标</label>
       <div class="elm-selector-row">
         <code class="elm-selector-val" :title="step.itemTargetRelativeSelector || step.itemTargetSelector?.cssSelector">
           {{ step.itemTargetRelativeSelector || step.itemTargetSelector?.cssSelector || '默认点击整项' }}
@@ -56,10 +63,25 @@ function onSave() {
         <BaseButton
           v-if="step.itemTargetSelector || step.itemTargetRelativeSelector"
           class="elm-resel-btn"
-          @click="step.itemTargetSelector = undefined; step.itemTargetRelativeSelector = undefined"
+          @click="clearItemTarget"
         >清除</BaseButton>
       </div>
-      <p class="elm-hint">选择头像、按钮等第一项内的元素后，循环会在每一项里点击对应元素。</p>
+      <p class="elm-hint">选择头像、按钮等第一项内的元素后，循环会在每一项里找到对应元素。</p>
+    </div>
+
+    <div class="elm-section">
+      <label class="elm-label">项内动作</label>
+      <div class="elm-selector-row">
+        <code class="elm-selector-val" :title="step.itemAction?.label || step.itemAction?.type || '点击'">
+          {{ step.itemAction?.label || '点击' }}
+        </code>
+        <BaseButton
+          class="elm-resel-btn"
+          :disabled="!step.itemTargetSelector && !step.itemTargetRelativeSelector"
+          @click="emit('configure-action', currentState())"
+        >选择动作</BaseButton>
+      </div>
+      <p class="elm-hint">默认点击目标元素；也可以改为聚焦、输入、获取文字、截图等动作。</p>
     </div>
 
     <template #footer>

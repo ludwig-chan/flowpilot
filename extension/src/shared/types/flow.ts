@@ -58,6 +58,7 @@ export interface FlowStep {
   scrollBehavior?: 'none' | 'item' | 'bottom' // loop_items: 每项处理前/后的滚动行为
   itemTargetSelector?: SelectorStrategy // loop_items: 从第一项中选择的点击目标模板
   itemTargetRelativeSelector?: string // loop_items: 模板目标相对列表项的 CSS 路径
+  itemAction?: FlowStep // loop_items: 对每一项或项内目标执行的动作配置
   elseChildren?: FlowStep[] // condition: else 分支步骤
   conditions?:      ConditionItem[]   // condition: 多条件列表
   conditionLogic?:  ConditionLogic    // condition: 条件连接方式，默认 'and'
