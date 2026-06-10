@@ -63,36 +63,67 @@ export interface ExportPayload {
   nodes:      FlowNode[]
 }
 
-/** 按 ID 集合递归过滤树，保留选中节点及其子节点结构 */
+/** 按 ID 集合递归过滤树，保留选中节点及命中子节点的父级路径 */
 export function filterNodesByIds(nodes: FlowNode[], ids: Set<string>): FlowNode[] {
   const result: FlowNode[] = []
   for (const n of nodes) {
-    if (!ids.has(n.id)) continue
     if (n.kind === 'folder') {
+      const children = filterNodesByIds((n as FlowFolder).children, ids)
+      if (!ids.has(n.id) && children.length === 0) continue
       result.push({
         ...n,
-        children: filterNodesByIds((n as FlowFolder).children, ids),
+        children,
       } as FlowFolder)
     } else {
+      if (!ids.has(n.id)) continue
       result.push(JSON.parse(JSON.stringify(n)) as LocalFlow)
     }
   }
   return result
 }
 
-function cloneWithNewIds(nodes: FlowNode[]): FlowNode[] {
+function collectFlowRefs(steps: FlowStep[], refs: Set<string>) {
+  for (const step of steps) {
+    if (step.type === 'call_flow' && step.flowRef) refs.add(step.flowRef)
+    collectFlowRefs(step.children ?? [], refs)
+    collectFlowRefs(step.elseChildren ?? [], refs)
+    if (step.itemAction) collectFlowRefs([step.itemAction], refs)
+    collectFlowRefs(step.itemActions ?? [], refs)
+  }
+}
+
+function rewriteFlowRefs(steps: FlowStep[], idMap: Map<string, string>) {
+  for (const step of steps) {
+    if (step.flowRef && idMap.has(step.flowRef)) step.flowRef = idMap.get(step.flowRef)
+    rewriteFlowRefs(step.children ?? [], idMap)
+    rewriteFlowRefs(step.elseChildren ?? [], idMap)
+    if (step.itemAction) rewriteFlowRefs([step.itemAction], idMap)
+    rewriteFlowRefs(step.itemActions ?? [], idMap)
+  }
+}
+
+function cloneWithNewIds(nodes: FlowNode[], idMap = new Map<string, string>()): FlowNode[] {
   return nodes.map(n => {
     if (n.kind === 'folder') {
       return {
         id: genId('fd'), kind: 'folder', name: n.name,
-        children: cloneWithNewIds((n as FlowFolder).children),
+        children: cloneWithNewIds((n as FlowFolder).children, idMap),
       } as FlowFolder
     }
+    const id = genId('bf')
+    idMap.set(n.id, id)
     return {
-      id: genId('bf'), kind: 'flow', name: (n as LocalFlow).name,
+      id, kind: 'flow', name: (n as LocalFlow).name,
       steps: JSON.parse(JSON.stringify((n as LocalFlow).steps)),
     } as LocalFlow
   })
+}
+
+function rewriteFlowRefsInNodes(nodes: FlowNode[], idMap: Map<string, string>) {
+  for (const node of nodes) {
+    if (node.kind === 'folder') rewriteFlowRefsInNodes(node.children, idMap)
+    else rewriteFlowRefs(node.steps, idMap)
+  }
 }
 
 // 迁移旧格式：{ id, name, steps } → { id, kind:'flow', name, steps }
@@ -250,17 +281,42 @@ export const useFlowStore = defineStore('flows', () => {
   }
 
   async function importInto(payload: ExportPayload, parentId?: string): Promise<number> {
-    const cloned = cloneWithNewIds(payload.nodes)
+    const idMap = new Map<string, string>()
+    const cloned = cloneWithNewIds(payload.nodes, idMap)
+    rewriteFlowRefsInNodes(cloned, idMap)
     getContainer(parentId).push(...cloned)
     await persist()
     return cloned.length
   }
 
+  function expandIdsWithReferencedFlows(ids: Set<string>): Set<string> {
+    const expanded = new Set(ids)
+    const queue = [...ids]
+
+    while (queue.length > 0) {
+      const id = queue.shift()
+      if (!id) continue
+      const node = findNode(tree.value, id)
+      if (!node || node.kind !== 'flow') continue
+
+      const refs = new Set<string>()
+      collectFlowRefs(node.steps, refs)
+      for (const refId of refs) {
+        if (expanded.has(refId) || !findNode(tree.value, refId)) continue
+        expanded.add(refId)
+        queue.push(refId)
+      }
+    }
+
+    return expanded
+  }
+
   function exportSelected(ids: Set<string>): ExportPayload {
+    const expandedIds = expandIdsWithReferencedFlows(ids)
     return {
       version:    1,
       exportedAt: toLocalTimeString(),
-      nodes:      filterNodesByIds(tree.value, ids),
+      nodes:      filterNodesByIds(tree.value, expandedIds),
     }
   }
 
@@ -278,7 +334,9 @@ export const useFlowStore = defineStore('flows', () => {
       return steps.some(s =>
         (s.type === 'call_flow' && !!s.flowRef && !validIds.has(s.flowRef)) ||
         hasAnyBrokenRef(s.children ?? []) ||
-        hasAnyBrokenRef(s.elseChildren ?? [])
+        hasAnyBrokenRef(s.elseChildren ?? []) ||
+        (!!s.itemAction && hasAnyBrokenRef([s.itemAction])) ||
+        hasAnyBrokenRef(s.itemActions ?? [])
       )
     }
     const broken = new Set<string>()
