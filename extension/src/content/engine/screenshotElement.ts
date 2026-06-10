@@ -1,4 +1,4 @@
-import { captureVisibleTabAsImage } from './captureUtils'
+import { captureVisibleTabAsImage, waitForScrollRender } from './captureUtils'
 
 /**
  * 对任意 DOM 元素截图并拼接，返回 PNG data URL，失败返回 null。
@@ -15,7 +15,7 @@ export async function screenshotElement(
   const viewportH = window.innerHeight
 
   el.scrollIntoView({ block: 'start', behavior: 'instant' as ScrollBehavior })
-  await new Promise<void>(rs => setTimeout(rs, 100))
+  await waitForScrollRender()
 
   const rect  = el.getBoundingClientRect()
   const cssW  = el.offsetWidth
@@ -44,7 +44,7 @@ export async function screenshotElement(
 
     for (let r = 0; r < rows; r++) {
       el.scrollTop = r * clientH
-      await new Promise<void>(rs => setTimeout(rs, 150))
+      await waitForScrollRender()
       const actualTop = el.scrollTop
       const tileH     = Math.min(clientH, totalH - actualTop)
       const curRect   = el.getBoundingClientRect()
@@ -88,7 +88,7 @@ export async function screenshotElement(
       for (let r = 0; r < rows; r++) {
         for (let c = 0; c < cols; c++) {
           window.scrollTo(absLeft + c * viewportW, absTop + r * viewportH)
-          await new Promise<void>(rs => setTimeout(rs, 150))
+          await waitForScrollRender()
           const curRect = el.getBoundingClientRect()
           const img     = await captureVisibleTabAsImage()
           const tileX   = c * viewportW

@@ -78,6 +78,7 @@ async function captureScreenshot(
   sel: string,
   resolve: ResolveFn,
   onLog: (s: string) => void,
+  fallbackEl?: HTMLElement,
 ): Promise<string | null> {
   const quickEl = (() => { try { return document.querySelector(sel) } catch { return null } })()
   const likelyCanvas = quickEl === null || quickEl.tagName.toLowerCase() === 'canvas'
@@ -87,7 +88,7 @@ async function captureScreenshot(
   if (dataUrl === null) {
     if (likelyCanvas && quickEl !== null) onLog('  [降级] canvas 路径失败，尝试通用元素截图...')
     try {
-      const el = await resolve(selector) as HTMLElement
+      const el = fallbackEl ?? await resolve(selector) as HTMLElement
       dataUrl = await screenshotElement(el, onLog)
     } catch (err) {
       onLog(`  [截图] 失败：${(err as Error).message}`)
@@ -347,7 +348,9 @@ async function executeLoopItemAction(
       el.scrollIntoView({ behavior: 'smooth', block: 'center' })
       break
     case 'save_canvas': {
-      const dataUrl = await screenshotElement(el, ctx.onLog)
+      const dataUrl = action.selector
+        ? await captureScreenshot(action.selector, action.selector.cssSelector, async () => target, ctx.onLog, el)
+        : await screenshotElement(el, ctx.onLog)
       if (!dataUrl) { ctx.onLog('  [跳过] 截图失败，无法保存'); return }
       const ts = toLocalTimeString().replace(/:/g, '-')
       const filename = `screenshot-${ts}-item-${index}.png`
@@ -517,6 +520,7 @@ async function handleLoopItems(
   onLog(`找到 ${itemsArr.length} 个条目，开始循环...`)
   const scrollBehavior = step.scrollBehavior ?? 'none'
   const hasChildSteps = !!step.children?.length
+  const childSteps = step.children ?? []
   const firstItem = itemsArr[0]
   const itemActions = getLoopItemActions(step)
 
@@ -534,7 +538,7 @@ async function handleLoopItems(
     }
     onLog(`  → 处理：${item.textContent?.trim().slice(0, 50)}`)
     if (hasChildSteps) {
-      for (const child of step.children) {
+      for (const child of childSteps) {
         if (signal.stopped) return
         await runChild(child, { ...ctx, depth: ctx.depth + 1 })
       }

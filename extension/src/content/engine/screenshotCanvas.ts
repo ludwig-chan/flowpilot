@@ -1,4 +1,4 @@
-import { captureVisibleTabAsImage } from './captureUtils'
+import { captureVisibleTabAsImage, waitForScrollRender } from './captureUtils'
 
 /**
  * 对 canvas 元素截图，支持跨 iframe、虚拟渲染检测、多路径拼接。
@@ -196,7 +196,7 @@ export async function screenshotCanvas(
 
         for (let r = 0; r < rows; r++) {
           scrollEl.scrollTop = r * cropH
-          await new Promise<void>(rs => setTimeout(rs, 150))
+          await waitForScrollRender()
           const actualTop = scrollEl.scrollTop
           const tileH     = Math.min(cropH, totalH - actualTop)
           const img       = await captureVisibleTabAsImage()
@@ -251,24 +251,33 @@ export async function screenshotCanvas(
         for (let step = 0; step < steps; step++) {
           const targetScrollTop = Math.min(step * clientH, totalH - clientH)
           const actualScrollTop = await waitScrollStable(targetScrollTop)
+          await waitForScrollRender()
           const tileH           = Math.min(clientH, totalH - actualScrollTop)
           const iframeRect      = iframeEl!.getBoundingClientRect()
           const canvasRect      = canvas.getBoundingClientRect()
           const absLeft         = iframeRect.left + canvasRect.left
           const absTop          = iframeRect.top  + canvasRect.top
+          const srcLeft         = Math.max(absLeft, 0)
+          const srcTop          = Math.max(absTop, 0)
+          const srcRight        = Math.min(absLeft + cssW, window.innerWidth)
+          const srcBottom       = Math.min(absTop + tileH, window.innerHeight)
+          const visibleW        = Math.max(0, srcRight - srcLeft)
+          const visibleH        = Math.max(0, srcBottom - srcTop)
+          const destX           = srcLeft - absLeft
+          const destY           = actualScrollTop + (srcTop - absTop)
 
           onLog(`  [方案B路径①b] 步骤${step + 1}/${steps} scrollTop=${Math.round(actualScrollTop)} absTop=${Math.round(absTop)} tileH=${Math.round(tileH)}`)
-          if (absTop + cssH <= 0 || absTop >= window.innerHeight) {
+          if (visibleW <= 0 || visibleH <= 0) {
             onLog(`  [方案B路径①b] 步骤${step + 1} canvas 不在视口内，跳过`); continue
           }
 
           const img = await captureVisibleTabAsImage()
           outCtx.drawImage(
             img,
-            Math.round(absLeft         * dpr), Math.round(absTop         * dpr),
-            Math.round(cssW            * dpr), Math.round(tileH          * dpr),
-            0,                                 Math.round(actualScrollTop * dpr),
-            Math.round(cssW            * dpr), Math.round(tileH          * dpr),
+            Math.round(srcLeft  * dpr), Math.round(srcTop  * dpr),
+            Math.round(visibleW * dpr), Math.round(visibleH * dpr),
+            Math.round(destX    * dpr), Math.round(destY    * dpr),
+            Math.round(visibleW * dpr), Math.round(visibleH * dpr),
           )
         }
         outerScrollEl.scrollTop = origScrollTop
@@ -314,7 +323,7 @@ export async function screenshotCanvas(
           for (let r = 0; r < rows; r++) {
             for (let c = 0; c < cols; c++) {
               window.scrollTo(pageLeft + c * viewportW, pageTop + r * viewportH)
-              await new Promise<void>(rs => setTimeout(rs, 150))
+              await waitForScrollRender()
               const cur   = canvas.getBoundingClientRect()
               const img   = await captureVisibleTabAsImage()
               const tileX = c * viewportW
