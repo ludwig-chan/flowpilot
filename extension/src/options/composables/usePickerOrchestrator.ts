@@ -71,11 +71,11 @@ export function usePickerOrchestrator(
       label:             makeLoopClickLabel(candidate.inferredLabel, candidate.count),
       selector:          { cssSelector: candidate.itemSelector },
       children:          [],
-      itemDelay:         [5000, 15000],
+      itemDelay:         [2000, 5000],
       scrollBehavior:    'item',
-      loopBatchSize:     8,
-      loopCooldown:      [30000, 120000],
-      scrollWait:        [500, 1800],
+      loopBatchSize:     10,
+      loopCooldown:      [15000, 45000],
+      scrollWait:        [300, 800],
     }
     editingFlow.value.steps.push(newStep)
   })
