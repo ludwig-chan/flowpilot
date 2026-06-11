@@ -47,6 +47,14 @@ function formatDate(value: string): string {
   return value
 }
 
+function isScreenshotId(value: string): boolean {
+  return value.startsWith('shot_') && !value.includes(' ')
+}
+
+function hasOcrResult(results: Record<string, string>, screenshotId: string): boolean {
+  return Object.prototype.hasOwnProperty.call(results, screenshotId)
+}
+
 export default function DataRecordList({
   records,
   tags,
@@ -63,6 +71,7 @@ export default function DataRecordList({
   const [lightboxImage, setLightboxImage] = useState<{ src: string; alt: string } | null>(null)
   const [lightboxLoading, setLightboxLoading] = useState(false)
   const [ocrResults, setOcrResults] = useState<Record<string, string>>({})
+  const [ocrErrors, setOcrErrors] = useState<Record<string, string>>({})
   const [ocrLoading, setOcrLoading] = useState<Record<string, boolean>>({})
   const [ocrPreloaded, setOcrPreloaded] = useState(false)
   const [ocrDialog, setOcrDialog] = useState<{ text: string; label: string } | null>(null)
@@ -73,7 +82,7 @@ export default function DataRecordList({
     window.api.listScreenshots().then((list) => {
       const map: Record<string, string> = {}
       for (const s of list.screenshots) {
-        if (s.ocrText) map[s.id] = s.ocrText
+        if (typeof s.ocrText === 'string') map[s.id] = s.ocrText
       }
       setOcrResults(map)
       setOcrPreloaded(true)
@@ -137,15 +146,24 @@ export default function DataRecordList({
 
   const runOcrForField = async (screenshotId: string): Promise<void> => {
     if (ocrLoading[screenshotId]) return
-    if (ocrResults[screenshotId]) return
+    if (hasOcrResult(ocrResults, screenshotId)) return
+    if (ocrErrors[screenshotId]) return
     setOcrLoading((prev) => ({ ...prev, [screenshotId]: true }))
+    setOcrErrors((prev) => {
+      const next = { ...prev }
+      delete next[screenshotId]
+      return next
+    })
     try {
       const result = await window.api.ocrScreenshot(screenshotId)
-      if (result.success && result.text) {
-        setOcrResults((prev) => ({ ...prev, [screenshotId]: result.text! }))
+      if (result.success) {
+        setOcrResults((prev) => ({ ...prev, [screenshotId]: result.text ?? '' }))
+      } else {
+        setOcrErrors((prev) => ({ ...prev, [screenshotId]: result.error ?? 'OCR failed' }))
       }
-    } catch { /* 忽略 OCR 失败 */ }
-    finally {
+    } catch (err) {
+      setOcrErrors((prev) => ({ ...prev, [screenshotId]: (err as Error).message }))
+    } finally {
       setOcrLoading((prev) => ({ ...prev, [screenshotId]: false }))
     }
   }
@@ -155,7 +173,7 @@ export default function DataRecordList({
     // 预加载截图缩略图
     const newThumbs: Record<string, string> = { ...thumbnails }
     for (const [, val] of Object.entries(item.fields)) {
-      if (val.startsWith('shot_') && !val.includes(' ') && !newThumbs[val]) {
+      if (isScreenshotId(val) && !newThumbs[val]) {
         try {
           const img = await window.api.getScreenshotImage(val)
           if (img) newThumbs[val] = img.dataUrl
@@ -165,14 +183,14 @@ export default function DataRecordList({
     setThumbnails(newThumbs)
 
     // 自动触发 OCR（仅对未识别过的截图字段，预加载完成后才触发）
-    if (ocrPreloaded) {
-      for (const [, val] of Object.entries(item.fields)) {
-        if (val.startsWith('shot_') && !val.includes(' ')) {
-          void runOcrForField(val)
-        }
-      }
-    }
   }
+
+  useEffect(() => {
+    if (!detailRecord || !ocrPreloaded) return
+    for (const [, val] of Object.entries(detailRecord.fields)) {
+      if (isScreenshotId(val)) void runOcrForField(val)
+    }
+  }, [detailRecord, ocrPreloaded, ocrResults, ocrErrors])
 
   // ── 详情弹窗的上/下条导航 ──
   const detailIndex = detailRecord
@@ -362,17 +380,19 @@ export default function DataRecordList({
               <table className="detail-fields-table">
                 <tbody>
                   {Object.entries(detailRecord.fields).map(([key, val]) => {
-                    const isScreenshot = val.startsWith('shot_') && !val.includes(' ')
-                    const ocrText = isScreenshot ? (ocrResults[val] ?? null) : null
+                    const isScreenshot = isScreenshotId(val)
+                    const ocrText = isScreenshot && hasOcrResult(ocrResults, val) ? ocrResults[val] : null
+                    const ocrError = isScreenshot ? (ocrErrors[val] ?? null) : null
                     const ocrIsLoading = isScreenshot ? (ocrLoading[val] ?? false) : false
                     return (
                       <tr key={key} className="detail-field-row">
                         <td className="detail-field-key">{displayFieldKey(key, detailRecord.fieldAliases)}</td>
                         <td className="detail-field-val">
-                          {isScreenshot && thumbnails[val] ? (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                          {isScreenshot ? (
+                            <div className="detail-screenshot-field">
                               <img
-                                src={thumbnails[val]}
+                                src={thumbnails[val] || ''}
+                                hidden={!thumbnails[val]}
                                 alt={key}
                                 onClick={() => {
                                   setLightboxLoading(true)
@@ -383,6 +403,9 @@ export default function DataRecordList({
                                 }}
                                 style={{ maxWidth: '100%', maxHeight: 200, borderRadius: 4, cursor: 'zoom-in', objectFit: 'contain' }}
                               />
+                              {!thumbnails[val] && (
+                                <div className="detail-screenshot-placeholder">截图加载中或文件不存在</div>
+                              )}
                               {ocrIsLoading && <span className="ocr-loading-hint">OCR 识别中…</span>}
                               {ocrText && (
                                 <button
@@ -392,6 +415,22 @@ export default function DataRecordList({
                                   显示OCR识别结果
                                 </button>
                               )}
+                              <div className="detail-ocr-panel">
+                                <div className="detail-ocr-header">OCR识别结果</div>
+                                {ocrIsLoading ? (
+                                  <div className="detail-ocr-state">OCR 识别中...</div>
+                                ) : ocrError ? (
+                                  <div className="detail-ocr-state detail-ocr-error">OCR 识别失败：{ocrError}</div>
+                                ) : ocrText !== null ? (
+                                  ocrText.trim() ? (
+                                    <pre className="detail-ocr-text">{ocrText}</pre>
+                                  ) : (
+                                    <div className="detail-ocr-state">未识别到文字</div>
+                                  )
+                                ) : (
+                                  <div className="detail-ocr-state">等待 OCR 识别...</div>
+                                )}
+                              </div>
                             </div>
                           ) : (
                             <span>{val || '(空)'}</span>
