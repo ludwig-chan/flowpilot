@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import type { FlowStep } from '@shared/types/flow'
 import RangeInput from '@shared/components/RangeInput.vue'
+import BaseInput from '@shared/components/BaseInput.vue'
 
 type OptionalRange = [number | undefined, number | undefined]
 
@@ -18,6 +19,8 @@ const emit = defineEmits<{
   (e: 'add-call-flow',        currentState: FlowStep): void
 }>()
 
+const stepLabel = ref(props.step.label || '')
+
 function autoLabel(step: FlowStep): string {
   const selector = step.selector?.cssSelector
   return selector ? `逐项操作列表：${selector.slice(0, 40)}` : '逐项操作列表'
@@ -26,7 +29,7 @@ function autoLabel(step: FlowStep): string {
 function currentState(): FlowStep {
   return {
     ...props.step,
-    label:    autoLabel(props.step),
+    label:    stepLabel.value.trim() || autoLabel(props.step),
     children: props.step.children ?? [],
     itemActions: normalizedItemActions(),
   }
@@ -137,6 +140,11 @@ function configureItemAction(idx: number) {
 
 <template>
   <BaseModal title="编辑选择列表" width="680px" :z-index="1070" @close="emit('close')">
+    <div class="elm-section">
+      <label class="elm-label">步骤名称</label>
+      <BaseInput v-model="stepLabel" :placeholder="autoLabel(step)" style="width: 100%" />
+    </div>
+
     <div class="elm-section">
       <label class="elm-label">选择列表</label>
       <div class="elm-selector-row">
