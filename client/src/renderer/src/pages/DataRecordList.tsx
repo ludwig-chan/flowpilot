@@ -372,7 +372,7 @@ export default function DataRecordList({
                                     if (img) setLightboxImage({ src: img.dataUrl, alt: key })
                                   }).catch(() => setLightboxLoading(false))
                                 }}
-                                style={{ maxWidth: '100%', maxHeight: 200, borderRadius: 4, cursor: 'zoom-in' }}
+                                style={{ maxWidth: '100%', maxHeight: 200, borderRadius: 4, cursor: 'zoom-in', objectFit: 'contain' }}
                               />
                               {ocrIsLoading && <span className="ocr-loading-hint">OCR 识别中…</span>}
                               {ocrText && (
