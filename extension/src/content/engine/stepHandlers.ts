@@ -745,6 +745,7 @@ async function handleSaveData(
     const result = await chrome.runtime.sendMessage({
       type: MSG.SAVE_DATA_RECORD,
       fields,
+      fieldAliases: step.recordFieldAliases,
       runId: ctx.runId,
       runStartedAt: ctx.runStartedAt,
       flowId: ctx.flowId,

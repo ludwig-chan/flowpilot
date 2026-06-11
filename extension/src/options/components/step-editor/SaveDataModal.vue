@@ -51,6 +51,12 @@ function confirm() {
     type:         'save_data',
     label:        stepLabel.value.trim() || '保存数据',
     recordFields: selectedVars.value,
+    recordFieldAliases: Object.fromEntries(
+      selectedVars.value.map(internal => {
+        const v = props.availableVars.find(av => av.internal === internal)
+        return [internal, v?.alias ?? internal]
+      })
+    ),
   }
   // 保留原有 selector（如果有）
   if (props.initialStep?.selector) step.selector = props.initialStep.selector

@@ -23,6 +23,7 @@ export interface DataRecordItem {
   id: string
   createdAt: string
   fields: Record<string, string>
+  fieldAliases?: Record<string, string>  // 变量别名映射（内部名→别名），用于友好显示
   status: DataRecordStatus
   tagIds: string[]
   deletedAt?: string
@@ -47,6 +48,7 @@ export interface DataRecordSaveMetadata {
   flowName?: string
   sourceUrl?: string
   sourceTitle?: string
+  fieldAliases?: Record<string, string>
 }
 
 export interface DataRecordViewItem extends DataRecordItem {
@@ -144,6 +146,7 @@ export function recordDataRecord(
     id: newId('dr'),
     createdAt: nowIso(),
     fields,
+    fieldAliases: metadata.fieldAliases,
     status: 'active',
     tagIds: [],
     runId: metadata.runId,

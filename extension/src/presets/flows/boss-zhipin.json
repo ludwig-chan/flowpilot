@@ -98,6 +98,13 @@
                 "var3",
                 "var4"
               ],
+              "recordFieldAliases": {
+                "var0": "截图",
+                "var1": "姓名",
+                "var2": "年龄",
+                "var3": "工龄",
+                "var4": "学历"
+              },
               "type": "save_data"
             }
           ],

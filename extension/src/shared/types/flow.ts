@@ -72,6 +72,7 @@ export interface FlowStep {
   conditions?:      ConditionItem[]   // condition: 多条件列表
   conditionLogic?:  ConditionLogic    // condition: 条件连接方式，默认 'and'
   recordFields?:    string[]          // save_data: 要保存的变量名列表
+  recordFieldAliases?: Record<string, string> // save_data: 变量别名映射（内部名→别名），透传到数据记录用于友好显示
 }
 
 // ─── 触发器 ────────────────────────────────────────────────────────────────────

@@ -1,8 +1,9 @@
 import React from 'react'
 import DataTable, { type Column } from '../components/DataTable'
 
-/** 将 varN 格式的内部变量名转换为友好的显示名 */
-function displayFieldKey(key: string): string {
+/** 根据别名映射显示友好的字段名，无映射时对 varN 格式生成默认别名 */
+function displayFieldKey(key: string, aliases?: Record<string, string>): string {
+  if (aliases && aliases[key]) return aliases[key]
   const match = key.match(/^var(\d+)$/)
   if (match) return `变量${parseInt(match[1]) + 1}`
   return key
@@ -12,6 +13,7 @@ interface RecordItem {
   id: string
   createdAt: string
   fields: Record<string, string>
+  fieldAliases?: Record<string, string>
   status: 'active' | 'trash'
   tagIds: string[]
   deletedAt?: string
@@ -83,7 +85,7 @@ export default function DataRecordTrash({
         return (
           <span className="field-preview">
             {entries.map(([k, v]) => (
-              <span key={k} className="field-chip">{displayFieldKey(k)}: {v.length > 30 ? v.slice(0, 30) + '…' : v}</span>
+              <span key={k} className="field-chip">{displayFieldKey(k, item.fieldAliases)}: {v.length > 30 ? v.slice(0, 30) + '…' : v}</span>
             ))}
             {Object.keys(item.fields).length > 2 && (
               <span className="field-chip field-more">+{Object.keys(item.fields).length - 2} 项</span>

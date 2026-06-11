@@ -269,6 +269,7 @@ function createScreenshotBridgeServer(): Server {
       try {
         const body = await readJsonBody(req) as {
           fields?: unknown
+          fieldAliases?: unknown
           runId?: unknown
           runStartedAt?: unknown
           flowId?: unknown
@@ -291,6 +292,9 @@ function createScreenshotBridgeServer(): Server {
           flowName: typeof body.flowName === 'string' ? body.flowName : undefined,
           sourceUrl: typeof body.sourceUrl === 'string' ? body.sourceUrl : undefined,
           sourceTitle: typeof body.sourceTitle === 'string' ? body.sourceTitle : undefined,
+          fieldAliases: typeof body.fieldAliases === 'object' && body.fieldAliases !== null && !Array.isArray(body.fieldAliases)
+            ? body.fieldAliases as Record<string, string>
+            : undefined,
         })
         if (mainWindow && !mainWindow.isDestroyed()) {
           mainWindow.webContents.send('data-records-updated')
