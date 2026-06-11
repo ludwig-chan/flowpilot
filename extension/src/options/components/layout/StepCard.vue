@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import type { FlowStep } from '@shared/types/flow'
+import type { ConditionItem, FlowStep } from '@shared/types/flow'
+import { CONDITION_OPERATORS } from '@shared/types/flow'
 import type { BranchDropTarget } from '../../composables/useStepDrag'
 import ConditionBranchView from '../step-editor/ConditionBranchView.vue'
 import { displayExprWithAliases } from '@shared/utils/varAlias'
@@ -38,6 +39,16 @@ const emit = defineEmits<{
   (e: 'branch-dragover', stepId: string, branch: 'if' | 'else', insertIdx: number): void
   (e: 'branch-drop'): void
 }>()
+
+function formatCondition(cond: ConditionItem): string {
+  if (cond.mode === 'elem') return cond.selector?.slice(0, 25) ?? '?'
+  if (cond.leftVar && cond.operator) {
+    const varName = props.varAliasMap?.get(cond.leftVar) ?? cond.leftVar
+    const opLabel = CONDITION_OPERATORS.find(o => o.value === cond.operator)?.label ?? cond.operator
+    return `${varName} ${opLabel} ${cond.rightValue ?? ''}`.trim()
+  }
+  return displayExprWithAliases(cond.value ?? '?', props.varAliasMap ?? new Map())
+}
 </script>
 
 <template>
@@ -67,7 +78,7 @@ const emit = defineEmits<{
       <!-- 多条件摘要 -->
       <div v-if="step.type === 'condition' && step.conditions?.length" class="step-card__cond-summary">
         <code v-for="(c, i) in step.conditions" :key="c.id">
-          {{ c.mode === 'expr' ? displayExprWithAliases(c.value ?? '?', varAliasMap ?? new Map()) : (c.selector?.slice(0, 25) ?? '?') }}
+          {{ formatCondition(c) }}
           <span v-if="i < step.conditions.length - 1" class="step-card__cond-logic">
             {{ step.conditionLogic === 'or' ? ' 或 ' : ' 且 ' }}
           </span>

@@ -35,10 +35,34 @@ export type ActionType =
   | 'save_data'
 
 // ─── 多条件分支 ────────────────────────────────────────────────────────────────
+export type ConditionOperator =
+  | '>'
+  | '<'
+  | '>='
+  | '<='
+  | '=='
+  | '!='
+  | 'contains'
+  | 'not_contains'
+
+export const CONDITION_OPERATORS: { value: ConditionOperator; label: string }[] = [
+  { value: '>',            label: '大于' },
+  { value: '<',            label: '小于' },
+  { value: '>=',           label: '大于等于' },
+  { value: '<=',           label: '小于等于' },
+  { value: '==',           label: '等于' },
+  { value: '!=',           label: '不等于' },
+  { value: 'contains',     label: '包含' },
+  { value: 'not_contains', label: '不包含' },
+]
+
 export interface ConditionItem {
   id:       string
   mode:     'expr' | 'elem'
   value?:   string       // expr 模式：如 "{{price}} > 100"
+  leftVar?: string       // expr 结构化模式：左侧变量内部名，如 "var0"
+  operator?: ConditionOperator
+  rightValue?: string    // expr 结构化模式：用户输入的比较值
   selector?: string      // elem 模式：CSS 选择器
 }
 export type ConditionLogic = 'and' | 'or'

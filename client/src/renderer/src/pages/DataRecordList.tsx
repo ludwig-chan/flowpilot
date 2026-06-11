@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import DataTable, { type Column } from '../components/DataTable'
 import ImageLightbox from '../components/ImageLightbox'
 import OcrTextDialog from '../components/OcrTextDialog'
@@ -55,6 +55,16 @@ function hasOcrResult(results: Record<string, string>, screenshotId: string): bo
   return Object.prototype.hasOwnProperty.call(results, screenshotId)
 }
 
+function collectScreenshotIds(records: RecordItem[]): string[] {
+  const ids = new Set<string>()
+  for (const record of records) {
+    for (const value of Object.values(record.fields)) {
+      if (isScreenshotId(value)) ids.add(value)
+    }
+  }
+  return [...ids]
+}
+
 export default function DataRecordList({
   records,
   tags,
@@ -76,6 +86,7 @@ export default function DataRecordList({
   const [ocrPreloaded, setOcrPreloaded] = useState(false)
   const [ocrDialog, setOcrDialog] = useState<{ text: string; label: string } | null>(null)
   const [tagEditRecord, setTagEditRecord] = useState<RecordItem | null>(null)
+  const queuedOcrIdsRef = useRef<Set<string>>(new Set())
 
   // ── 预加载截图库已有 OCR 结果，避免重复识别 ──
   useEffect(() => {
@@ -96,6 +107,11 @@ export default function DataRecordList({
       return true
     }),
     [records, tagFilter],
+  )
+
+  const recordScreenshotIds = React.useMemo(
+    () => collectScreenshotIds(records.filter((record) => record.status === 'active')),
+    [records],
   )
 
   const handleTrash = async (item: RecordItem): Promise<void> => {
@@ -144,29 +160,69 @@ export default function DataRecordList({
     onRefresh()
   }
 
-  const runOcrForField = async (screenshotId: string): Promise<void> => {
-    if (ocrLoading[screenshotId]) return
-    if (hasOcrResult(ocrResults, screenshotId)) return
-    if (ocrErrors[screenshotId]) return
-    setOcrLoading((prev) => ({ ...prev, [screenshotId]: true }))
-    setOcrErrors((prev) => {
+  const runOcrForScreenshots = async (screenshotIds: string[]): Promise<void> => {
+    const targets = screenshotIds.filter((screenshotId) => {
+      if (ocrLoading[screenshotId]) return false
+      if (hasOcrResult(ocrResults, screenshotId)) return false
+      if (ocrErrors[screenshotId]) return false
+      if (queuedOcrIdsRef.current.has(screenshotId)) return false
+      return true
+    })
+    if (!targets.length) return
+
+    for (const id of targets) queuedOcrIdsRef.current.add(id)
+    setOcrLoading((prev) => {
       const next = { ...prev }
-      delete next[screenshotId]
+      for (const id of targets) next[id] = true
       return next
     })
+    setOcrErrors((prev) => {
+      const next = { ...prev }
+      for (const id of targets) delete next[id]
+      return next
+    })
+
     try {
-      const result = await window.api.ocrScreenshot(screenshotId)
-      if (result.success) {
-        setOcrResults((prev) => ({ ...prev, [screenshotId]: result.text ?? '' }))
-      } else {
-        setOcrErrors((prev) => ({ ...prev, [screenshotId]: result.error ?? 'OCR failed' }))
-      }
+      const result = await window.api.ocrScreenshotsBatch(targets)
+      const returnedIds = new Set(result.results.map((item) => item.id))
+
+      setOcrResults((prev) => {
+        const next = { ...prev }
+        for (const item of result.results) {
+          if (typeof item.text === 'string') next[item.id] = item.text
+        }
+        return next
+      })
+      setOcrErrors((prev) => {
+        const next = { ...prev }
+        for (const item of result.results) {
+          if (item.error) next[item.id] = item.error
+        }
+        for (const id of targets) {
+          if (!returnedIds.has(id)) next[id] = result.error ?? 'OCR failed'
+        }
+        return next
+      })
     } catch (err) {
-      setOcrErrors((prev) => ({ ...prev, [screenshotId]: (err as Error).message }))
+      setOcrErrors((prev) => {
+        const next = { ...prev }
+        for (const id of targets) next[id] = (err as Error).message
+        return next
+      })
     } finally {
-      setOcrLoading((prev) => ({ ...prev, [screenshotId]: false }))
+      for (const id of targets) queuedOcrIdsRef.current.delete(id)
+      setOcrLoading((prev) => {
+        const next = { ...prev }
+        for (const id of targets) next[id] = false
+        return next
+      })
     }
   }
+
+  useEffect(() => {
+    if (!ocrPreloaded) return
+    void runOcrForScreenshots(recordScreenshotIds)
+  }, [ocrPreloaded, recordScreenshotIds, ocrResults, ocrErrors])
 
   const openDetail = async (item: RecordItem): Promise<void> => {
     setDetailRecord(item)
@@ -182,15 +238,7 @@ export default function DataRecordList({
     }
     setThumbnails(newThumbs)
 
-    // 自动触发 OCR（仅对未识别过的截图字段，预加载完成后才触发）
   }
-
-  useEffect(() => {
-    if (!detailRecord || !ocrPreloaded) return
-    for (const [, val] of Object.entries(detailRecord.fields)) {
-      if (isScreenshotId(val)) void runOcrForField(val)
-    }
-  }, [detailRecord, ocrPreloaded, ocrResults, ocrErrors])
 
   // ── 详情弹窗的上/下条导航 ──
   const detailIndex = detailRecord

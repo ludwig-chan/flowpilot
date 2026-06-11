@@ -804,6 +804,9 @@ body {
   border-radius: 6px;
   background: var(--bg);
   padding: 10px;
+  user-select: text;
+  -webkit-user-select: text;
+  cursor: text;
 }
 
 .detail-ocr-header {
@@ -822,6 +825,9 @@ body {
   font: inherit;
   line-height: 1.55;
   color: var(--text);
+  user-select: text;
+  -webkit-user-select: text;
+  cursor: text;
 }
 
 .detail-ocr-state {
