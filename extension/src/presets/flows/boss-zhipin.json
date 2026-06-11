@@ -32,7 +32,8 @@
                 "iframeSelector": "body > div:nth-child(18) > div:nth-child(1) > div > div > div > div > div:nth-child(1) > div:nth-child(1) > iframe"
               },
               "type": "save_canvas",
-              "value": "screenshot"
+              "value": "var0",
+              "varAlias": "截图"
             },
             {
               "id": "step_1780650539280_v9e",
@@ -51,7 +52,8 @@
                 "text": "隆孝存"
               },
               "type": "get_text",
-              "value": "name"
+              "value": "var1",
+              "varAlias": "姓名"
             },
             {
               "id": "step_1781083065554_rh8",
@@ -61,7 +63,8 @@
                 "text": "42岁"
               },
               "type": "get_text",
-              "value": "age"
+              "value": "var2",
+              "varAlias": "年龄"
             },
             {
               "id": "step_1781083107448_ec5",
@@ -71,7 +74,8 @@
                 "text": "10年以上"
               },
               "type": "get_text",
-              "value": "workyear"
+              "value": "var3",
+              "varAlias": "工龄"
             },
             {
               "id": "step_1781083133299_p3n",
@@ -81,17 +85,18 @@
                 "text": "中专/中技 · 中专/中技"
               },
               "type": "get_text",
-              "value": "school"
+              "value": "var4",
+              "varAlias": "学历"
             },
             {
               "id": "step_1781146613673_pg2",
               "label": "保存数据",
               "recordFields": [
-                "screenshot",
-                "name",
-                "age",
-                "workyear",
-                "school"
+                "var0",
+                "var1",
+                "var2",
+                "var3",
+                "var4"
               ],
               "type": "save_data"
             }
@@ -146,7 +151,8 @@
                 "text": "23岁"
               },
               "type": "get_text",
-              "value": "age"
+              "value": "var2",
+              "varAlias": "年龄"
             },
             {
               "id": "step_1780918303458_vpi",
@@ -156,7 +162,8 @@
                 "text": "高中 · 高中"
               },
               "type": "get_text",
-              "value": "school"
+              "value": "var4",
+              "varAlias": "学历"
             },
             {
               "children": [
@@ -172,19 +179,19 @@
                 {
                   "id": "cond_1780975751733_ltkwr",
                   "mode": "expr",
-                  "value": "{{age}} <= 30"
+                  "value": "{{var2}} <= 30"
                 },
                 {
                   "id": "cond_1780975765327_n2kmz",
                   "mode": "expr",
-                  "value": "{{school}}  not_contains 高中"
+                  "value": "{{var4}}  not_contains 高中"
                 }
               ],
               "elseChildren": [],
               "id": "step_1780918236481_9xg32",
               "label": "条件判断",
               "type": "condition",
-              "value": "{{age}} <= 30"
+              "value": "{{var2}} <= 30"
             }
           ],
           "pinnedInMenu": false

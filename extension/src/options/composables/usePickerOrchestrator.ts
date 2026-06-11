@@ -256,11 +256,12 @@ export function usePickerOrchestrator(
   }
 
   /** ActionPickerModal 点击「换元素」 → 保留动作状态，重新打开元素选择器 */
-  function onActionRePick(type: ActionType, value: string | undefined) {
+  function onActionRePick(type: ActionType, value: string | undefined, varAlias: string | undefined) {
     if (configuringLoopItemAction.value && es.editingLoopStep?.selector?.cssSelector) {
-      es.editingInitialType = type
-      es.editingInitialValue = value
-      es.showActionModal = false
+      es.editingInitialType     = type
+      es.editingInitialValue    = value
+      es.editingInitialVarAlias = varAlias
+      es.showActionModal        = false
       selectingLoopTargetIdx.value = configuringLoopItemActionIdx.value
       selectingLoopTarget.value = true
       pickedCssSelector.value = ''
@@ -268,7 +269,7 @@ export function usePickerOrchestrator(
       scanDom(es.editingLoopStep.selector.cssSelector)
       return
     }
-    _onActionRePickBase(type, value, showPickerModal, pickedCssSelector)
+    _onActionRePickBase(type, value, varAlias, showPickerModal, pickedCssSelector)
   }
 
   async function openPicker() {

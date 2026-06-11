@@ -2,6 +2,7 @@ import type { InjectionKey, Ref, ComputedRef } from 'vue'
 import type { FlowStep, ActionType, StepDelayLevel, FlowTrigger } from '@shared/types/flow'
 import type { SerializedDomNode, SerializedElement } from '@shared/types/dom'
 import type { RepeatingCandidate } from '@shared/types/message'
+import type { VarInfo } from '@shared/utils/varAlias'
 
 export interface StepEditorModalContext {
   // ── useDomPicker ─────────────────────────────────────────────────
@@ -33,13 +34,13 @@ export interface StepEditorModalContext {
   confirmLoopCallFlow: (id: string) => void
   onActionConfirm: (step: FlowStep) => void
   onActionTry: (step: FlowStep) => void
-  onActionRePick: (type: ActionType, value: string | undefined) => void
+  onActionRePick: (type: ActionType, value: string | undefined, varAlias: string | undefined) => void
   cancelActionModal: () => void
   // ── useConditionEditor ────────────────────────────────────────────
   showConditionModal: Ref<boolean>
   conditionModalStep: Ref<FlowStep | null>
   conditionModalIdx: Ref<number | null>
-  conditionAvailableVars: ComputedRef<string[]>
+  conditionAvailableVars: ComputedRef<VarInfo[]>
   onConditionConfirm: (data: { label: string; conditions: import('@shared/types/flow').ConditionItem[]; logic: import('@shared/types/flow').ConditionLogic }) => void
   // ── useFlowEditor ─────────────────────────────────────────────────
   showSettingsModal: Ref<boolean>
@@ -55,7 +56,7 @@ export interface StepEditorModalContext {
   showSaveDataModal: Ref<boolean>
   saveDataEditTarget: Ref<FlowStep | null>
   onSaveDataConfirm: (step: FlowStep) => void
-  saveDataAvailableVars: ComputedRef<string[]>
+  saveDataAvailableVars: ComputedRef<VarInfo[]>
 }
 
 export const STEP_EDITOR_MODALS_KEY: InjectionKey<StepEditorModalContext> = Symbol('stepEditorModals')

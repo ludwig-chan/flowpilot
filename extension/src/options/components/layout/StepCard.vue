@@ -2,6 +2,7 @@
 import type { FlowStep } from '@shared/types/flow'
 import type { BranchDropTarget } from '../../composables/useStepDrag'
 import ConditionBranchView from '../step-editor/ConditionBranchView.vue'
+import { displayExprWithAliases } from '@shared/utils/varAlias'
 
 const props = defineProps<{
   step:               FlowStep
@@ -12,6 +13,7 @@ const props = defineProps<{
   expandedConditions: Set<string>
   isBrokenRef:        (flowRef?: string) => boolean
   branchDropTarget?:  BranchDropTarget | null
+  varAliasMap?:       Map<string, string>
 }>()
 
 const emit = defineEmits<{
@@ -65,7 +67,7 @@ const emit = defineEmits<{
       <!-- 多条件摘要 -->
       <div v-if="step.type === 'condition' && step.conditions?.length" class="step-card__cond-summary">
         <code v-for="(c, i) in step.conditions" :key="c.id">
-          {{ c.mode === 'expr' ? (c.value ?? '?') : (c.selector?.slice(0, 25) ?? '?') }}
+          {{ c.mode === 'expr' ? displayExprWithAliases(c.value ?? '?', varAliasMap ?? new Map()) : (c.selector?.slice(0, 25) ?? '?') }}
           <span v-if="i < step.conditions.length - 1" class="step-card__cond-logic">
             {{ step.conditionLogic === 'or' ? ' 或 ' : ' 且 ' }}
           </span>

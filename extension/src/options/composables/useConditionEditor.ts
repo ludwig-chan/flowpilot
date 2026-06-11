@@ -4,6 +4,7 @@ import type { LocalFlow } from '../stores/useFlowStore'
 import type { FlowStep, ConditionItem, ConditionLogic } from '@shared/types/flow'
 import { useEditorStore } from '../stores/useEditorStore'
 import { genId } from '@shared/utils/genId'
+import { collectVarInfos, type VarInfo } from '@shared/utils/varAlias'
 
 export function useConditionEditor(
   editingFlow: Ref<LocalFlow | null>,
@@ -15,18 +16,10 @@ export function useConditionEditor(
   const conditionModalIdx  = ref<number | null>(null)
   const expandedConditions = ref(new Set<string>())
 
-  /** 收集当前流程中所有 get_text 步骤的变量名（递归），用于条件表达式变量提示 */
-  const conditionAvailableVars = computed<string[]>(() => {
-    const vars: string[] = []
-    function collect(steps: FlowStep[]) {
-      for (const s of steps) {
-        if (s.type === 'get_text' && s.value?.trim()) vars.push(s.value.trim())
-        if (s.children?.length) collect(s.children)
-        if (s.elseChildren?.length) collect(s.elseChildren)
-      }
-    }
-    if (editingFlow.value?.steps) collect(editingFlow.value.steps)
-    return [...new Set(vars)]
+  /** 收集当前流程中所有 get_text 步骤的变量信息（递归），用于条件表达式变量提示 */
+  const conditionAvailableVars = computed<VarInfo[]>(() => {
+    if (!editingFlow.value?.steps) return []
+    return collectVarInfos(editingFlow.value.steps)
   })
 
   function addConditionStep() {

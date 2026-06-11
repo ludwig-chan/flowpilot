@@ -44,6 +44,7 @@ export function useStepEditor(
     es.openActionModal(el, {
       initialType:        step.type,
       initialValue:       step.value,
+      initialVarAlias:    step.varAlias,
       initialWaitTimeout: step.waitTimeout,
       initialFoundDelay:  step.foundDelay,
       initialLabel:       step.label,
@@ -54,14 +55,16 @@ export function useStepEditor(
   function onActionRePick(
     type: ActionType,
     value: string | undefined,
+    varAlias: string | undefined,
     showPickerModal: Ref<boolean>,
     pickedCssSelector: Ref<string>,
   ) {
-    es.editingInitialType  = type
-    es.editingInitialValue = value
-    es.showActionModal     = false
-    pickedCssSelector.value = ''
-    showPickerModal.value   = true
+    es.editingInitialType     = type
+    es.editingInitialValue    = value
+    es.editingInitialVarAlias = varAlias
+    es.showActionModal        = false
+    pickedCssSelector.value   = ''
+    showPickerModal.value     = true
   }
 
   /** 关闭 ActionPickerModal，清理编辑状态 */
@@ -86,12 +89,14 @@ export function useStepEditor(
       es.editingBranchStep   = null
       es.editingInitialType  = undefined
       es.editingInitialValue = undefined
+      es.editingInitialVarAlias = undefined
     } else if (es.editingStepIdx !== null) {
       const originalId = editingFlow.value.steps[es.editingStepIdx].id
       editingFlow.value.steps[es.editingStepIdx] = { ...step, id: originalId }
       es.editingStepIdx      = null
       es.editingInitialType  = undefined
       es.editingInitialValue = undefined
+      es.editingInitialVarAlias = undefined
     } else if (es.addingToBranch) {
       const { condStepId, branch } = es.addingToBranch
       const condStep = editingFlow.value.steps.find(s => s.id === condStepId)
@@ -129,6 +134,7 @@ export function useStepEditor(
     es.openActionModal(el, {
       initialType:        childStep.type,
       initialValue:       childStep.value,
+      initialVarAlias:    childStep.varAlias,
       initialWaitTimeout: childStep.waitTimeout,
       initialFoundDelay:  childStep.foundDelay,
       initialLabel:       childStep.label,

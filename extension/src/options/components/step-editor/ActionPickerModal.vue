@@ -47,7 +47,7 @@ const ACTION_GROUPS: ActionGroup[] = [
   {
     label: '数据 & 等待',
     options: [
-      { type: 'get_text',       label: '📋 获取文字', needValue: true,  valueLabel: '变量名', valuePlaceholder: '如 title、name、status' },
+      { type: 'get_text',       label: '📋 获取文字', needValue: true,  valueLabel: '变量别名', valuePlaceholder: '如 年龄、学历、姓名' },
       { type: 'save_data',      label: '💾 保存数据', needValue: false },
       { type: 'wait_appear',    label: '⏳ 等待出现', needValue: false },
       { type: 'wait_disappear', label: '🕐 等待消失', needValue: false },
@@ -57,7 +57,7 @@ const ACTION_GROUPS: ActionGroup[] = [
     label: '页面',
     options: [
       { type: 'scroll_to',          label: '📜 滚动到',    needValue: false },
-      { type: 'save_canvas',        label: '📷 截图',      needValue: true, valueLabel: '变量名', valuePlaceholder: '如 screenshot、cardImage' },
+      { type: 'save_canvas',        label: '📷 截图',      needValue: true, valueLabel: '变量别名', valuePlaceholder: '如 截图、卡片图片' },
     ],
   },
 ]
@@ -68,16 +68,18 @@ const props = defineProps<{
   element:             SerializedElement
   initialType?:        ActionType
   initialValue?:       string
+  initialVarAlias?:    string
   initialLabel?:       string
   initialWaitTimeout?: number
   initialFoundDelay?:  [number, number]
+  existingSteps?:      FlowStep[]
 }>()
 
 const emit = defineEmits<{
   (e: 'confirm', step: FlowStep): void
   (e: 'try',     step: FlowStep): void
   (e: 'cancel'): void
-  (e: 're-pick', type: ActionType, value: string | undefined): void
+  (e: 're-pick', type: ActionType, value: string | undefined, varAlias: string | undefined): void
 }>()
 
 function inferDefault(el: SerializedElement): ActionType {
@@ -86,8 +88,11 @@ function inferDefault(el: SerializedElement): ActionType {
   return 'click'
 }
 
+import { nextVarIndex, genVarName, genDefaultAlias } from '@shared/utils/varAlias'
+
 const selectedType      = ref<ActionType>(props.initialType ?? inferDefault(props.element))
 const inputValue        = ref(props.initialValue ?? '')
+const inputVarAlias     = ref(props.initialVarAlias ?? '')
 const stepLabel         = ref(props.initialLabel ?? '')
 const tryState          = ref<'idle' | 'running' | 'done'>('idle')
 const stepWaitTimeout   = ref<number | undefined>(props.initialWaitTimeout)
@@ -111,12 +116,34 @@ const autoLabel  = computed(() => {
 
 function buildStep(): FlowStep {
   const [fdMin, fdMax] = stepFoundDelay.value
+  const isVarStep = selectedType.value === 'get_text' || selectedType.value === 'save_canvas'
+
+  // 对 get_text / save_canvas：用户填的是别名，内部名自动生成
+  let finalValue: string | undefined
+  let finalVarAlias: string | undefined
+  if (isVarStep) {
+    // 编辑已有步骤时保留原内部名，新建时自动生成
+    if (props.initialValue?.trim()) {
+      finalValue = props.initialValue.trim()
+    } else {
+      const idx = nextVarIndex(props.existingSteps ?? [])
+      finalValue = genVarName(idx)                           // var0, var1...
+    }
+    finalVarAlias = inputVarAlias.value.trim() || genDefaultAlias(
+      // 从 value 中提取编号用于默认别名
+      finalValue.match(/^var(\d+)$/) ? parseInt(finalValue.match(/^var(\d+)$/)![1]) : nextVarIndex(props.existingSteps ?? [])
+    ) // 用户填的或 "变量1"
+  } else {
+    finalValue = inputValue.value.trim() || undefined
+  }
+
   return {
     id:               `step_${Date.now()}_${Math.random().toString(36).slice(2, 5)}`,
     type:             selectedType.value,
     label:            stepLabel.value.trim() || autoLabel.value,
     selector:         props.element.selector,
-    value:            inputValue.value.trim() || undefined,
+    value:            finalValue,
+    varAlias:         finalVarAlias,
     waitTimeout:      stepWaitTimeout.value || undefined,
     foundDelay:       ((fdMin ?? 0) > 0 || (fdMax ?? 0) > 0) ? [fdMin ?? 0, fdMax ?? 0] : undefined,
   }
@@ -143,7 +170,7 @@ function tryAction() {
         <BaseButton
           class="action-modal__repick-btn"
           title="重新选择元素"
-          @click="emit('re-pick', selectedType, inputValue.trim() || undefined)"
+          @click="emit('re-pick', selectedType, inputValue.trim() || undefined, inputVarAlias.trim() || undefined)"
         >🎯 换元素</BaseButton>      </div>
 
       <div class="action-modal__body">
@@ -160,7 +187,7 @@ function tryAction() {
           <select
             class="action-modal__action-select"
             :value="selectedType"
-            @change="selectedType = ($event.target as HTMLSelectElement).value as ActionType; inputValue = ''"
+            @change="selectedType = ($event.target as HTMLSelectElement).value as ActionType; inputValue = ''; inputVarAlias = ''"
           >
             <optgroup v-for="group in ACTION_GROUPS" :key="group.label" :label="group.label">
               <option v-for="opt in group.options" :key="opt.type" :value="opt.type">{{ opt.label }}</option>
@@ -170,6 +197,12 @@ function tryAction() {
         <div v-if="currentOpt.needValue" class="action-modal__value-row">
           <span class="action-modal__value-label">{{ currentOpt.valueLabel || '值' }}</span>
           <BaseInput
+            v-if="selectedType === 'get_text' || selectedType === 'save_canvas'"
+            v-model="inputVarAlias"
+            :placeholder="currentOpt.valuePlaceholder"
+          />
+          <BaseInput
+            v-else
             v-model="inputValue"
             :placeholder="currentOpt.valuePlaceholder"
           />

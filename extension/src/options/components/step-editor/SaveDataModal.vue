@@ -3,9 +3,10 @@ import { ref, computed } from 'vue'
 import type { FlowStep } from '@shared/types/flow'
 import BaseCheckbox from '@shared/components/BaseCheckbox.vue'
 import BaseInput from '@shared/components/BaseInput.vue'
+import { type VarInfo } from '@shared/utils/varAlias'
 
 const props = defineProps<{
-  availableVars: string[]
+  availableVars: VarInfo[]
   initialStep?: FlowStep | null
 }>()
 
@@ -14,7 +15,7 @@ const emit = defineEmits<{
   (e: 'cancel'): void
 }>()
 
-// 从 initialStep 恢复已选变量
+// 从 initialStep 恢复已选变量（内部名）
 const initialFields = computed(() => props.initialStep?.recordFields ?? [])
 const selectedVars = ref<string[]>(initialFields.value)
 const stepLabel = ref(props.initialStep?.label ?? '保存数据')
@@ -27,14 +28,20 @@ function toggleAll() {
   if (allSelected.value) {
     selectedVars.value = []
   } else {
-    selectedVars.value = [...props.availableVars]
+    selectedVars.value = props.availableVars.map(v => v.internal)
   }
 }
 
-function toggleVar(name: string) {
-  const idx = selectedVars.value.indexOf(name)
+function toggleVar(internal: string) {
+  const idx = selectedVars.value.indexOf(internal)
   if (idx >= 0) selectedVars.value.splice(idx, 1)
-  else selectedVars.value.push(name)
+  else selectedVars.value.push(internal)
+}
+
+/** 根据内部名查找别名 */
+function getAlias(internal: string): string {
+  const v = props.availableVars.find(av => av.internal === internal)
+  return v?.alias ?? internal
 }
 
 function confirm() {
@@ -71,12 +78,12 @@ function confirm() {
             />
             <span class="sdm-var-name sdm-var-name--header">全选 / 取消全选</span>
           </div>
-          <div v-for="name in availableVars" :key="name" class="sdm-var-row">
+          <div v-for="v in availableVars" :key="v.internal" class="sdm-var-row">
             <BaseCheckbox
-              :model-value="selectedVars.includes(name)"
-              @update:model-value="toggleVar(name)"
+              :model-value="selectedVars.includes(v.internal)"
+              @update:model-value="toggleVar(v.internal)"
             />
-            <span class="sdm-var-name">{{ name }}</span>
+            <span class="sdm-var-name">{{ v.alias }}</span>
           </div>
         </div>
         <div v-else class="sdm-empty">
@@ -88,7 +95,7 @@ function confirm() {
       <!-- 已选摘要 -->
       <div v-if="selectedVars.length" class="sdm-summary">
         将保存 {{ selectedVars.length }} 个变量：
-        <code>{{ selectedVars.join(', ') }}</code>
+        <code>{{ selectedVars.map(getAlias).join(', ') }}</code>
       </div>
     </div>
 

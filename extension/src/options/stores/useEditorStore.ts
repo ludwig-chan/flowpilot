@@ -25,6 +25,7 @@ export const useEditorStore = defineStore('editor', () => {
   const editingInitialWaitTimeout = ref<number | undefined>(undefined)
   const editingInitialFoundDelay  = ref<[number, number] | undefined>(undefined)
   const editingInitialLabel       = ref<string | undefined>(undefined)
+  const editingInitialVarAlias    = ref<string | undefined>(undefined)
 
   // ── 分支编辑共享状态 ─────────────────────────────────────────────
   const addingToBranch        = ref<{ condStepId: string; branch: 'if' | 'else' } | null>(null)
@@ -37,6 +38,7 @@ export const useEditorStore = defineStore('editor', () => {
     opts: {
       initialType?: ActionType
       initialValue?: string
+      initialVarAlias?: string
       initialWaitTimeout?: number
       initialFoundDelay?: [number, number]
       initialLabel?: string
@@ -45,6 +47,7 @@ export const useEditorStore = defineStore('editor', () => {
     actionModalEl.value = el
     if (opts.initialType !== undefined)        editingInitialType.value        = opts.initialType
     if (opts.initialValue !== undefined)       editingInitialValue.value       = opts.initialValue
+    if (opts.initialVarAlias !== undefined)    editingInitialVarAlias.value    = opts.initialVarAlias
     if (opts.initialWaitTimeout !== undefined) editingInitialWaitTimeout.value = opts.initialWaitTimeout
     if (opts.initialFoundDelay !== undefined)  editingInitialFoundDelay.value  = opts.initialFoundDelay
     if (opts.initialLabel !== undefined)       editingInitialLabel.value       = opts.initialLabel
@@ -54,6 +57,7 @@ export const useEditorStore = defineStore('editor', () => {
   function clearEditState() {
     editingInitialType.value        = undefined
     editingInitialValue.value       = undefined
+    editingInitialVarAlias.value    = undefined
     editingInitialWaitTimeout.value = undefined
     editingInitialFoundDelay.value  = undefined
     editingInitialLabel.value       = undefined
@@ -68,6 +72,7 @@ export const useEditorStore = defineStore('editor', () => {
     editingStepIdx.value            = null
     editingInitialType.value        = undefined
     editingInitialValue.value       = undefined
+    editingInitialVarAlias.value    = undefined
     editingInitialWaitTimeout.value = undefined
     editingInitialFoundDelay.value  = undefined
     editingInitialLabel.value       = undefined
@@ -93,6 +98,7 @@ export const useEditorStore = defineStore('editor', () => {
     editingInitialWaitTimeout,
     editingInitialFoundDelay,
     editingInitialLabel,
+    editingInitialVarAlias,
     openActionModal,
     clearEditState,
     resetAll,

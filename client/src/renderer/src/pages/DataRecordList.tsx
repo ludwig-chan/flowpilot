@@ -33,6 +33,13 @@ interface DataRecordListProps {
   onRefresh: () => void
 }
 
+/** 将 varN 格式的内部变量名转换为友好的显示名 */
+function displayFieldKey(key: string): string {
+  const match = key.match(/^var(\d+)$/)
+  if (match) return `变量${parseInt(match[1]) + 1}`
+  return key
+}
+
 function formatDate(value: string): string {
   if (!value) return '-'
   return value
@@ -192,7 +199,7 @@ export default function DataRecordList({
       >
         {preview.map(([k, v]) => (
           <span key={k} className="field-chip">
-            {k}: {v.length > 30 ? v.slice(0, 30) + '…' : v}
+            {displayFieldKey(k)}: {v.length > 30 ? v.slice(0, 30) + '…' : v}
           </span>
         ))}
         {more > 0 && <span className="field-chip field-more">+{more} 项</span>}
@@ -358,7 +365,7 @@ export default function DataRecordList({
                     const ocrIsLoading = isScreenshot ? (ocrLoading[val] ?? false) : false
                     return (
                       <tr key={key} className="detail-field-row">
-                        <td className="detail-field-key">{key}</td>
+                        <td className="detail-field-key">{displayFieldKey(key)}</td>
                         <td className="detail-field-val">
                           {isScreenshot && thumbnails[val] ? (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>

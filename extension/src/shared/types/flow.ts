@@ -49,7 +49,8 @@ export interface FlowStep {
   type: ActionType
   label: string
   selector?: SelectorStrategy
-  value?: string            // 支持变量插值 {{varName}}
+  value?: string            // 支持变量插值 {{varName}}；get_text/save_canvas 时为内部变量名（var0, var1...）
+  varAlias?: string         // 用户可见的变量别名（如 "年龄"、"学历"），仅 UI 展示用，默认 "变量N"
   delay?: [number, number]  // [min, max] ms，步骤执行完后的随机延迟
   waitTimeout?: number      // 等待元素出现的超时时间 ms（覆盖流程级默认值）
   foundDelay?: [number, number]  // 元素出现后、执行动作前的随机等待 ms

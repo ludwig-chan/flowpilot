@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import BaseInput from '@shared/components/BaseInput.vue'
 import type { ConditionItem, ConditionLogic } from '@shared/types/flow'
 import { genId } from '@shared/utils/genId'
+import { buildVarAliasMap, displayExprWithAliases, storeExprFromDisplay, type VarInfo } from '@shared/utils/varAlias'
 
 // ── Props / Emits ────────────────────────────────────────────────────────────
 const props = defineProps<{
@@ -10,7 +11,7 @@ const props = defineProps<{
   initialValue?:       string               // 兼容旧格式
   initialConditions?:  ConditionItem[]
   initialLogic?:       ConditionLogic
-  availableVars?:      string[]
+  availableVars?:      VarInfo[]
 }>()
 
 const emit = defineEmits<{
@@ -22,17 +23,26 @@ const emit = defineEmits<{
   }): void
 }>()
 
+// ── 变量别名映射 ──────────────────────────────────────────────────────────────
+const varAliasMap = computed(() => buildVarAliasMap(props.availableVars ?? []))
+
 // ── 步骤标签 ──────────────────────────────────────────────────────────────────
 const label = ref(props.initialLabel ?? '条件判断')
 
 // ── 多条件行 ──────────────────────────────────────────────────────────────────
 function buildInitialConditions(): ConditionItem[] {
   if (props.initialConditions?.length) {
-    return JSON.parse(JSON.stringify(props.initialConditions))
+    // 将内部名 {{var0}} 转换为别名显示
+    return JSON.parse(JSON.stringify(props.initialConditions)).map((c: ConditionItem) => {
+      if (c.mode === 'expr' && c.value) {
+        c.value = displayExprWithAliases(c.value, varAliasMap.value)
+      }
+      return c
+    })
   }
-  // 兼容旧格式：从 initialValue 构造单行
+  // 兼容旧格式：从 initialValue 构造单行（也转换为别名显示）
   if (props.initialValue?.trim()) {
-    return [{ id: genId('cond'), mode: 'expr', value: props.initialValue }]
+    return [{ id: genId('cond'), mode: 'expr', value: displayExprWithAliases(props.initialValue, varAliasMap.value) }]
   }
   return [{ id: genId('cond'), mode: 'expr', value: '' }]
 }
@@ -61,11 +71,12 @@ function toggleLogic() {
 }
 
 // ── 插入操作（作用于当前聚焦行）───────────────────────────────────────────────
-function insertVar(varName: string) {
+function insertVar(varInfo: VarInfo) {
   const cond = focusedCond.value
   if (!cond || cond.mode !== 'expr') return
-  const token = `{{${varName}}}`
-  cond.value = (cond.value ?? '') + ((cond.value?.trim() ? ' ' : '') + token)
+  // 在显示层插入别名文本（用户看到的是别名）
+  const alias = varInfo.alias
+  cond.value = (cond.value ?? '') + ((cond.value?.trim() ? ' ' : '') + alias)
 }
 
 function insertOp(op: string) {
@@ -84,9 +95,16 @@ const canConfirm = computed(() =>
 // ── 确认 ──────────────────────────────────────────────────────────────────────
 function confirm() {
   const trimLabel = label.value.trim() || '条件判断'
+  // 将显示层的别名还原为内部存储格式 {{var0}}
+  const storedConditions = conditions.value.map(c => {
+    if (c.mode === 'expr' && c.value) {
+      return { ...c, value: storeExprFromDisplay(c.value, varAliasMap.value) }
+    }
+    return c
+  })
   emit('confirm', {
     label:      trimLabel,
-    conditions: conditions.value,
+    conditions: storedConditions,
     logic:      logic.value,
   })
 }
@@ -170,11 +188,11 @@ function confirm() {
       <span class="cp-vars__label">可用变量：</span>
       <BaseButton
         v-for="v in props.availableVars"
-        :key="v"
+        :key="v.internal"
         class="cp-var-chip"
         :disabled="!focusedCond || focusedCond.mode !== 'expr'"
         @click="insertVar(v)"
-      >&#123;&#123;{{ v }}&#125;&#125;</BaseButton>
+      >{{ v.alias }}</BaseButton>
     </div>
 
     <!-- 运算符提示 -->

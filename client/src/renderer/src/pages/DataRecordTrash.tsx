@@ -1,6 +1,13 @@
 import React from 'react'
 import DataTable, { type Column } from '../components/DataTable'
 
+/** 将 varN 格式的内部变量名转换为友好的显示名 */
+function displayFieldKey(key: string): string {
+  const match = key.match(/^var(\d+)$/)
+  if (match) return `变量${parseInt(match[1]) + 1}`
+  return key
+}
+
 interface RecordItem {
   id: string
   createdAt: string
@@ -76,7 +83,7 @@ export default function DataRecordTrash({
         return (
           <span className="field-preview">
             {entries.map(([k, v]) => (
-              <span key={k} className="field-chip">{k}: {v.length > 30 ? v.slice(0, 30) + '…' : v}</span>
+              <span key={k} className="field-chip">{displayFieldKey(k)}: {v.length > 30 ? v.slice(0, 30) + '…' : v}</span>
             ))}
             {Object.keys(item.fields).length > 2 && (
               <span className="field-chip field-more">+{Object.keys(item.fields).length - 2} 项</span>

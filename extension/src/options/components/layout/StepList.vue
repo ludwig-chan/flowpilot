@@ -14,6 +14,7 @@ import { useStepActions, stepTypeLabels } from '../../composables/useStepActions
 import { showConfirm, showAlert } from '@shared/utils/dialog'
 import { useConditionEditor } from '../../composables/useConditionEditor'
 import { useStepDrag } from '../../composables/useStepDrag'
+import { collectVarInfos, buildVarAliasMap, type VarInfo } from '@shared/utils/varAlias'
 import FlowEditorHeader from './FlowEditorHeader.vue'
 import DropdownMenu from '@shared/components/DropdownMenu.vue'
 import StepCard from './StepCard.vue'
@@ -109,20 +110,14 @@ const { dragSrcIdx, dragInsertIdx, branchDropTarget, onHandleMouseDown, onDragSt
 const validFlowIds = computed(() => new Set(flowStore.allFlows().map(f => f.id)))
 function isBrokenRef(flowRef?: string) { return !!flowRef && !validFlowIds.value.has(flowRef) }
 
-/** 收集当前流程中所有 get_text 和 save_canvas 步骤的变量名（递归），用于保存数据步骤的变量选择 */
-const saveDataAvailableVars = computed<string[]>(() => {
-  const vars: string[] = []
-  function collect(steps: FlowStep[]) {
-    for (const s of steps) {
-      if (s.type === 'get_text' && s.value?.trim()) vars.push(s.value.trim())
-      if (s.type === 'save_canvas' && s.value?.trim()) vars.push(s.value.trim())
-      if (s.children?.length) collect(s.children)
-      if (s.elseChildren?.length) collect(s.elseChildren)
-    }
-  }
-  if (editingFlow.value?.steps) collect(editingFlow.value.steps)
-  return [...new Set(vars)]
+/** 收集当前流程中所有 get_text 和 save_canvas 步骤的变量信息（递归），用于保存数据步骤的变量选择 */
+const saveDataAvailableVars = computed<VarInfo[]>(() => {
+  if (!editingFlow.value?.steps) return []
+  return collectVarInfos(editingFlow.value.steps)
 })
+
+/** 变量别名映射（internal → alias），用于 StepCard 条件摘要显示 */
+const varAliasMap = computed(() => buildVarAliasMap(saveDataAvailableVars.value))
 
 function handleEdit(step: FlowStep, i: number) {
   if (step.type === 'element_branch') return
@@ -215,6 +210,7 @@ provide(STEP_EDITOR_MODALS_KEY, {
           :expanded-conditions="expandedConditions"
           :is-broken-ref="isBrokenRef"
           :branch-drop-target="branchDropTarget"
+          :var-alias-map="varAliasMap"
           @dragstart="onDragStart"
           @dragover="onDragOver"
           @drop="onDrop"
