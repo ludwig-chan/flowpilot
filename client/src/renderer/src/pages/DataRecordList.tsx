@@ -109,7 +109,7 @@ export default function DataRecordList({
     // 预加载截图缩略图
     const newThumbs: Record<string, string> = { ...thumbnails }
     for (const [, val] of Object.entries(item.fields)) {
-      if (val.startsWith('ss_') && !val.includes(' ') && !newThumbs[val]) {
+      if (val.startsWith('shot_') && !val.includes(' ') && !newThumbs[val]) {
         try {
           const img = await window.api.getScreenshotImage(val)
           if (img) newThumbs[val] = img.dataUrl
@@ -256,7 +256,7 @@ export default function DataRecordList({
                 {detailRecord.createdAt}
               </div>
               {Object.entries(detailRecord.fields).map(([key, val]) => {
-                const isScreenshot = val.startsWith('ss_') && !val.includes(' ')
+                const isScreenshot = val.startsWith('shot_') && !val.includes(' ')
                 return (
                   <div key={key} className="detail-field-row">
                     <span className="detail-field-key">{key}</span>
