@@ -76,6 +76,7 @@ interface DataRecordItem {
   id: string
   createdAt: string
   fields: Record<string, string>
+  fieldAliases?: Record<string, string>
   status: 'active' | 'trash'
   tagIds: string[]
   deletedAt?: string

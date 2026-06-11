@@ -87,6 +87,13 @@ function emptyLibrary(): DataRecordLibrary {
   return { schemaVersion: 2, records: [], tags: [] }
 }
 
+function normalizeStringRecord(value: unknown): Record<string, string> | undefined {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined
+  return Object.fromEntries(
+    Object.entries(value as Record<string, unknown>).map(([k, v]) => [k, String(v ?? '')])
+  )
+}
+
 function loadLibrary(): DataRecordLibrary {
   ensureDirs()
   if (!existsSync(LIBRARY_FILE)) return emptyLibrary()
@@ -99,9 +106,8 @@ function loadLibrary(): DataRecordLibrary {
     const records: DataRecordItem[] = rawRecords.map((r) => ({
       id:          String(r.id ?? ''),
       createdAt:   String(r.createdAt ?? ''),
-      fields:      (r.fields && typeof r.fields === 'object' && !Array.isArray(r.fields))
-        ? Object.fromEntries(Object.entries(r.fields as Record<string, unknown>).map(([k, v]) => [k, String(v ?? '')]))
-        : {},
+      fields:      normalizeStringRecord(r.fields) ?? {},
+      fieldAliases: normalizeStringRecord(r.fieldAliases),
       status:      (r.status === 'active' || r.status === 'trash') ? r.status : 'active',
       tagIds:      Array.isArray(r.tagIds) ? r.tagIds.filter((t): t is string => typeof t === 'string') : [],
       deletedAt:   typeof r.deletedAt === 'string' ? r.deletedAt : undefined,
