@@ -3,7 +3,7 @@
   "description": "按年龄和学历筛选候选人，自动打开简历截图保存",
   "tags": ["招聘", "BOSS直聘", "简历", "筛选"],
   "version": 1,
-  "exportedAt": "2026-06-09 08:00:00",
+  "exportedAt": "2026-06-11 15:22:56",
   "nodes": [
     {
       "id": "fd_1780650458249_nq8zy",
@@ -11,18 +11,18 @@
       "name": "BOSS直聘",
       "children": [
         {
-          "kind": "flow",
           "id": "bf_1780635596137_sll6d",
+          "kind": "flow",
           "name": "查看详情",
           "steps": [
             {
               "id": "step_1780650518593_2nh",
-              "type": "click",
               "label": "打开简历",
               "selector": {
                 "cssSelector": "div#container > div:nth-child(1) > div > div:nth-child(2) > div:nth-child(2) > div:nth-child(2) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:nth-child(2) > a",
                 "text": "在线简历"
-              }
+              },
+              "type": "click"
             },
             {
               "id": "step_1780635619254_wu1",
@@ -35,56 +35,68 @@
               "value": "screenshot"
             },
             {
+              "id": "step_1780650539280_v9e",
+              "label": "关闭简历",
+              "selector": {
+                "cssSelector": "body > div:nth-child(18) > div:nth-child(1) > div > div > div > div > div:nth-child(1) > div:nth-child(2) > div > button",
+                "text": "继续沟通"
+              },
+              "type": "click"
+            },
+            {
               "id": "step_1781083017008_2w5",
-              "type": "get_text",
               "label": "获取姓名",
               "selector": {
                 "cssSelector": "div#container > div:nth-child(1) > div > div:nth-child(2) > div:nth-child(2) > div:nth-child(2) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > span > span > span",
                 "text": "隆孝存"
               },
+              "type": "get_text",
               "value": "name"
             },
             {
               "id": "step_1781083065554_rh8",
-              "type": "get_text",
               "label": "获取年龄",
               "selector": {
                 "cssSelector": "div#container > div:nth-child(1) > div > div:nth-child(2) > div:nth-child(2) > div:nth-child(2) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:nth-child(3)",
                 "text": "42岁"
               },
+              "type": "get_text",
               "value": "age"
             },
             {
               "id": "step_1781083107448_ec5",
-              "type": "get_text",
               "label": "获取工龄",
               "selector": {
                 "cssSelector": "div#container > div:nth-child(1) > div > div:nth-child(2) > div:nth-child(2) > div:nth-child(2) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:nth-child(4)",
                 "text": "10年以上"
               },
+              "type": "get_text",
               "value": "workyear"
             },
             {
               "id": "step_1781083133299_p3n",
-              "type": "get_text",
               "label": "获取学历",
               "selector": {
                 "cssSelector": "div#container > div:nth-child(1) > div > div:nth-child(2) > div:nth-child(2) > div:nth-child(2) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:nth-child(2) > div:nth-child(1) > div > div:nth-child(2) > ul > li:nth-child(3) > span",
                 "text": "中专/中技 · 中专/中技"
               },
+              "type": "get_text",
               "value": "school"
             },
             {
-              "id": "step_1780650539280_v9e",
-              "type": "click",
-              "label": "关闭简历",
-              "selector": {
-                "cssSelector": "body > div:nth-child(18) > div:nth-child(1) > div > div > div > div > div:nth-child(1) > div:nth-child(2) > div > button",
-                "text": "继续沟通"
-              }
+              "id": "step_1781146613673_pg2",
+              "label": "保存数据",
+              "recordFields": [
+                "screenshot",
+                "name",
+                "age",
+                "workyear",
+                "school"
+              ],
+              "type": "save_data"
             }
           ],
-          "pinnedInMenu": true
+          "pinnedInMenu": false
         },
         {
           "id": "bf_1780650562538_qeap8",
@@ -106,10 +118,10 @@
                   "type": "click"
                 },
                 {
-                  "id": "step_1781076716622_u1j5u",
-                  "type": "call_flow",
-                  "label": "嵌入流程：查看详情",
-                  "flowRef": "bf_1780635596137_sll6d"
+                  "flowRef": "bf_1780918119029_ydlr1",
+                  "id": "step_1781088296670_cy07w",
+                  "label": "嵌入流程：筛选简历",
+                  "type": "call_flow"
                 }
               ],
               "label": "逐项操作列表：div#container > div:nth-child(1) > div >",
@@ -118,16 +130,17 @@
               },
               "type": "loop_items"
             }
-          ]
+          ],
+          "pinnedInMenu": false
         },
         {
-          "kind": "flow",
           "id": "bf_1780918119029_ydlr1",
+          "kind": "flow",
           "name": "筛选简历",
           "steps": [
             {
               "id": "step_1780918226209_d1r",
-              "label": "获取文字：23岁",
+              "label": "判断年龄",
               "selector": {
                 "cssSelector": "div#container > div:nth-child(1) > div > div:nth-child(2) > div:nth-child(2) > div:nth-child(2) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:nth-child(3)",
                 "text": "23岁"
@@ -137,7 +150,7 @@
             },
             {
               "id": "step_1780918303458_vpi",
-              "label": "获取文字：高中 · 高中",
+              "label": "判断学历",
               "selector": {
                 "cssSelector": "div#container > div:nth-child(1) > div > div:nth-child(2) > div:nth-child(2) > div:nth-child(2) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:nth-child(2) > div:nth-child(1) > div > div:nth-child(2) > ul > li:nth-child(2) > span",
                 "text": "高中 · 高中"
@@ -154,11 +167,7 @@
                   "type": "call_flow"
                 }
               ],
-              "elseChildren": [],
-              "id": "step_1780918236481_9xg32",
-              "label": "条件判断",
-              "type": "condition",
-              "value": "{{age}} <= 30",
+              "conditionLogic": "and",
               "conditions": [
                 {
                   "id": "cond_1780975751733_ltkwr",
@@ -168,13 +177,17 @@
                 {
                   "id": "cond_1780975765327_n2kmz",
                   "mode": "expr",
-                  "value": "{{school}} contains 高中"
+                  "value": "{{school}}  not_contains 高中"
                 }
               ],
-              "conditionLogic": "and"
+              "elseChildren": [],
+              "id": "step_1780918236481_9xg32",
+              "label": "条件判断",
+              "type": "condition",
+              "value": "{{age}} <= 30"
             }
           ],
-          "pinnedInMenu": true
+          "pinnedInMenu": false
         }
       ]
     }
