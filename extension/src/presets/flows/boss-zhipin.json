@@ -11,7 +11,12 @@
       "name": "BOSS直聘",
       "children": [
         {
-          "id": "bf_1780635596137_sll6d",
+          "id": "fd_1781200000000_goutong",
+          "kind": "folder",
+          "name": "沟通",
+          "children": [
+            {
+              "id": "bf_1780635596137_sll6d",
           "kind": "flow",
           "name": "查看详情",
           "steps": [
@@ -202,6 +207,8 @@
             }
           ],
           "pinnedInMenu": false
+        }
+          ]
         }
       ]
     }
