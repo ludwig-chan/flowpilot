@@ -731,6 +731,44 @@ body {
   color: var(--text);
 }
 
+.ocr-dialog-body-selectable {
+  user-select: text;
+  -webkit-user-select: text;
+  cursor: text;
+}
+
+/* 截图字段旁的"查看OCR"按钮 */
+.ocr-view-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  padding: 2px 8px;
+  border: 1px solid var(--primary);
+  background: transparent;
+  color: var(--primary);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s;
+  margin-top: 4px;
+}
+
+.ocr-view-btn:hover {
+  background: var(--primary);
+  color: #fff;
+}
+
+.ocr-view-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ocr-loading-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
 .detail-fields-table {
   width: 100%;
   border-collapse: collapse;

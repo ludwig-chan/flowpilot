@@ -11,6 +11,7 @@ import {
   listScreenshots,
   openScreenshotInExplorer,
   restoreScreenshot,
+  syncLibrary,
   trashScreenshot,
   updateScreenshotOcr,
   updateScreenshotTags
@@ -261,8 +262,15 @@ export function registerIpcHandlers(
     }
   })
 
-  // OCR 单张截图：识别并保存结果
+  // OCR 单张截图：识别并保存结果（已有结果直接返回缓存）
   ipcMain.handle('ocr-screenshot', async (_event, screenshotId: string) => {
+    // 先检查已有 OCR 结果，避免重复识别
+    const library = syncLibrary()
+    const existing = library.screenshots.find((s) => s.id === screenshotId)
+    if (existing?.ocrText) {
+      return { success: true, text: existing.ocrText }
+    }
+
     const image = getScreenshotImage(screenshotId)
     if (!image) return { success: false, error: '截图文件不存在' }
 
@@ -284,14 +292,20 @@ export function registerIpcHandlers(
     }
   })
 
-  // OCR 批量截图：识别所有未识别的截图
+  // OCR 批量截图：识别所有未识别的截图（已有结果直接返回缓存）
   ipcMain.handle('ocr-screenshots-batch', async (_event, screenshotIds?: string[]) => {
     const all = listScreenshots()
+    // 已有 OCR 结果的截图直接返回缓存，不重复识别
+    const cached = screenshotIds
+      ? all.screenshots.filter((s) => screenshotIds.includes(s.id) && s.ocrText)
+      : []
+    const cachedResults = cached.map((s) => ({ id: s.id, text: s.ocrText!, filename: s.filename }))
     const targets = screenshotIds
-      ? all.screenshots.filter((s) => screenshotIds.includes(s.id))
+      ? all.screenshots.filter((s) => screenshotIds.includes(s.id) && !s.ocrText)
       : all.screenshots.filter((s) => s.status === 'active' && !s.ocrText)
 
-    if (targets.length === 0) return { success: true, results: [] }
+    if (targets.length === 0 && cached.length === 0) return { success: true, results: [] }
+    if (targets.length === 0) return { success: true, results: cachedResults }
 
     const { createWorker } = await import('tesseract.js')
     const langPath = join(app.getPath('userData'), 'tessdata')
@@ -312,9 +326,9 @@ export function registerIpcHandlers(
           results.push({ id: item.id, error: (err as Error).message, filename: item.filename })
         }
       }
-      return { success: true, results }
+      return { success: true, results: [...cachedResults, ...results] }
     } catch (err) {
-      return { success: false, error: (err as Error).message, results }
+      return { success: false, error: (err as Error).message, results: [...cachedResults, ...results] }
     } finally {
       await worker.terminate()
     }

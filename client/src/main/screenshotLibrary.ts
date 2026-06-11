@@ -242,7 +242,7 @@ function syncLegacyFiles(library: ScreenshotLibrary): boolean {
   return changed
 }
 
-function syncLibrary(): ScreenshotLibrary {
+export function syncLibrary(): ScreenshotLibrary {
   const library = loadLibrary()
   if (syncLegacyFiles(library)) saveLibrary(library)
   return library

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import DataTable, { type Column } from '../components/DataTable'
 import ImageLightbox from '../components/ImageLightbox'
+import OcrTextDialog from '../components/OcrTextDialog'
 import TagEditor from '../components/TagEditor'
 
 interface Tag {
@@ -54,6 +55,7 @@ export default function DataRecordList({
   const [lightboxLoading, setLightboxLoading] = useState(false)
   const [ocrResults, setOcrResults] = useState<Record<string, string>>({})
   const [ocrLoading, setOcrLoading] = useState<Record<string, boolean>>({})
+  const [ocrPreloaded, setOcrPreloaded] = useState(false)
   const [ocrDialog, setOcrDialog] = useState<{ text: string; label: string } | null>(null)
   const [tagEditRecord, setTagEditRecord] = useState<RecordItem | null>(null)
 
@@ -64,8 +66,9 @@ export default function DataRecordList({
       for (const s of list.screenshots) {
         if (s.ocrText) map[s.id] = s.ocrText
       }
-      setOcrResults((prev) => ({ ...map, ...prev }))
-    }).catch(() => {})
+      setOcrResults(map)
+      setOcrPreloaded(true)
+    }).catch(() => { setOcrPreloaded(true) })
   }, [])
 
   const activeRecords = React.useMemo(
@@ -152,10 +155,12 @@ export default function DataRecordList({
     }
     setThumbnails(newThumbs)
 
-    // 自动触发 OCR（仅对未识别过的截图字段）
-    for (const [, val] of Object.entries(item.fields)) {
-      if (val.startsWith('shot_') && !val.includes(' ')) {
-        void runOcrForField(val)
+    // 自动触发 OCR（仅对未识别过的截图字段，预加载完成后才触发）
+    if (ocrPreloaded) {
+      for (const [, val] of Object.entries(item.fields)) {
+        if (val.startsWith('shot_') && !val.includes(' ')) {
+          void runOcrForField(val)
+        }
       }
     }
   }
@@ -350,49 +355,37 @@ export default function DataRecordList({
                   {Object.entries(detailRecord.fields).map(([key, val]) => {
                     const isScreenshot = val.startsWith('shot_') && !val.includes(' ')
                     const ocrText = isScreenshot ? (ocrResults[val] ?? null) : null
+                    const ocrIsLoading = isScreenshot ? (ocrLoading[val] ?? false) : false
                     return (
                       <tr key={key} className="detail-field-row">
-                        <td className="detail-field-key">
-                          {key}
-                          {isScreenshot && (
-                            <button
-                              className="btn btn-primary btn-sm"
-                              style={{ fontSize: 10, padding: '1px 6px', marginLeft: 4 }}
-                              onClick={() => {
-                                if (ocrText) {
-                                  setOcrDialog({ text: ocrText, label: key })
-                                } else {
-                                  void runOcrForField(val)
-                                }
-                              }}
-                              disabled={ocrLoading[val]}
-                            >
-                              {ocrLoading[val] ? '识别中…' : 'OCR'}
-                            </button>
-                          )}
-                        </td>
+                        <td className="detail-field-key">{key}</td>
                         <td className="detail-field-val">
                           {isScreenshot && thumbnails[val] ? (
-                            <img
-                              src={thumbnails[val]}
-                              alt={key}
-                              onClick={() => {
-                                setLightboxLoading(true)
-                                window.api.getScreenshotImage(val).then((img) => {
-                                  setLightboxLoading(false)
-                                  if (img) setLightboxImage({ src: img.dataUrl, alt: key })
-                                }).catch(() => setLightboxLoading(false))
-                              }}
-                              style={{ maxWidth: '100%', maxHeight: 200, borderRadius: 4, cursor: 'zoom-in' }}
-                            />
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                              <img
+                                src={thumbnails[val]}
+                                alt={key}
+                                onClick={() => {
+                                  setLightboxLoading(true)
+                                  window.api.getScreenshotImage(val).then((img) => {
+                                    setLightboxLoading(false)
+                                    if (img) setLightboxImage({ src: img.dataUrl, alt: key })
+                                  }).catch(() => setLightboxLoading(false))
+                                }}
+                                style={{ maxWidth: '100%', maxHeight: 200, borderRadius: 4, cursor: 'zoom-in' }}
+                              />
+                              {ocrIsLoading && <span className="ocr-loading-hint">OCR 识别中…</span>}
+                              {ocrText && (
+                                <button
+                                  className="ocr-view-btn"
+                                  onClick={() => setOcrDialog({ text: ocrText, label: key })}
+                                >
+                                  显示OCR识别结果
+                                </button>
+                              )}
+                            </div>
                           ) : (
                             <span>{val || '(空)'}</span>
-                          )}
-                          {isScreenshot && ocrText && (
-                            <div className="ocr-text" title={ocrText} style={{ marginTop: 4, fontSize: 11 }}>
-                              <span className="ocr-label">OCR：</span>
-                              {ocrText.length > 60 ? `${ocrText.slice(0, 60)}...` : ocrText}
-                            </div>
                           )}
                         </td>
                       </tr>
@@ -428,15 +421,11 @@ export default function DataRecordList({
       />
 
       {ocrDialog && (
-        <div className="ocr-dialog-overlay" onClick={() => setOcrDialog(null)}>
-          <div className="ocr-dialog" onClick={(e) => e.stopPropagation()}>
-            <div className="ocr-dialog-header">
-              <span>OCR 识别结果 — {ocrDialog.label}</span>
-              <button className="ocr-dialog-close" onClick={() => setOcrDialog(null)}>×</button>
-            </div>
-            <div className="ocr-dialog-body">{ocrDialog.text}</div>
-          </div>
-        </div>
+        <OcrTextDialog
+          text={ocrDialog.text}
+          label={ocrDialog.label}
+          onClose={() => setOcrDialog(null)}
+        />
       )}
     </>
   )
