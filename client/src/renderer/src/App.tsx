@@ -2,9 +2,10 @@ import React, { useState, useCallback } from 'react'
 import Home from './pages/Home'
 import Tutorial from './pages/Tutorial'
 import Screenshots from './pages/Screenshots'
+import DataRecords from './pages/DataRecords'
 import Settings from './pages/Settings'
 
-type Page = 'home' | 'tutorial' | 'screenshots' | 'settings'
+type Page = 'home' | 'tutorial' | 'screenshots' | 'data-records' | 'settings'
 
 interface Toast {
   id: number
@@ -46,6 +47,12 @@ export default function App(): React.JSX.Element {
             截图
           </div>
           <div
+            className={`nav-item ${page === 'data-records' ? 'active' : ''}`}
+            onClick={() => setPage('data-records')}
+          >
+            数据
+          </div>
+          <div
             className={`nav-item ${page === 'settings' ? 'active' : ''}`}
             onClick={() => setPage('settings')}
           >
@@ -58,6 +65,7 @@ export default function App(): React.JSX.Element {
         {page === 'home' && <Home showToast={showToast} />}
         {page === 'tutorial' && <Tutorial showToast={showToast} />}
         {page === 'screenshots' && <Screenshots showToast={showToast} />}
+        {page === 'data-records' && <DataRecords showToast={showToast} />}
         {page === 'settings' && <Settings showToast={showToast} />}
       </main>
 

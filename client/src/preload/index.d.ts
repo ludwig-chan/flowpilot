@@ -63,6 +63,34 @@ interface ScreenshotImageResult {
   dataUrl: string
 }
 
+interface DataRecordTag {
+  id: string
+  name: string
+  createdAt: string
+  updatedAt: string
+}
+
+interface DataRecordItem {
+  id: string
+  createdAt: string
+  fields: Record<string, string>
+  status: 'active' | 'trash'
+  tagIds: string[]
+  deletedAt?: string
+  runId?: string
+  runStartedAt?: string
+  flowId?: string
+  flowName?: string
+  sourceUrl?: string
+  sourceTitle?: string
+  tags: DataRecordTag[]
+}
+
+interface DataRecordListResult {
+  records: DataRecordItem[]
+  tags: DataRecordTag[]
+}
+
 interface FlowPilotAPI {
   getConfig: () => Promise<AppConfig>
   saveConfig: (config: AppConfig) => Promise<boolean>
@@ -90,8 +118,15 @@ interface FlowPilotAPI {
   restoreScreenshot: (id: string) => Promise<boolean>
   deleteScreenshotPermanently: (id: string) => Promise<boolean>
   openScreenshotInExplorer: (id: string) => Promise<boolean>
+  listDataRecords: () => Promise<DataRecordListResult>
+  createDataRecordTag: (name: string) => Promise<DataRecordTag>
+  updateDataRecordTags: (id: string, tagIds: string[]) => Promise<DataRecordItem>
+  trashDataRecord: (id: string) => Promise<boolean>
+  restoreDataRecord: (id: string) => Promise<boolean>
+  deleteDataRecordPermanently: (id: string) => Promise<boolean>
   onScreenshotsUpdated: (callback: () => void) => () => void
   onAutoClickerStatusChanged: (callback: (status: AutoClickerStatus) => void) => () => void
+  onDataRecordsUpdated: (callback: () => void) => () => void
 }
 
 interface AutoClickerStatus {

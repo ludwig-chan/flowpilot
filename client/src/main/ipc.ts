@@ -15,6 +15,14 @@ import {
   updateScreenshotOcr,
   updateScreenshotTags
 } from './screenshotLibrary'
+import {
+  createDataRecordTag,
+  deleteDataRecordPermanently,
+  listDataRecords,
+  restoreDataRecord,
+  trashDataRecord,
+  updateDataRecordTags
+} from './dataRecordLibrary'
 
 const TESS_LANGS = ['chi_sim', 'eng'] as const
 
@@ -134,6 +142,33 @@ export function registerIpcHandlers(
 
   ipcMain.handle('open-screenshot-in-explorer', (_event, id: string) => {
     return openScreenshotInExplorer(id)
+  })
+
+  ipcMain.handle('list-data-records', () => {
+    return listDataRecords()
+  })
+
+  ipcMain.handle('create-data-record-tag', (_event, name: string) => {
+    return createDataRecordTag(name)
+  })
+
+  ipcMain.handle('update-data-record-tags', (_event, id: string, tagIds: unknown) => {
+    const safeTagIds = Array.isArray(tagIds)
+      ? tagIds.filter((tagId): tagId is string => typeof tagId === 'string')
+      : []
+    return updateDataRecordTags(id, safeTagIds)
+  })
+
+  ipcMain.handle('trash-data-record', (_event, id: string) => {
+    return trashDataRecord(id)
+  })
+
+  ipcMain.handle('restore-data-record', (_event, id: string) => {
+    return restoreDataRecord(id)
+  })
+
+  ipcMain.handle('delete-data-record-permanently', (_event, id: string) => {
+    return deleteDataRecordPermanently(id)
   })
 
   // 检测已安装的浏览器

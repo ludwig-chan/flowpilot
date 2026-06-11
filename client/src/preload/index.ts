@@ -26,6 +26,14 @@ const api = {
   deleteScreenshotPermanently: (id: string) =>
     ipcRenderer.invoke('delete-screenshot-permanently', id),
   openScreenshotInExplorer: (id: string) => ipcRenderer.invoke('open-screenshot-in-explorer', id),
+  listDataRecords: () => ipcRenderer.invoke('list-data-records'),
+  createDataRecordTag: (name: string) => ipcRenderer.invoke('create-data-record-tag', name),
+  updateDataRecordTags: (id: string, tagIds: string[]) =>
+    ipcRenderer.invoke('update-data-record-tags', id, tagIds),
+  trashDataRecord: (id: string) => ipcRenderer.invoke('trash-data-record', id),
+  restoreDataRecord: (id: string) => ipcRenderer.invoke('restore-data-record', id),
+  deleteDataRecordPermanently: (id: string) =>
+    ipcRenderer.invoke('delete-data-record-permanently', id),
   onScreenshotsUpdated: (callback: () => void) => {
     const listener = (): void => callback()
     ipcRenderer.on('screenshots-updated', listener)
@@ -35,6 +43,11 @@ const api = {
     const listener = (_event: Electron.IpcRendererEvent, status: unknown): void => callback(status)
     ipcRenderer.on('auto-clicker-status-changed', listener)
     return () => ipcRenderer.removeListener('auto-clicker-status-changed', listener)
+  },
+  onDataRecordsUpdated: (callback: () => void) => {
+    const listener = (): void => callback()
+    ipcRenderer.on('data-records-updated', listener)
+    return () => ipcRenderer.removeListener('data-records-updated', listener)
   }
 }
 
