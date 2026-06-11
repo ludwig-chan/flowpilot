@@ -345,55 +345,61 @@ export default function DataRecordList({
                 <span>{detailRecord.createdAt}</span>
                 {detailRecord.sourceTitle && <span>页面：{detailRecord.sourceTitle}</span>}
               </div>
-              {Object.entries(detailRecord.fields).map(([key, val]) => {
-                const isScreenshot = val.startsWith('shot_') && !val.includes(' ')
-                const ocrText = isScreenshot ? (ocrResults[val] ?? null) : null
-                return (
-                  <div key={key} className="detail-field-row">
-                    <div className="detail-field-top">
-                      <span className="detail-field-key">{key}</span>
-                      {isScreenshot && (
-                        <button
-                          className="btn btn-primary btn-sm"
-                          style={{ fontSize: 10, padding: '1px 6px' }}
-                          onClick={() => {
-                            if (ocrText) {
-                              setOcrDialog({ text: ocrText, label: key })
-                            } else {
-                              void runOcrForField(val)
-                            }
-                          }}
-                          disabled={ocrLoading[val]}
-                        >
-                          {ocrLoading[val] ? '识别中…' : 'OCR'}
-                        </button>
-                      )}
-                    </div>
-                    {isScreenshot && thumbnails[val] ? (
-                      <img
-                        src={thumbnails[val]}
-                        alt={key}
-                        onClick={() => {
-                          setLightboxLoading(true)
-                          window.api.getScreenshotImage(val).then((img) => {
-                            setLightboxLoading(false)
-                            if (img) setLightboxImage({ src: img.dataUrl, alt: key })
-                          }).catch(() => setLightboxLoading(false))
-                        }}
-                        style={{ maxWidth: '100%', maxHeight: 200, borderRadius: 4, marginTop: 4, cursor: 'zoom-in' }}
-                      />
-                    ) : (
-                      <span className="detail-field-val">{val || '(空)'}</span>
-                    )}
-                    {isScreenshot && ocrText && (
-                      <div className="ocr-text" title={ocrText} style={{ marginTop: 4, fontSize: 11 }}>
-                        <span className="ocr-label">OCR：</span>
-                        {ocrText.length > 60 ? `${ocrText.slice(0, 60)}...` : ocrText}
-                      </div>
-                    )}
-                  </div>
-                )
-              })}
+              <table className="detail-fields-table">
+                <tbody>
+                  {Object.entries(detailRecord.fields).map(([key, val]) => {
+                    const isScreenshot = val.startsWith('shot_') && !val.includes(' ')
+                    const ocrText = isScreenshot ? (ocrResults[val] ?? null) : null
+                    return (
+                      <tr key={key} className="detail-field-row">
+                        <td className="detail-field-key">
+                          {key}
+                          {isScreenshot && (
+                            <button
+                              className="btn btn-primary btn-sm"
+                              style={{ fontSize: 10, padding: '1px 6px', marginLeft: 4 }}
+                              onClick={() => {
+                                if (ocrText) {
+                                  setOcrDialog({ text: ocrText, label: key })
+                                } else {
+                                  void runOcrForField(val)
+                                }
+                              }}
+                              disabled={ocrLoading[val]}
+                            >
+                              {ocrLoading[val] ? '识别中…' : 'OCR'}
+                            </button>
+                          )}
+                        </td>
+                        <td className="detail-field-val">
+                          {isScreenshot && thumbnails[val] ? (
+                            <img
+                              src={thumbnails[val]}
+                              alt={key}
+                              onClick={() => {
+                                setLightboxLoading(true)
+                                window.api.getScreenshotImage(val).then((img) => {
+                                  setLightboxLoading(false)
+                                  if (img) setLightboxImage({ src: img.dataUrl, alt: key })
+                                }).catch(() => setLightboxLoading(false))
+                              }}
+                              style={{ maxWidth: '100%', maxHeight: 200, borderRadius: 4, cursor: 'zoom-in' }}
+                            />
+                          ) : (
+                            <span>{val || '(空)'}</span>
+                          )}
+                          {isScreenshot && ocrText && (
+                            <div className="ocr-text" title={ocrText} style={{ marginTop: 4, fontSize: 11 }}>
+                              <span className="ocr-label">OCR：</span>
+                              {ocrText.length > 60 ? `${ocrText.slice(0, 60)}...` : ocrText}
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
 
             </div>
           </div>
