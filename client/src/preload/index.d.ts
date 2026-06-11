@@ -47,6 +47,8 @@ interface ScreenshotItem {
   run?: ScreenshotRun
   tags: ScreenshotTag[]
   thumbnailDataUrl: string
+  ocrText?: string
+  ocrAt?: string
 }
 
 interface ScreenshotListResult {
