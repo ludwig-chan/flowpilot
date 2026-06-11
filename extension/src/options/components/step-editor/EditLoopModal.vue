@@ -77,30 +77,6 @@ function toCompleteRange(range: OptionalRange): [number, number] | undefined {
   return min <= max ? [min, max] : [max, min]
 }
 
-function setItemDelay(range: OptionalRange) {
-  props.step.itemDelay = toCompleteRange(range)
-}
-
-function setLoopCooldown(range: OptionalRange) {
-  props.step.loopCooldown = toCompleteRange(range)
-}
-
-function setScrollWait(range: OptionalRange) {
-  props.step.scrollWait = toCompleteRange(range)
-}
-
-function setMaxLoopItems(value: number | undefined) {
-  props.step.maxLoopItems = value && value > 0 ? Math.floor(value) : undefined
-}
-
-function setLoopBatchSize(value: number | undefined) {
-  props.step.loopBatchSize = value && value > 0 ? Math.floor(value) : undefined
-}
-
-function setLoopStopSelector(value: string) {
-  props.step.loopStopSelector = value.trim() || undefined
-}
-
 function ensureItemActions(): FlowStep[] {
   if (!props.step.itemActions) props.step.itemActions = normalizedItemActions()
   props.step.itemAction = undefined
@@ -214,58 +190,6 @@ function configureItemAction(idx: number) {
       <label class="elm-label">执行节奏</label>
       <div class="elm-settings-grid">
         <div class="elm-setting-row">
-          <span class="elm-setting-label">最多处理</span>
-          <BaseNumberInput
-            min="1"
-            step="1"
-            style="width: 78px"
-            :modelValue="step.maxLoopItems"
-            @update:modelValue="setMaxLoopItems"
-          />
-          <span class="elm-setting-unit">项</span>
-        </div>
-        <div class="elm-setting-row">
-          <span class="elm-setting-label">每批数量</span>
-          <BaseNumberInput
-            min="1"
-            step="1"
-            style="width: 78px"
-            :modelValue="step.loopBatchSize"
-            @update:modelValue="setLoopBatchSize"
-          />
-          <span class="elm-setting-unit">项</span>
-        </div>
-        <div class="elm-setting-row elm-setting-row--wide">
-          <span class="elm-setting-label">每项延迟</span>
-          <RangeInput
-            :model-value="toOptionalRange(step.itemDelay)"
-            :allow-empty="true"
-            placeholder-min="最小"
-            placeholder-max="最大"
-            @update:model-value="setItemDelay"
-          />
-        </div>
-        <div class="elm-setting-row elm-setting-row--wide">
-          <span class="elm-setting-label">批间冷却</span>
-          <RangeInput
-            :model-value="toOptionalRange(step.loopCooldown)"
-            :allow-empty="true"
-            placeholder-min="最小"
-            placeholder-max="最大"
-            @update:model-value="setLoopCooldown"
-          />
-        </div>
-        <div class="elm-setting-row elm-setting-row--wide">
-          <span class="elm-setting-label">滚动等待</span>
-          <RangeInput
-            :model-value="toOptionalRange(step.scrollWait)"
-            :allow-empty="true"
-            placeholder-min="最小"
-            placeholder-max="最大"
-            @update:model-value="setScrollWait"
-          />
-        </div>
-        <div class="elm-setting-row">
           <span class="elm-setting-label">滚动方式</span>
           <select
             class="elm-select"
@@ -276,17 +200,7 @@ function configureItemAction(idx: number) {
             <option value="natural">自然滚动（风控）</option>
           </select>
         </div>
-        <div class="elm-setting-row elm-setting-row--full">
-          <span class="elm-setting-label">停止选择器</span>
-          <BaseInput
-            class="elm-stop-input"
-            :modelValue="step.loopStopSelector ?? ''"
-            placeholder="例：.captcha, .login-modal, .rate-limit-tip"
-            @update:modelValue="setLoopStopSelector"
-          />
-        </div>
       </div>
-      <p class="elm-hint">命中停止选择器时会立即停止循环，适合填写验证码、登录弹窗或频率提示元素。</p>
     </div>
 
     <template #footer>

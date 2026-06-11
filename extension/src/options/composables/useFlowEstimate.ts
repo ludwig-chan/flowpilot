@@ -38,23 +38,7 @@ function estimateStepListMs(steps: FlowStep[], interStepMs: number): EstimateRes
       const childResult = estimateStepListMs(actionSteps, interStepMs)
       if (childResult === null) return null
       if (childResult.perItem > 0) return null  // 嵌套循环，放弃估算
-      const itemDelayMs = avg(step.itemDelay)
-      const scrollWaitMs = avg(step.scrollWait)
-      const maxItems = positiveInt(step.maxLoopItems)
-      const batchSize = positiveInt(step.loopBatchSize)
-      const cooldownMs = avg(step.loopCooldown)
-      const cooldownPerItem = batchSize && cooldownMs > 0
-        ? cooldownMs / batchSize
-        : 0
-      const perLoopItemMs = childResult.fixed + itemDelayMs + scrollWaitMs
-      if (maxItems) {
-        const cooldownCount = batchSize && cooldownMs > 0
-          ? Math.max(0, Math.floor((maxItems - 1) / batchSize))
-          : 0
-        fixed += perLoopItemMs * maxItems + cooldownMs * cooldownCount
-      } else {
-        perItem += perLoopItemMs + cooldownPerItem
-      }
+      perItem += childResult.fixed
       if (step.foundDelay) fixed += (step.foundDelay[0] + step.foundDelay[1]) / 2
       continue
     }

@@ -227,21 +227,6 @@ async function scrollElementIntoViewIfNeeded(el: HTMLElement, waitRange?: [numbe
   }
 }
 
-function findLoopStopElement(selector?: string): Element | null {
-  const trimmed = selector?.trim()
-  if (!trimmed) return null
-  try { return document.querySelector(trimmed) } catch { return null }
-}
-
-function stopLoopIfNeeded(step: FlowStep, ctx: RunContext): boolean {
-  const stopElement = findLoopStopElement(step.loopStopSelector)
-  if (!stopElement) return false
-  const label = stopElement.textContent?.replace(/\s+/g, ' ').trim().slice(0, 60)
-  ctx.onLog(`  [停止] 检测到异常提示${label ? `：「${label}」` : ''}`)
-  ctx.signal.stopped = true
-  return true
-}
-
 // dispatchDoubleClick / dispatchRightClick / dispatchHover 已由 eventSimulator.ts 的 async 版本替代
 
 async function waitForLoopTargetToDisappear(item: Element, relativeSelector?: string, timeout = 10000): Promise<void> {
@@ -528,15 +513,8 @@ async function handleLoopItems(
   const { onLog, onStep, signal } = ctx
   if (!step.selector) return
   const allItems = Array.from(document.querySelectorAll(step.selector.cssSelector))
-  const maxLoopItems = normalizePositiveInt(step.maxLoopItems)
-  const itemsArr = maxLoopItems ? allItems.slice(0, maxLoopItems) : allItems
-  const batchSize = normalizePositiveInt(step.loopBatchSize)
-  const cooldownRange = step.loopCooldown
-  const scrollWait = step.scrollWait ?? [500, 1800]
-  const itemDelay = step.itemDelay ?? [800, 2000]
-  const limitText = maxLoopItems && allItems.length > itemsArr.length ? `，本次最多处理 ${itemsArr.length} 项` : ''
-  const batchText = batchSize ? `，每批 ${batchSize} 项` : ''
-  onLog(`找到 ${allItems.length} 个条目${limitText}${batchText}，开始循环...`)
+  const itemsArr = allItems
+  onLog(`找到 ${allItems.length} 个条目，开始循环...`)
   const scrollBehavior = step.scrollBehavior ?? 'natural'
   const hasChildSteps = !!step.children?.length
   const childSteps = step.children ?? []
@@ -575,7 +553,6 @@ async function handleLoopItems(
         await applyLoopQueueStepDelay(action, ctx)
       }
     }
-    await humanDelay(...itemDelay)
   }
 
   if (scrollBehavior === 'natural') {
@@ -587,7 +564,6 @@ async function handleLoopItems(
     let i = 0
     while (i < itemsArr.length) {
       if (signal.stopped) return
-      if (stopLoopIfNeeded(step, ctx)) return
 
       const naturalBatch = NATURAL_BATCH_SIZES[Math.floor(Math.random() * NATURAL_BATCH_SIZES.length)]
       const actualBatch = Math.min(naturalBatch, itemsArr.length - i)
@@ -596,40 +572,28 @@ async function handleLoopItems(
       const scrollPX = itemHeight * naturalBatch * jitter
       container.scrollBy({ top: scrollPX, behavior: 'smooth' })
       onLog(`  🌊 自然滚动 ${Math.round(scrollPX)}px，处理 ${actualBatch} 项`)
-      await humanDelay(...scrollWait)
 
       for (let j = 0; j < actualBatch; j++) {
         if (signal.stopped) return
-        if (stopLoopIfNeeded(step, ctx)) return
         await processOneItem(itemsArr[i + j], i + j)
       }
 
       i += actualBatch
-      if (batchSize && cooldownRange && i < itemsArr.length && i % batchSize === 0) {
-        onLog(`  批次完成，冷却约 ${Math.round(rangeAverage(cooldownRange) / 1000)} 秒...`)
-        await humanDelay(...cooldownRange)
-      }
     }
   } else {
     // ── 居中滚动：每项处理前精确居中 ──
     for (let i = 0; i < itemsArr.length; i++) {
       const item = itemsArr[i]
       if (signal.stopped) return
-      if (stopLoopIfNeeded(step, ctx)) return
 
       if (!hasChildSteps) {
         const firstTarget = firstItem ? resolveLoopActionTarget(step, itemActions[0], item, firstItem) : item
-        await scrollElementIntoViewIfNeeded(firstTarget as HTMLElement, scrollWait)
+        await scrollElementIntoViewIfNeeded(firstTarget as HTMLElement)
       } else {
-        await scrollElementIntoViewIfNeeded(item as HTMLElement, scrollWait)
+        await scrollElementIntoViewIfNeeded(item as HTMLElement)
       }
 
       await processOneItem(item, i)
-
-      if (batchSize && cooldownRange && i < itemsArr.length - 1 && (i + 1) % batchSize === 0) {
-        onLog(`  批次完成，冷却约 ${Math.round(rangeAverage(cooldownRange) / 1000)} 秒...`)
-        await humanDelay(...cooldownRange)
-      }
     }
   }
 }
