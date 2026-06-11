@@ -164,4 +164,5 @@ export const MSG = {
   SET_ACTIVE_TAB:                   'SET_ACTIVE_TAB',
   GET_ACTIVE_TAB:                   'GET_ACTIVE_TAB',
   SAVE_SCREENSHOT:                  'SAVE_SCREENSHOT',
+  SAVE_DATA_RECORD:                 'SAVE_DATA_RECORD',
 } as const

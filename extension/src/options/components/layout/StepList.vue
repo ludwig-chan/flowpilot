@@ -75,6 +75,8 @@ const {
 const {
   removeStep, addDelayStep, editDelayStep, onDelayConfirm,
   showDelayModal, delayEditTarget,
+  addSaveDataStep, editSaveDataStep, onSaveDataConfirm,
+  showSaveDataModal, saveDataEditTarget,
   selectedStepIds, toggleSelect, deleteSelected,
   showCallFlowPicker, addCallFlowStep, confirmCallFlow,
   convertToElementBranch, revertElementBranch,
@@ -107,11 +109,27 @@ const { dragSrcIdx, dragInsertIdx, branchDropTarget, onHandleMouseDown, onDragSt
 const validFlowIds = computed(() => new Set(flowStore.allFlows().map(f => f.id)))
 function isBrokenRef(flowRef?: string) { return !!flowRef && !validFlowIds.value.has(flowRef) }
 
+/** 收集当前流程中所有 get_text 和 save_canvas 步骤的变量名（递归），用于保存数据步骤的变量选择 */
+const saveDataAvailableVars = computed<string[]>(() => {
+  const vars: string[] = []
+  function collect(steps: FlowStep[]) {
+    for (const s of steps) {
+      if (s.type === 'get_text' && s.value?.trim()) vars.push(s.value.trim())
+      if (s.type === 'save_canvas' && s.value?.trim()) vars.push(s.value.trim())
+      if (s.children?.length) collect(s.children)
+      if (s.elseChildren?.length) collect(s.elseChildren)
+    }
+  }
+  if (editingFlow.value?.steps) collect(editingFlow.value.steps)
+  return [...new Set(vars)]
+})
+
 function handleEdit(step: FlowStep, i: number) {
   if (step.type === 'element_branch') return
   if (step.type === 'condition')  return editConditionStep(step, i)
   if (step.type === 'delay')      return editDelayStep(step)
   if (step.type === 'loop_items') return editLoopStep(step, i)
+  if (step.type === 'save_data')  return editSaveDataStep(step)
   editStep(step, i)
 }
 
@@ -133,6 +151,12 @@ function handleAddBranchCondition(condStepId: string, branch: 'if' | 'else') {
   conditionModalStep.value = null
   conditionModalIdx.value  = null
   showConditionModal.value = true
+}
+
+function handleAddBranchSaveData(condStepId: string, branch: 'if' | 'else') {
+  es.addingToBranch       = { condStepId, branch }
+  saveDataEditTarget.value = null
+  showSaveDataModal.value  = true
 }
 
 const mutationHandler = (evt: BridgeEvent) => {
@@ -157,6 +181,7 @@ provide(STEP_EDITOR_MODALS_KEY, {
   showSettingsModal, onSettingsConfirm, saveToast,
   // useStepActions
   showCallFlowPicker, confirmCallFlow, showDelayModal, delayEditTarget, onDelayConfirm,
+  showSaveDataModal, saveDataEditTarget, onSaveDataConfirm, saveDataAvailableVars,
 })
 </script>
 
@@ -205,6 +230,7 @@ provide(STEP_EDITOR_MODALS_KEY, {
           @add-branch-delay="handleAddBranchDelay"
           @add-branch-call-flow="handleAddBranchCallFlow"
           @add-branch-condition="handleAddBranchCondition"
+          @add-branch-save-data="handleAddBranchSaveData"
           @convert-to-element-branch="handleConvertToElementBranch"
           @revert-element-branch="(step, i) => revertElementBranch(step, i)"
           @branch-dragover="onBranchDragOver"
@@ -237,6 +263,7 @@ provide(STEP_EDITOR_MODALS_KEY, {
           <BaseButton @click="openSmartLoopPicker(); close()">选择列表</BaseButton>
           <BaseButton @click="addConditionStep(); close()">条件判断</BaseButton>
           <BaseButton @click="addCallFlowStep(); close()">嵌入流程</BaseButton>
+          <BaseButton @click="addSaveDataStep(); close()">保存数据</BaseButton>
           <BaseButton @click="addDelayStep(); close()">等待</BaseButton>
         </template>
       </DropdownMenu>

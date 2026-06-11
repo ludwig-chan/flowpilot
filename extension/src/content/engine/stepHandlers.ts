@@ -385,6 +385,35 @@ async function executeLoopItemAction(
       }
       break
     }
+    case 'save_data': {
+      const fieldNames = action.recordFields ?? []
+      if (!fieldNames.length) { ctx.onLog('  [跳过] 保存数据：未选择任何变量'); break }
+      const fields: Record<string, string> = {}
+      for (const name of fieldNames) {
+        const val = ctx.variables[name]
+        if (val !== undefined) fields[name] = val
+        else ctx.onLog(`  变量 {{${name}}} 尚未赋值，跳过`)
+      }
+      if (!Object.keys(fields).length) { ctx.onLog('  [跳过] 保存数据：所有变量均未赋值'); break }
+      ctx.onLog(`  保存数据：${Object.keys(fields).join(', ')}`)
+      try {
+        const result = await chrome.runtime.sendMessage({
+          type: MSG.SAVE_DATA_RECORD,
+          fields,
+          runId: ctx.runId,
+          runStartedAt: ctx.runStartedAt,
+          flowId: ctx.flowId,
+          flowName: ctx.flowName,
+          sourceUrl: location.href,
+          sourceTitle: document.title,
+        }) as { ok?: boolean; id?: string; error?: string } | undefined
+        if (result?.ok) ctx.onLog(`  数据已保存 → 记录 ${result.id}`)
+        else ctx.onLog(`  [失败] 保存数据：${result?.error ?? '本地服务未响应'}`)
+      } catch (err) {
+        ctx.onLog(`  [失败] 保存数据：${(err as Error).message}`)
+      }
+      break
+    }
     default:
       ctx.onLog(`[跳过] 循环项内暂不支持动作：${action.type}`)
   }
@@ -650,6 +679,52 @@ async function handleSaveCanvas(
   }
 }
 
+async function handleSaveData(
+  step: FlowStep,
+  ctx: RunContext,
+  _resolve: ResolveFn,
+  _runChild: RunChildStepFn,
+): Promise<void> {
+  const { onLog } = ctx
+  const fieldNames = step.recordFields ?? []
+  if (!fieldNames.length) { onLog('  [跳过] 保存数据：未选择任何变量'); return }
+
+  const fields: Record<string, string> = {}
+  for (const name of fieldNames) {
+    const val = ctx.variables[name]
+    if (val !== undefined) {
+      fields[name] = val
+    } else {
+      onLog(`  变量 {{${name}}} 尚未赋值，跳过`)
+    }
+  }
+
+  if (!Object.keys(fields).length) { onLog('  [跳过] 保存数据：所有变量均未赋值'); return }
+
+  onLog(`  保存数据：${Object.keys(fields).join(', ')}`)
+
+  try {
+    const result = await chrome.runtime.sendMessage({
+      type: MSG.SAVE_DATA_RECORD,
+      fields,
+      runId: ctx.runId,
+      runStartedAt: ctx.runStartedAt,
+      flowId: ctx.flowId,
+      flowName: ctx.flowName,
+      sourceUrl: location.href,
+      sourceTitle: document.title,
+    }) as { ok?: boolean; id?: string; error?: string } | undefined
+
+    if (result?.ok) {
+      onLog(`  数据已保存 → 记录 ${result.id}`)
+    } else {
+      onLog(`  [失败] 保存数据：${result?.error ?? '本地服务未响应'}`)
+    }
+  } catch (err) {
+    onLog(`  [失败] 保存数据：${(err as Error).message}`)
+  }
+}
+
 // ─── 注册表 ────────────────────────────────────────────────────────────────────
 
 export const STEP_HANDLERS: Record<string, (step: FlowStep, ctx: RunContext, resolve: ResolveFn, runChild: RunChildStepFn) => Promise<void>> = {
@@ -674,4 +749,5 @@ export const STEP_HANDLERS: Record<string, (step: FlowStep, ctx: RunContext, res
   element_branch: handleElementBranch,
   call_flow:      handleCallFlow,
   save_canvas:    handleSaveCanvas,
+  save_data:      handleSaveData,
 }

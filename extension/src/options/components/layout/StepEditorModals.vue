@@ -12,6 +12,7 @@ import FlowSettingsModal from './FlowSettingsModal.vue'
 import SmartLoopPickerModal from '../step-editor/SmartLoopPickerModal.vue'
 import CallFlowPickerModal from '../step-editor/CallFlowPickerModal.vue'
 import EditDelayModal from '../step-editor/EditDelayModal.vue'
+import SaveDataModal from '../step-editor/SaveDataModal.vue'
 import { STEP_EDITOR_MODALS_KEY } from './stepEditorContext'
 
 const es = useEditorStore()
@@ -31,6 +32,7 @@ const {
   showConditionModal, conditionModalStep, conditionModalIdx, conditionAvailableVars, onConditionConfirm,
   showSettingsModal, onSettingsConfirm, saveToast,
   showCallFlowPicker, confirmCallFlow, showDelayModal, delayEditTarget, onDelayConfirm,
+  showSaveDataModal, saveDataEditTarget, onSaveDataConfirm, saveDataAvailableVars,
 } = ctx
 
 function onCloseConditionModal() {
@@ -146,6 +148,15 @@ function onCancelSmartLoop() {
       :initial-ms="delayEditTarget ? Number(delayEditTarget.value) : undefined"
       @confirm="onDelayConfirm"
       @cancel="showDelayModal = false"
+    />
+
+    <!-- 保存数据步骤编辑弹窗 -->
+    <SaveDataModal
+      v-if="showSaveDataModal"
+      :available-vars="saveDataAvailableVars"
+      :initial-step="saveDataEditTarget"
+      @confirm="onSaveDataConfirm"
+      @cancel="showSaveDataModal = false"
     />
   </Teleport>
 

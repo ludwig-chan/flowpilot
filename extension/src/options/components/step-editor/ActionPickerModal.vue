@@ -48,6 +48,7 @@ const ACTION_GROUPS: ActionGroup[] = [
     label: '数据 & 等待',
     options: [
       { type: 'get_text',       label: '📋 获取文字', needValue: true,  valueLabel: '变量名', valuePlaceholder: '如 title、name、status' },
+      { type: 'save_data',      label: '💾 保存数据', needValue: false },
       { type: 'wait_appear',    label: '⏳ 等待出现', needValue: false },
       { type: 'wait_disappear', label: '🕐 等待消失', needValue: false },
     ],

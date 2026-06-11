@@ -51,6 +51,11 @@ export interface StepEditorModalContext {
   showDelayModal: Ref<boolean>
   delayEditTarget: Ref<FlowStep | null>
   onDelayConfirm: (ms: number) => void
+  // ── useStepActions (save_data) ──────────────────────────────────────
+  showSaveDataModal: Ref<boolean>
+  saveDataEditTarget: Ref<FlowStep | null>
+  onSaveDataConfirm: (step: FlowStep) => void
+  saveDataAvailableVars: ComputedRef<string[]>
 }
 
 export const STEP_EDITOR_MODALS_KEY: InjectionKey<StepEditorModalContext> = Symbol('stepEditorModals')

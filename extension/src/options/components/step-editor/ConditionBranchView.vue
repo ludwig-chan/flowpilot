@@ -22,6 +22,7 @@ const emit = defineEmits<{
   (e: 'add-delay',      condStepId: string, branch: 'if' | 'else'): void
   (e: 'add-call-flow',  condStepId: string, branch: 'if' | 'else'): void
   (e: 'add-condition',  condStepId: string, branch: 'if' | 'else'): void
+  (e: 'add-save-data',  condStepId: string, branch: 'if' | 'else'): void
   (e: 'branch-dragover', stepId: string, branch: 'if' | 'else', insertIdx: number): void
   (e: 'branch-drop'): void
 }>()
@@ -77,6 +78,7 @@ const emit = defineEmits<{
           <BaseButton @click="emit('open-picker', step.id, 'if'); close()">选择元素</BaseButton>
           <BaseButton @click="emit('add-condition', step.id, 'if'); close()">条件判断</BaseButton>
           <BaseButton @click="emit('add-call-flow', step.id, 'if'); close()">嵌入流程</BaseButton>
+          <BaseButton @click="emit('add-save-data', step.id, 'if'); close()">保存数据</BaseButton>
           <BaseButton @click="emit('add-delay', step.id, 'if'); close()">等待</BaseButton>
         </template>
       </DropdownMenu>
@@ -129,6 +131,7 @@ const emit = defineEmits<{
           <BaseButton @click="emit('open-picker', step.id, 'else'); close()">选择元素</BaseButton>
           <BaseButton @click="emit('add-condition', step.id, 'else'); close()">条件判断</BaseButton>
           <BaseButton @click="emit('add-call-flow', step.id, 'else'); close()">嵌入流程</BaseButton>
+          <BaseButton @click="emit('add-save-data', step.id, 'else'); close()">保存数据</BaseButton>
           <BaseButton @click="emit('add-delay', step.id, 'else'); close()">等待</BaseButton>
         </template>
       </DropdownMenu>

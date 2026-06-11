@@ -30,6 +30,7 @@ const emit = defineEmits<{
   (e: 'add-branch-delay',     condStepId: string, branch: 'if' | 'else'): void
   (e: 'add-branch-call-flow', condStepId: string, branch: 'if' | 'else'): void
   (e: 'add-branch-condition', condStepId: string, branch: 'if' | 'else'): void
+  (e: 'add-branch-save-data', condStepId: string, branch: 'if' | 'else'): void
   (e: 'convert-to-element-branch', step: FlowStep, index: number): void
   (e: 'revert-element-branch',     step: FlowStep, index: number): void
   (e: 'branch-dragover', stepId: string, branch: 'if' | 'else', insertIdx: number): void
@@ -86,7 +87,7 @@ const emit = defineEmits<{
     </div>
     <div class="step-card__actions">
       <BaseButton
-        v-if="step.type !== 'call_flow' && step.type !== 'element_branch' && (step.type === 'condition' || step.type === 'delay' || step.type === 'loop_items' || !!step.selector)"
+        v-if="step.type !== 'call_flow' && step.type !== 'element_branch' && (step.type === 'condition' || step.type === 'delay' || step.type === 'loop_items' || step.type === 'save_data' || !!step.selector)"
         class="step-card__btn step-card__btn--edit"
         title="编辑步骤"
         @click="$emit('edit', step, index)"
@@ -119,6 +120,7 @@ const emit = defineEmits<{
     @add-delay="(condId, branch) => $emit('add-branch-delay', condId, branch)"
     @add-call-flow="(condId, branch) => $emit('add-branch-call-flow', condId, branch)"
     @add-condition="(condId, branch) => $emit('add-branch-condition', condId, branch)"
+    @add-save-data="(condId, branch) => $emit('add-branch-save-data', condId, branch)"
     @branch-dragover="(stepId, branch, idx) => $emit('branch-dragover', stepId, branch, idx)"
     @branch-drop="$emit('branch-drop')"
   />

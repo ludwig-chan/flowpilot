@@ -74,6 +74,7 @@ const TEST_ACTIONS: TestAction[] = [
   // 数据 & 等待
   { divider: true, type: '', label: '' },
   { type: 'get_text',       label: '📋 获取文字' },
+  { type: 'save_data',      label: '💾 保存数据' },
   { type: 'wait_appear',    label: '⏳ 等待出现' },
   { type: 'wait_disappear', label: '🕐 等待消失' },
   // 页面

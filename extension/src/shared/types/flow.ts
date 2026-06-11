@@ -32,6 +32,7 @@ export type ActionType =
   | 'delay'
   | 'call_flow'
   | 'save_canvas'
+  | 'save_data'
 
 // ─── 多条件分支 ────────────────────────────────────────────────────────────────
 export interface ConditionItem {
@@ -69,6 +70,7 @@ export interface FlowStep {
   elseChildren?: FlowStep[] // condition: else 分支步骤
   conditions?:      ConditionItem[]   // condition: 多条件列表
   conditionLogic?:  ConditionLogic    // condition: 条件连接方式，默认 'and'
+  recordFields?:    string[]          // save_data: 要保存的变量名列表
 }
 
 // ─── 触发器 ────────────────────────────────────────────────────────────────────

@@ -13,6 +13,7 @@ import {
   recordScreenshot,
   type ScreenshotSaveMetadata
 } from './screenshotLibrary'
+import { recordDataRecord } from './dataRecordLibrary'
 
 const pad2 = (n: number) => String(n).padStart(2, '0')
 function localTimeString(): string {
@@ -257,6 +258,44 @@ function createScreenshotBridgeServer(): Server {
           mainWindow.webContents.send('screenshots-updated')
         }
         sendJson(res, 200, { ok: true, id: saved.id, filename: saved.filename, path: saved.path }, originValue)
+      } catch (err) {
+        const message = (err as Error).message
+        sendJson(res, message === '请求体过大' ? 413 : 400, { ok: false, error: message }, originValue)
+      }
+      return
+    }
+
+    if (req.method === 'POST' && url.pathname === '/data-records') {
+      try {
+        const body = await readJsonBody(req) as {
+          fields?: unknown
+          runId?: unknown
+          runStartedAt?: unknown
+          flowId?: unknown
+          flowName?: unknown
+          sourceUrl?: unknown
+          sourceTitle?: unknown
+        }
+        if (typeof body.fields !== 'object' || body.fields === null || Array.isArray(body.fields)) {
+          sendJson(res, 400, { ok: false, error: 'fields 必须为普通对象' }, originValue)
+          return
+        }
+        const fields: Record<string, string> = {}
+        for (const [k, v] of Object.entries(body.fields as Record<string, unknown>)) {
+          fields[k] = typeof v === 'string' ? v : String(v ?? '')
+        }
+        const item = recordDataRecord(fields, {
+          runId: typeof body.runId === 'string' ? body.runId : undefined,
+          runStartedAt: typeof body.runStartedAt === 'string' ? body.runStartedAt : undefined,
+          flowId: typeof body.flowId === 'string' ? body.flowId : undefined,
+          flowName: typeof body.flowName === 'string' ? body.flowName : undefined,
+          sourceUrl: typeof body.sourceUrl === 'string' ? body.sourceUrl : undefined,
+          sourceTitle: typeof body.sourceTitle === 'string' ? body.sourceTitle : undefined,
+        })
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.webContents.send('data-records-updated')
+        }
+        sendJson(res, 200, { ok: true, id: item.id }, originValue)
       } catch (err) {
         const message = (err as Error).message
         sendJson(res, message === '请求体过大' ? 413 : 400, { ok: false, error: message }, originValue)

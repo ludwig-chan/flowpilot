@@ -210,6 +210,49 @@ function handleSaveScreenshot(msg: any, _s: any, sr: (r: unknown) => void): true
   return true
 }
 
+function handleSaveDataRecord(msg: any, _s: any, sr: (r?: unknown) => void): true {
+  const fields: Record<string, string> = msg.fields ?? {}
+  console.log('[SAVE_DATA_RECORD] 保存数据记录，字段数：', Object.keys(fields).length)
+
+  ;(async () => {
+    try {
+      const bridge = await findScreenshotBridge()
+      if (!bridge.port) {
+        sr({ ok: false, error: `FlowPilot 本地服务不可用：${bridge.error}` })
+        return
+      }
+
+      const url = `http://${SCREENSHOT_BRIDGE_HOST}:${bridge.port}/data-records`
+      const res = await fetchWithTimeout(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fields,
+          runId: msg.runId,
+          runStartedAt: msg.runStartedAt,
+          flowId: msg.flowId,
+          flowName: msg.flowName,
+          sourceUrl: msg.sourceUrl,
+          sourceTitle: msg.sourceTitle,
+        }),
+      }, 10_000)
+      const body = await res.json().catch(() => ({ ok: false, error: `HTTP ${res.status}` })) as
+        { ok?: boolean; id?: string; error?: string }
+
+      if (!res.ok || !body.ok) {
+        sr({ ok: false, error: body.error ?? `HTTP ${res.status}` })
+        return
+      }
+
+      sr({ ok: true, id: body.id })
+    } catch (err) {
+      sr({ ok: false, error: (err as Error).message })
+    }
+  })()
+
+  return true
+}
+
 const MSG_HANDLERS: Record<string, MsgHandler> = {
   [MSG.GET_LOGS]:          handleGetLogs,
   [MSG.CLEAR_LOGS]:        handleClearLogs,
@@ -221,6 +264,7 @@ const MSG_HANDLERS: Record<string, MsgHandler> = {
   [MSG.SET_ACTIVE_TAB]:    handleSetActiveTab,
   [MSG.GET_ACTIVE_TAB]:    handleGetActiveTab,
   [MSG.SAVE_SCREENSHOT]:   handleSaveScreenshot,
+  [MSG.SAVE_DATA_RECORD]: handleSaveDataRecord,
 }
 
 // 中转消息分发

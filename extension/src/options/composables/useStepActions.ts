@@ -14,7 +14,7 @@ export const stepTypeLabels: Record<string, string> = {
   double_click: '双击', right_click: '右键', hover: '悬停', clear: '清空', check: '勾选',
   get_text: '获取文字', wait_appear: '等待出现', wait_disappear: '等待消失',
   scroll_to: '滚动到', navigate: '导航', loop_items: '逐项操作列表', condition: '条件判断', element_branch: '元素分支',
-  delay: '等待', press_key: '按键', call_flow: '嵌入流程', save_canvas: '截图',
+  delay: '等待', press_key: '按键', call_flow: '嵌入流程', save_canvas: '截图', save_data: '保存数据',
 }
 
 export function useStepActions(editingFlow: Ref<LocalFlow | null>, flowStore: FlowStore) {
@@ -23,6 +23,9 @@ export function useStepActions(editingFlow: Ref<LocalFlow | null>, flowStore: Fl
 
   const showDelayModal  = ref(false)
   const delayEditTarget = ref<FlowStep | null>(null)
+
+  const showSaveDataModal  = ref(false)
+  const saveDataEditTarget = ref<FlowStep | null>(null)
 
   function addDelayStep() {
     if (!editingFlow.value) return
@@ -60,6 +63,39 @@ export function useStepActions(editingFlow: Ref<LocalFlow | null>, flowStore: Fl
     }
     showDelayModal.value  = false
     delayEditTarget.value = null
+  }
+
+  function addSaveDataStep() {
+    if (!editingFlow.value) return
+    es.addingToBranch       = null
+    saveDataEditTarget.value = null
+    showSaveDataModal.value  = true
+  }
+
+  function editSaveDataStep(step: FlowStep) {
+    saveDataEditTarget.value = step
+    showSaveDataModal.value  = true
+  }
+
+  function onSaveDataConfirm(step: FlowStep) {
+    if (!editingFlow.value) return
+    if (saveDataEditTarget.value) {
+      // 编辑模式：替换原步骤
+      const idx = editingFlow.value.steps.findIndex(s => s.id === saveDataEditTarget.value!.id)
+      if (idx >= 0) editingFlow.value.steps[idx] = { ...step, id: saveDataEditTarget.value!.id }
+    } else if (es.addingToBranch) {
+      const { condStepId, branch } = es.addingToBranch
+      const condStep = editingFlow.value.steps.find(s => s.id === condStepId)
+      if (condStep) {
+        if (branch === 'if') condStep.children = [...(condStep.children ?? []), step]
+        else condStep.elseChildren = [...(condStep.elseChildren ?? []), step]
+      }
+      es.addingToBranch = null
+    } else {
+      editingFlow.value.steps.push(step)
+    }
+    showSaveDataModal.value  = false
+    saveDataEditTarget.value = null
   }
 
   const selectedStepIds = ref<string[]>([])
@@ -134,6 +170,8 @@ export function useStepActions(editingFlow: Ref<LocalFlow | null>, flowStore: Fl
   return {
     removeStep, addDelayStep, editDelayStep, onDelayConfirm,
     showDelayModal, delayEditTarget,
+    addSaveDataStep, editSaveDataStep, onSaveDataConfirm,
+    showSaveDataModal, saveDataEditTarget,
     selectedStepIds, toggleSelect, deleteSelected,
     showCallFlowPicker, addCallFlowStep, confirmCallFlow,
     convertToElementBranch, revertElementBranch,
