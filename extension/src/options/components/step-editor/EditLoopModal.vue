@@ -261,12 +261,11 @@ function configureItemAction(idx: number) {
           <span class="elm-setting-label">滚动方式</span>
           <select
             class="elm-select"
-            :value="step.scrollBehavior ?? 'none'"
+            :value="step.scrollBehavior ?? 'natural'"
             @change="step.scrollBehavior = ($event.target as HTMLSelectElement).value as FlowStep['scrollBehavior']"
           >
-            <option value="none">不额外滚动</option>
-            <option value="item">滚到当前项</option>
-            <option value="bottom">滚到底部</option>
+            <option value="center">居中滚动</option>
+            <option value="natural">自然滚动（风控）</option>
           </select>
         </div>
         <div class="elm-setting-row elm-setting-row--full">

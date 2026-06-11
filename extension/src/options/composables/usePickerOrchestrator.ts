@@ -72,7 +72,7 @@ export function usePickerOrchestrator(
       selector:          { cssSelector: candidate.itemSelector },
       children:          [],
       itemDelay:         [2000, 5000],
-      scrollBehavior:    'item',
+      scrollBehavior:    'natural',
       loopBatchSize:     10,
       loopCooldown:      [15000, 45000],
       scrollWait:        [300, 800],

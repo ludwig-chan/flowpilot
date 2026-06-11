@@ -56,7 +56,7 @@ export interface FlowStep {
   children?: FlowStep[]     // loop_items / condition 子步骤
   flowRef?: string          // call_flow: 引用的已保存流程 ID
   itemDelay?: [number, number] // loop_items: 每项处理完后的随机延迟 [min, max] ms
-  scrollBehavior?: 'none' | 'item' | 'bottom' // loop_items: 每项处理前/后的滚动行为
+  scrollBehavior?: 'center' | 'natural' // loop_items: 滚动方式，默认 natural（自然滚动）
   maxLoopItems?: number // loop_items: 本次最多处理多少项（空表示全部）
   loopBatchSize?: number // loop_items: 每批处理多少项（空表示不分批）
   loopCooldown?: [number, number] // loop_items: 每批处理完后的随机冷却 [min, max] ms

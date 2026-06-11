@@ -537,24 +537,16 @@ async function handleLoopItems(
   const limitText = maxLoopItems && allItems.length > itemsArr.length ? `，本次最多处理 ${itemsArr.length} 项` : ''
   const batchText = batchSize ? `，每批 ${batchSize} 项` : ''
   onLog(`找到 ${allItems.length} 个条目${limitText}${batchText}，开始循环...`)
-  const scrollBehavior = step.scrollBehavior ?? 'none'
+  const scrollBehavior = step.scrollBehavior ?? 'natural'
   const hasChildSteps = !!step.children?.length
   const childSteps = step.children ?? []
   const firstItem = itemsArr[0]
   const itemActions = getLoopItemActions(step)
 
-  for (let i = 0; i < itemsArr.length; i++) {
-    const item = itemsArr[i]
-    if (signal.stopped) return
-    if (stopLoopIfNeeded(step, ctx)) return
+  // 处理单个列表项（childSteps 或 itemActions）
+  const processOneItem = async (item: Element, idx: number) => {
     const itemText = getLoopItemText(item)
-    onStep?.({ type: 'loop_progress', stepId: step.id, index: i + 1, total: itemsArr.length, itemText })
-    if (!hasChildSteps) {
-      const firstTarget = firstItem ? resolveLoopActionTarget(step, itemActions[0], item, firstItem) : item
-      await scrollElementIntoViewIfNeeded(firstTarget as HTMLElement, scrollWait)
-    } else if (scrollBehavior === 'item') {
-      await scrollElementIntoViewIfNeeded(item as HTMLElement, scrollWait)
-    }
+    onStep?.({ type: 'loop_progress', stepId: step.id, index: idx + 1, total: itemsArr.length, itemText })
     onLog(`  → 处理：${itemText.slice(0, 50)}`)
     if (hasChildSteps) {
       for (const child of childSteps) {
@@ -571,7 +563,7 @@ async function handleLoopItems(
         onStep?.({
           type: 'loop_progress',
           stepId: step.id,
-          index: i + 1,
+          index: idx + 1,
           total: itemsArr.length,
           itemText,
           actionIndex: actionIdx + 1,
@@ -579,19 +571,65 @@ async function handleLoopItems(
           actionLabel,
         })
         onLog(`  执行动作：${actionLabel}`)
-        await executeLoopItemAction(action, itemTarget, item, ctx, i + 1, runChild)
+        await executeLoopItemAction(action, itemTarget, item, ctx, idx + 1, runChild)
         await applyLoopQueueStepDelay(action, ctx)
       }
     }
-    if (hasChildSteps && scrollBehavior === 'bottom') {
-      const container = findScrollContainer(item)
-      container.scrollTop = container.scrollHeight
-      await humanDelay(...scrollWait)
-    }
     await humanDelay(...itemDelay)
-    if (batchSize && cooldownRange && i < itemsArr.length - 1 && (i + 1) % batchSize === 0) {
-      onLog(`  批次完成，冷却约 ${Math.round(rangeAverage(cooldownRange) / 1000)} 秒...`)
-      await humanDelay(...cooldownRange)
+  }
+
+  if (scrollBehavior === 'natural') {
+    // ── 自然滚动：按随机批次滚动像素距离，模拟真人浏览 ──
+    const container = findScrollContainer(firstItem)
+    const itemHeight = firstItem.getBoundingClientRect().height
+    const NATURAL_BATCH_SIZES = [3, 4, 5, 5, 6, 6, 7]
+
+    let i = 0
+    while (i < itemsArr.length) {
+      if (signal.stopped) return
+      if (stopLoopIfNeeded(step, ctx)) return
+
+      const naturalBatch = NATURAL_BATCH_SIZES[Math.floor(Math.random() * NATURAL_BATCH_SIZES.length)]
+      const actualBatch = Math.min(naturalBatch, itemsArr.length - i)
+
+      const jitter = 0.8 + Math.random() * 0.5
+      const scrollPX = itemHeight * naturalBatch * jitter
+      container.scrollBy({ top: scrollPX, behavior: 'smooth' })
+      onLog(`  🌊 自然滚动 ${Math.round(scrollPX)}px，处理 ${actualBatch} 项`)
+      await humanDelay(...scrollWait)
+
+      for (let j = 0; j < actualBatch; j++) {
+        if (signal.stopped) return
+        if (stopLoopIfNeeded(step, ctx)) return
+        await processOneItem(itemsArr[i + j], i + j)
+      }
+
+      i += actualBatch
+      if (batchSize && cooldownRange && i < itemsArr.length && i % batchSize === 0) {
+        onLog(`  批次完成，冷却约 ${Math.round(rangeAverage(cooldownRange) / 1000)} 秒...`)
+        await humanDelay(...cooldownRange)
+      }
+    }
+  } else {
+    // ── 居中滚动：每项处理前精确居中 ──
+    for (let i = 0; i < itemsArr.length; i++) {
+      const item = itemsArr[i]
+      if (signal.stopped) return
+      if (stopLoopIfNeeded(step, ctx)) return
+
+      if (!hasChildSteps) {
+        const firstTarget = firstItem ? resolveLoopActionTarget(step, itemActions[0], item, firstItem) : item
+        await scrollElementIntoViewIfNeeded(firstTarget as HTMLElement, scrollWait)
+      } else {
+        await scrollElementIntoViewIfNeeded(item as HTMLElement, scrollWait)
+      }
+
+      await processOneItem(item, i)
+
+      if (batchSize && cooldownRange && i < itemsArr.length - 1 && (i + 1) % batchSize === 0) {
+        onLog(`  批次完成，冷却约 ${Math.round(rangeAverage(cooldownRange) / 1000)} 秒...`)
+        await humanDelay(...cooldownRange)
+      }
     }
   }
 }
