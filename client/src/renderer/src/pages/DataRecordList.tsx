@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import DataTable, { type Column } from '../components/DataTable'
 import ImageLightbox from '../components/ImageLightbox'
+import TagEditor from '../components/TagEditor'
 
 interface Tag {
   id: string
@@ -54,6 +55,7 @@ export default function DataRecordList({
   const [ocrResults, setOcrResults] = useState<Record<string, string>>({})
   const [ocrLoading, setOcrLoading] = useState<Record<string, boolean>>({})
   const [ocrDialog, setOcrDialog] = useState<{ text: string; label: string } | null>(null)
+  const [tagEditRecord, setTagEditRecord] = useState<RecordItem | null>(null)
 
   // ── 预加载截图库已有 OCR 结果，避免重复识别 ──
   useEffect(() => {
@@ -237,10 +239,13 @@ export default function DataRecordList({
     {
       key: 'actions',
       header: '操作',
-      width: '100px',
+      width: '156px',
       align: 'right',
       render: (item) => (
         <div className="screenshot-actions datatable-actions" onClick={(e) => e.stopPropagation()}>
+          <button className="btn btn-secondary btn-sm" onClick={() => setTagEditRecord(item)}>
+            标签
+          </button>
           <button className="btn btn-danger btn-sm" onClick={() => handleTrash(item)}>
             删除
           </button>
@@ -389,54 +394,25 @@ export default function DataRecordList({
                   </div>
                 )
               })}
-              {/* 标签编辑区 */}
-              <div style={{ marginTop: 12, borderTop: '1px solid #313244', paddingTop: 10 }}>
-                <div style={{ fontSize: 12, color: '#a6adc8', marginBottom: 6 }}>标签</div>
-                <div className="tag-row" style={{ marginBottom: 6 }}>
-                  {detailRecord.tags.length === 0 && <span className="tag-empty">无标签</span>}
-                  {detailRecord.tags.map((tag) => (
-                    <button
-                      key={tag.id}
-                      className="tag-pill"
-                      onClick={() => { removeTag(detailRecord, tag.id); setDetailRecord({ ...detailRecord, tags: detailRecord.tags.filter((t) => t.id !== tag.id), tagIds: detailRecord.tagIds.filter((id) => id !== tag.id) }) }}
-                      title="移除标签"
-                    >
-                      {tag.name} ×
-                    </button>
-                  ))}
-                </div>
-                <div style={{ display: 'flex', gap: 6 }}>
-                  <select
-                    className="form-select"
-                    value=""
-                    onChange={(e) => {
-                      if (e.target.value) {
-                        void addExistingTag(detailRecord, e.target.value)
-                      }
-                    }}
-                    style={{ flex: 1 }}
-                  >
-                    <option value="">选择标签</option>
-                    {tags.filter((t) => !detailRecord.tagIds.includes(t.id)).map((t) => (
-                      <option key={t.id} value={t.id}>{t.name}</option>
-                    ))}
-                  </select>
-                  <input
-                    className="form-input"
-                    placeholder="新标签"
-                    value={newTagById[detailRecord.id] || ''}
-                    onChange={(e) => setNewTagById((prev) => ({ ...prev, [detailRecord.id]: e.target.value }))}
-                    onKeyDown={(e) => { if (e.key === 'Enter') void addNewTag(detailRecord) }}
-                    style={{ flex: 1 }}
-                  />
-                  <button className="btn btn-secondary btn-sm" onClick={() => addNewTag(detailRecord)}>
-                    添加
-                  </button>
-                </div>
-              </div>
+
             </div>
           </div>
         </div>
+      )}
+
+      {tagEditRecord && (
+        <TagEditor
+          title="标签管理"
+          itemTags={tagEditRecord.tags}
+          itemTagIds={tagEditRecord.tagIds}
+          allTags={tags}
+          newTagName={newTagById[tagEditRecord.id] || ''}
+          onNewTagNameChange={(value) => setNewTagById((prev) => ({ ...prev, [tagEditRecord.id]: value }))}
+          onAddExistingTag={async (tagId) => { await addExistingTag(tagEditRecord, tagId) }}
+          onAddNewTag={async () => { await addNewTag(tagEditRecord) }}
+          onRemoveTag={async (tagId) => { await removeTag(tagEditRecord, tagId) }}
+          onClose={() => setTagEditRecord(null)}
+        />
       )}
 
       <ImageLightbox
