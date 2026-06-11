@@ -136,7 +136,7 @@
                   "type": "call_flow"
                 }
               ],
-              "label": "逐项操作列表：div#container > div:nth-child(1) > div >",
+              "label": "逐项点击",
               "selector": {
                 "cssSelector": "div#container > div:nth-child(1) > div > div:nth-child(2) > div:nth-child(2) > div:nth-child(1) > div:nth-child(2) > div > div:nth-child(2) > div"
               },
