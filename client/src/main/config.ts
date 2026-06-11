@@ -3,6 +3,14 @@ import * as fs from 'fs'
 import * as os from 'os'
 import * as path from 'path'
 
+export interface WindowState {
+  x: number
+  y: number
+  width: number
+  height: number
+  isMaximized: boolean
+}
+
 export interface AppConfig {
   extensionDir: string
   extensionHash: string
@@ -11,6 +19,7 @@ export interface AppConfig {
   launchAtStartup?: boolean
   autoClickerEnabled?: boolean
   currentVersion?: string
+  windowState?: WindowState
 }
 
 const CONFIG_DIR = path.join(app.getPath('userData'), 'flowpilot')

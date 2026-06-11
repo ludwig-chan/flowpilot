@@ -56,7 +56,7 @@ export interface FlowStep {
   foundDelay?: [number, number]  // 元素出现后、执行动作前的随机等待 ms
   children?: FlowStep[]     // loop_items / condition 子步骤
   flowRef?: string          // call_flow: 引用的已保存流程 ID
-  scrollBehavior?: 'center' | 'natural' // loop_items: 滚动方式，默认 natural（自然滚动）
+  executionMode?: 'center' | 'natural' // loop_items: 执行模式，默认 natural（自然模式，模拟真人操作防风控）
   requireManualConfirm?: boolean // loop_items: 预留人工确认模式
   itemTargetSelector?: SelectorStrategy // loop_items: 从第一项中选择的点击目标模板
   itemTargetRelativeSelector?: string // loop_items: 模板目标相对列表项的 CSS 路径

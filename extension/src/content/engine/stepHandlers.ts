@@ -515,7 +515,7 @@ async function handleLoopItems(
   const allItems = Array.from(document.querySelectorAll(step.selector.cssSelector))
   const itemsArr = allItems
   onLog(`找到 ${allItems.length} 个条目，开始循环...`)
-  const scrollBehavior = step.scrollBehavior ?? 'natural'
+  const executionMode = step.executionMode ?? 'natural'
   const hasChildSteps = !!step.children?.length
   const childSteps = step.children ?? []
   const firstItem = itemsArr[0]
@@ -555,8 +555,8 @@ async function handleLoopItems(
     }
   }
 
-  if (scrollBehavior === 'natural') {
-    // ── 自然滚动：按随机批次滚动像素距离，模拟真人浏览 ──
+  if (executionMode === 'natural') {
+    // ── 自然模式：按随机批次滚动像素距离，模拟真人浏览 ──
     const container = findScrollContainer(firstItem)
     const itemHeight = firstItem.getBoundingClientRect().height
     const NATURAL_BATCH_SIZES = [3, 4, 5, 5, 6, 6, 7]
@@ -571,7 +571,7 @@ async function handleLoopItems(
       const jitter = 0.8 + Math.random() * 0.5
       const scrollPX = itemHeight * naturalBatch * jitter
       container.scrollBy({ top: scrollPX, behavior: 'smooth' })
-      onLog(`  🌊 自然滚动 ${Math.round(scrollPX)}px，处理 ${actualBatch} 项`)
+      onLog(`  � 自然模式 ${Math.round(scrollPX)}px，处理 ${actualBatch} 项`)
 
       for (let j = 0; j < actualBatch; j++) {
         if (signal.stopped) return
@@ -581,7 +581,7 @@ async function handleLoopItems(
       i += actualBatch
     }
   } else {
-    // ── 居中滚动：每项处理前精确居中 ──
+    // ── 快速模式：每项处理前精确居中 ──
     for (let i = 0; i < itemsArr.length; i++) {
       const item = itemsArr[i]
       if (signal.stopped) return

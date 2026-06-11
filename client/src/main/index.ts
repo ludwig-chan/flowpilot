@@ -6,7 +6,7 @@ import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { createTray } from './tray'
 import { setTrayAutoClickerStatus } from './tray'
 import { registerIpcHandlers, prefetchTessdata } from './ipc'
-import { getEffectiveScreenshotDir, loadConfig, saveConfig } from './config'
+import { getEffectiveScreenshotDir, loadConfig, saveConfig, type WindowState } from './config'
 import { AutoClickerService } from './autoClicker'
 import {
   createUniqueScreenshotPath,
@@ -35,11 +35,15 @@ function createWindow(): BrowserWindow {
     ? join(process.cwd(), 'resources', 'icon.png')
     : join(process.resourcesPath, 'icon.png')
 
+  const config = loadConfig()
+  const savedState = config.windowState
   const { width: sw, height: sh } = screen.getPrimaryDisplay().workAreaSize
 
   const win = new BrowserWindow({
-    width: Math.round(sw * 0.5),
-    height: Math.round(sh * 0.5),
+    x: savedState?.x,
+    y: savedState?.y,
+    width: savedState?.width ?? Math.round(sw * 0.5),
+    height: savedState?.height ?? Math.round(sh * 0.5),
     minWidth: 900,
     minHeight: 600,
     show: false,
@@ -53,14 +57,41 @@ function createWindow(): BrowserWindow {
     }
   })
 
+  // 跟踪最大化状态
+  let isMaximized = savedState?.isMaximized ?? false
+
+  win.on('maximize', () => { isMaximized = true })
+  win.on('unmaximize', () => { isMaximized = false })
+
   win.on('ready-to-show', () => {
+    if (isMaximized) {
+      win.maximize()
+    }
     win.show()
   })
 
+  // 保存窗口状态
+  const saveWindowState = () => {
+    const bounds = win.getBounds()
+    const state: WindowState = {
+      x: bounds.x,
+      y: bounds.y,
+      width: bounds.width,
+      height: bounds.height,
+      isMaximized
+    }
+    const cfg = loadConfig()
+    cfg.windowState = state
+    saveConfig(cfg)
+  }
+
   win.on('close', (e) => {
     if (!(app as typeof app & { isQuitting: boolean }).isQuitting) {
+      saveWindowState()
       e.preventDefault()
       win.hide()
+    } else {
+      saveWindowState()
     }
   })
 

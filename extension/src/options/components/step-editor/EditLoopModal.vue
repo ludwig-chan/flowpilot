@@ -190,14 +190,14 @@ function configureItemAction(idx: number) {
       <label class="elm-label">执行节奏</label>
       <div class="elm-settings-grid">
         <div class="elm-setting-row">
-          <span class="elm-setting-label">滚动方式</span>
+          <span class="elm-setting-label">执行模式</span>
           <select
             class="elm-select"
-            :value="step.scrollBehavior ?? 'natural'"
-            @change="step.scrollBehavior = ($event.target as HTMLSelectElement).value as FlowStep['scrollBehavior']"
+            :value="step.executionMode ?? 'natural'"
+            @change="step.executionMode = ($event.target as HTMLSelectElement).value as FlowStep['executionMode']"
           >
-            <option value="center">居中滚动</option>
-            <option value="natural">自然滚动（风控）</option>
+            <option value="center">快速模式</option>
+            <option value="natural">自然模式（防风控）</option>
           </select>
         </div>
       </div>
