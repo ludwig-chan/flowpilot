@@ -124,14 +124,6 @@ function removeItemAction(idx: number) {
   ensureItemActions().splice(idx, 1)
 }
 
-function moveItemAction(idx: number, offset: -1 | 1) {
-  const actions = ensureItemActions()
-  const nextIdx = idx + offset
-  if (nextIdx < 0 || nextIdx >= actions.length) return
-  const [item] = actions.splice(idx, 1)
-  actions.splice(nextIdx, 0, item)
-}
-
 function reselectItemActionTarget(idx: number) {
   ensureItemActions()
   emit('reselect-target', currentState(), idx)
@@ -181,16 +173,6 @@ function configureItemAction(idx: number) {
               class="elm-resel-btn"
               @click="configureItemAction(idx)"
             >选择动作</BaseButton>
-            <BaseButton
-              class="elm-resel-btn"
-              :disabled="idx === 0"
-              @click="moveItemAction(idx, -1)"
-            >上移</BaseButton>
-            <BaseButton
-              class="elm-resel-btn"
-              :disabled="idx === itemActions.length - 1"
-              @click="moveItemAction(idx, 1)"
-            >下移</BaseButton>
             <BaseButton
               class="elm-resel-btn"
               @click="removeItemAction(idx)"
