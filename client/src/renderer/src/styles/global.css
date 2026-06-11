@@ -784,7 +784,7 @@ body {
 .image-lightbox {
   position: fixed;
   inset: 0;
-  z-index: 9999;
+  z-index: 11000;
   background: rgba(0, 0, 0, 0.84);
   display: flex;
   align-items: center;
