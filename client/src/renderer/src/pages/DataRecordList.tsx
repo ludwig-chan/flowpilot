@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import DataTable, { type Column } from '../components/DataTable'
 import ImageLightbox from '../components/ImageLightbox'
 
@@ -54,6 +54,17 @@ export default function DataRecordList({
   const [ocrResults, setOcrResults] = useState<Record<string, string>>({})
   const [ocrLoading, setOcrLoading] = useState<Record<string, boolean>>({})
   const [ocrDialog, setOcrDialog] = useState<{ text: string; label: string } | null>(null)
+
+  // ── 预加载截图库已有 OCR 结果，避免重复识别 ──
+  useEffect(() => {
+    window.api.listScreenshots().then((list) => {
+      const map: Record<string, string> = {}
+      for (const s of list.screenshots) {
+        if (s.ocrText) map[s.id] = s.ocrText
+      }
+      setOcrResults((prev) => ({ ...map, ...prev }))
+    }).catch(() => {})
+  }, [])
 
   const activeRecords = React.useMemo(
     () => records.filter((r) => {
@@ -111,7 +122,8 @@ export default function DataRecordList({
   }
 
   const runOcrForField = async (screenshotId: string): Promise<void> => {
-    if (ocrLoading[screenshotId] || ocrResults[screenshotId]) return
+    if (ocrLoading[screenshotId]) return
+    if (ocrResults[screenshotId]) return
     setOcrLoading((prev) => ({ ...prev, [screenshotId]: true }))
     try {
       const result = await window.api.ocrScreenshot(screenshotId)
@@ -292,7 +304,7 @@ export default function DataRecordList({
           }}
           tabIndex={0}
         >
-          <div className="ocr-dialog" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 720, maxHeight: '85vh' }}>
+          <div className="ocr-dialog" onClick={(e) => e.stopPropagation()} style={{ width: '75vw', maxWidth: 960, maxHeight: '85vh' }}>
             <div className="ocr-dialog-header">
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <button
@@ -323,16 +335,17 @@ export default function DataRecordList({
               <button className="ocr-dialog-close" onClick={() => setDetailRecord(null)}>×</button>
             </div>
             <div className="ocr-dialog-body">
-              <div style={{ marginBottom: 8, color: '#a6adc8', fontSize: 12 }}>
-                {detailRecord.flowName && <>流程：{detailRecord.flowName} · </>}
-                {detailRecord.createdAt}
+              <div style={{ marginBottom: 10, color: '#a6adc8', fontSize: 12, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                {detailRecord.flowName && <span>流程：{detailRecord.flowName}</span>}
+                <span>{detailRecord.createdAt}</span>
+                {detailRecord.sourceTitle && <span>页面：{detailRecord.sourceTitle}</span>}
               </div>
               {Object.entries(detailRecord.fields).map(([key, val]) => {
                 const isScreenshot = val.startsWith('shot_') && !val.includes(' ')
                 const ocrText = isScreenshot ? (ocrResults[val] ?? null) : null
                 return (
                   <div key={key} className="detail-field-row">
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+                    <div className="detail-field-top">
                       <span className="detail-field-key">{key}</span>
                       {isScreenshot && (
                         <button
@@ -362,7 +375,7 @@ export default function DataRecordList({
                             if (img) setLightboxImage({ src: img.dataUrl, alt: key })
                           }).catch(() => setLightboxLoading(false))
                         }}
-                        style={{ maxWidth: 260, maxHeight: 180, borderRadius: 4, marginTop: 4, cursor: 'zoom-in' }}
+                        style={{ maxWidth: '100%', maxHeight: 200, borderRadius: 4, marginTop: 4, cursor: 'zoom-in' }}
                       />
                     ) : (
                       <span className="detail-field-val">{val || '(空)'}</span>
