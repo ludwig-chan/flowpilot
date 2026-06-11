@@ -119,6 +119,17 @@ export default function DataRecordList({
     setThumbnails(newThumbs)
   }
 
+  // ── 详情弹窗的上/下条导航 ──
+  const detailIndex = detailRecord
+    ? activeRecords.findIndex((r) => r.id === detailRecord.id)
+    : -1
+
+  const prevRecord = detailIndex > 0 ? activeRecords[detailIndex - 1] : null
+  const nextRecord = detailIndex < activeRecords.length - 1 ? activeRecords[detailIndex + 1] : null
+
+  const goToPrev = () => { if (prevRecord) void openDetail(prevRecord) }
+  const goToNext = () => { if (nextRecord) void openDetail(nextRecord) }
+
   const renderFieldPreview = (item: RecordItem): React.ReactNode => {
     const entries = Object.entries(item.fields)
     if (!entries.length) return <span className="tag-empty">无字段</span>
@@ -244,10 +255,44 @@ export default function DataRecordList({
 
       {/* 字段详情弹窗 */}
       {detailRecord && (
-        <div className="ocr-dialog-overlay" onClick={() => setDetailRecord(null)}>
+        <div
+          className="ocr-dialog-overlay"
+          onClick={() => setDetailRecord(null)}
+          onKeyDown={(e) => {
+            if (e.key === 'ArrowLeft') goToPrev()
+            else if (e.key === 'ArrowRight') goToNext()
+            else if (e.key === 'Escape') setDetailRecord(null)
+          }}
+          tabIndex={0}
+        >
           <div className="ocr-dialog" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 560 }}>
             <div className="ocr-dialog-header">
-              <span>字段详情</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <button
+                  className="ocr-dialog-nav-btn"
+                  onClick={goToPrev}
+                  disabled={!prevRecord}
+                  title="上一条"
+                >
+                  ←
+                </button>
+                <span>
+                  字段详情
+                  {activeRecords.length > 1 && (
+                    <span style={{ fontWeight: 400, color: '#a6adc8', marginLeft: 6, fontSize: 12 }}>
+                      {detailIndex + 1} / {activeRecords.length}
+                    </span>
+                  )}
+                </span>
+                <button
+                  className="ocr-dialog-nav-btn"
+                  onClick={goToNext}
+                  disabled={!nextRecord}
+                  title="下一条"
+                >
+                  →
+                </button>
+              </div>
               <button className="ocr-dialog-close" onClick={() => setDetailRecord(null)}>×</button>
             </div>
             <div className="ocr-dialog-body">
