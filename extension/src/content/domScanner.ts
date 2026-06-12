@@ -48,7 +48,7 @@ export function handleDomScan(scope?: string): void {
   let scopeCanonicalSelector: string | undefined
   if (scope) {
     try {
-      const el = document.querySelector(scope)
+      const el = resolveScopeRoot(scope)
       if (el) scopeCanonicalSelector = getCssSelector(el)
     } catch { /* 无效选择器，忽略 */ }
   }
@@ -65,10 +65,12 @@ export function buildSerializedTree(scope?: string): SerializedDomNode[] {
   const MAX_DEPTH = 30
   const MAX_NODES = 5000
   let nodeCount = 0
-  let scopeRoot: Element | null = null
+  let scopeRoot = resolveScopeRoot(scope)
   if (scope) {
     try { scopeRoot = document.querySelector(scope) } catch { /* 非法选择器，回退到 body */ }
   }
+
+  if (scope && !scopeRoot) scopeRoot = resolveScopeRoot(scope)
 
   const walk = (el: Element, depth: number, iframeEl: HTMLIFrameElement | null = null): SerializedDomNode | null => {
     if (EXCLUDE_TAGS.has(el.tagName)) return null
@@ -136,6 +138,7 @@ export function buildSerializedTree(scope?: string): SerializedDomNode[] {
   // 确定扫描起始点：有 scope → 从 scope 元素开始；否则从 body 开始
   let startEls: Element[] = []
   if (scopeRoot) startEls = [scopeRoot]
+  else if (scope) return []
   if (startEls.length === 0 && document.body) {
     startEls = Array.from(document.body.children)
   }
@@ -144,6 +147,45 @@ export function buildSerializedTree(scope?: string): SerializedDomNode[] {
     if (node) result.push(node)
   }
   return result
+}
+
+function tryQuerySelector(selector: string): Element | null {
+  try { return document.querySelector(selector) } catch { return null }
+}
+
+function scopeFallbackSelectors(scope: string): string[] {
+  const selectors: string[] = []
+  const add = (selector?: string) => {
+    const s = selector?.trim()
+    if (s && !selectors.includes(s)) selectors.push(s)
+  }
+
+  add(scope)
+  add(scope.replace(/:nth-child\(\d+\)/g, ''))
+
+  const parts = scope.split('>').map(p => p.trim()).filter(Boolean)
+  const last = parts[parts.length - 1]
+  add(last)
+  add(last?.replace(/:nth-child\(\d+\)/g, ''))
+
+  if (last) {
+    const withoutNth = last.replace(/:nth-child\(\d+\)/g, '')
+    const tagMatch = withoutNth.match(/^[a-z][\w-]*/i)
+    const classMatch = withoutNth.match(/\.([_a-zA-Z][\w-]*)/)
+    if (tagMatch && classMatch) add(`${tagMatch[0]}.${CSS.escape(classMatch[1])}`)
+    if (classMatch) add(`.${CSS.escape(classMatch[1])}`)
+  }
+
+  return selectors
+}
+
+export function resolveScopeRoot(scope?: string): Element | null {
+  if (!scope) return null
+  for (const selector of scopeFallbackSelectors(scope)) {
+    const el = tryQuerySelector(selector)
+    if (el) return el
+  }
+  return null
 }
 
 // ─── 元素序列化（可操作性分类，不含 Element 引用） ───────────────────────────

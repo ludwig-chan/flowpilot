@@ -22,16 +22,18 @@ export function useDomPicker(
   const scopeCanonicalSelector = ref<string | undefined>(undefined)
 
   let scanTimer: ReturnType<typeof setTimeout> | null = null
+  let pendingScanFallback: SerializedDomNode[] | undefined
 
   function clearScanTimer() {
     if (scanTimer !== null) { clearTimeout(scanTimer); scanTimer = null }
   }
 
-  async function scanDom(scope?: string) {
+  async function scanDom(scope?: string, fallbackTree?: SerializedDomNode[]) {
     if (!activeTabId.value) { await showAlert('请先选择一个目标 Tab'); return }
     domScanning.value = true
     domMutated.value  = false
     domTree.value     = []
+    pendingScanFallback = fallbackTree
     clearScanTimer()
     scanTimer = setTimeout(() => {
       if (domScanning.value) {
@@ -62,9 +64,10 @@ export function useDomPicker(
     if (evt.type === MSG.DOM_SCAN_RESULT) {
       clearScanTimer()
       domScanning.value = false
-      domTree.value     = evt.tree
+      domTree.value     = evt.tree.length > 0 ? evt.tree : (pendingScanFallback ?? [])
       domTabTitle.value = evt.tabTitle
       scopeCanonicalSelector.value = evt.scopeCanonicalSelector
+      pendingScanFallback = undefined
     }
     if (evt.type === MSG.ELEMENT_PICKED) {
       pickMode.value          = false

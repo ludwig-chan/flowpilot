@@ -4,8 +4,9 @@
  */
 
 import type { RepeatingCandidate, SmartLoopDebugTraceRow } from '@shared/types/message'
+import type { SerializedDomNode } from '@shared/types/dom'
 import { MSG } from '@shared/types/message'
-import { getCssSelector } from './domScanner'
+import { EXCLUDE_TAGS, getCssSelector, serializeElement } from './domScanner'
 
 // ─── 智能循环候选高亮状态 ─────────────────────────────────────────────────────
 const loopHighlightEls: HTMLElement[] = []
@@ -86,6 +87,52 @@ function emitSmartLoopDebug(debug: {
   chrome.runtime.sendMessage({ type: MSG.SMART_LOOP_DEBUG, ...debug }).catch(() => {})
 }
 
+function buildItemPreviewTree(item: Element): SerializedDomNode[] {
+  let nodeCount = 0
+  const MAX_DEPTH = 30
+  const MAX_NODES = 5000
+
+  const walk = (el: Element, depth: number): SerializedDomNode | null => {
+    if (EXCLUDE_TAGS.has(el.tagName)) return null
+    if (nodeCount >= MAX_NODES) return null
+
+    const htmlEl = el as HTMLElement
+    const hidden = htmlEl.hidden
+      || htmlEl.style?.display === 'none'
+      || htmlEl.style?.visibility === 'hidden'
+      || el.getAttribute('aria-hidden') === 'true'
+    if (hidden && el.children.length > 2) return null
+
+    const rect = el.getBoundingClientRect()
+    const node: SerializedDomNode = {
+      depth,
+      tag:      el.tagName.toLowerCase(),
+      id:       el.id ?? '',
+      classes:  typeof el.className === 'string' ? el.className : '',
+      item:     serializeElement(el, null, item),
+      children: [],
+      w:        rect.width > 0 ? Math.round(rect.width) : undefined,
+      h:        rect.height > 0 ? Math.round(rect.height) : undefined,
+      scrollW:  el.scrollWidth > el.clientWidth + 1 ? el.scrollWidth : undefined,
+      scrollH:  el.scrollHeight > el.clientHeight + 1 ? el.scrollHeight : undefined,
+    }
+    nodeCount++
+
+    if (node.tag === 'svg') return node
+    if (depth < MAX_DEPTH) {
+      for (const child of el.children) {
+        if (nodeCount >= MAX_NODES) break
+        const childNode = walk(child, depth + 1)
+        if (childNode) node.children.push(childNode)
+      }
+    }
+    return node
+  }
+
+  const root = walk(item, 0)
+  return root ? [root] : []
+}
+
 function analyzeRepeatingAncestors(pickedEl: Element): {
   candidates: RepeatingCandidate[]
   trace: SmartLoopDebugTraceRow[]
@@ -127,12 +174,15 @@ function analyzeRepeatingAncestors(pickedEl: Element): {
         row.count = count
         if (count >= 2) {
           row.accepted = true
+          let firstItem: Element | null = null
+          try { firstItem = ownerDoc.querySelector(itemSel) } catch { firstItem = null }
           candidates.push({
             itemSelector:     itemSel,
             count,
             tagName:          current.tagName,
             inferredLabel:    inferCandidateLabel(current),
             depth,
+            itemPreviewTree:  firstItem ? buildItemPreviewTree(firstItem) : undefined,
           })
         }
       }

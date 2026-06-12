@@ -4,7 +4,7 @@
  */
 
 import { MSG } from '@shared/types/message'
-import { serializeElement, buildSelector } from './domScanner'
+import { serializeElement, buildSelector, resolveScopeRoot } from './domScanner'
 import { handleSmartLoopFromElement } from './smartLoop'
 
 // ─── 元素拾取状态 ─────────────────────────────────────────────────────────────
@@ -18,7 +18,8 @@ export function handlePickElement(scope?: string, mode?: 'smart_loop'): void {
   pickCleanup?.()  // 取消之前可能存在的拾取
 
   // 解析范围：scope 为空 → 全页面；否则只允许 scope 内的元素
-  const rootEl: Element | null = scope ? (() => { try { return document.querySelector(scope) } catch { return null } })() : null
+  const rootEl: Element | null = resolveScopeRoot(scope)
+  const scopeMissing = !!scope && !rootEl
 
   const ov    = document.createElement('div')
   const hlDiv = document.createElement('div')
@@ -35,7 +36,11 @@ export function handlePickElement(scope?: string, mode?: 'smart_loop'): void {
     ov.style.pointerEvents = 'none'
     const t = document.elementFromPoint(e.clientX, e.clientY)
     ov.style.pointerEvents = ''
-    if (!t || t === hlDiv) return
+    if (scopeMissing || !t || t === hlDiv) {
+      cur = null
+      hlDiv.style.display = 'none'
+      return
+    }
 
     // 尝试穿透同源 iframe
     let pickedEl: Element = t
@@ -63,6 +68,7 @@ export function handlePickElement(scope?: string, mode?: 'smart_loop'): void {
 
     cur       = pickedEl
     curIframe = pickedIframe
+    hlDiv.style.display = ''
 
     let r: DOMRect
     if (pickedIframe) {

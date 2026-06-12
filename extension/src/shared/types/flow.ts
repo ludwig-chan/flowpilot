@@ -1,4 +1,6 @@
 // ─── 选择器策略（从稳定到脆弱依次尝试）───────────────────────────────────────
+import type { SerializedDomNode } from './dom'
+
 export interface SelectorStrategy {
   ariaLabel?:      string
   text?:           string
@@ -86,6 +88,7 @@ export interface FlowStep {
   itemTargetRelativeSelector?: string // loop_items: 模板目标相对列表项的 CSS 路径
   itemAction?: FlowStep // loop_items: 对每一项或项内目标执行的动作配置
   itemActions?: FlowStep[] // loop_items: 对每一项依次执行的动作队列
+  itemPreviewTree?: SerializedDomNode[] // loop_items: 编辑器使用的第一项 DOM 快照
   elseChildren?: FlowStep[] // condition: else 分支步骤
   conditions?:      ConditionItem[]   // condition: 多条件列表
   conditionLogic?:  ConditionLogic    // condition: 条件连接方式，默认 'and'

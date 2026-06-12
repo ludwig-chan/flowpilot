@@ -2,7 +2,7 @@ import { ref, onUnmounted } from 'vue'
 import type { Ref } from 'vue'
 import type { LocalFlow } from '../stores/useFlowStore'
 import type { FlowStep, ActionType } from '@shared/types/flow'
-import type { SerializedElement } from '@shared/types/dom'
+import type { SerializedDomNode, SerializedElement } from '@shared/types/dom'
 import { useBridge } from './useBridge'
 import { showAlert } from '@shared/utils/dialog'
 import { useLoopEditor } from './useLoopEditor'
@@ -19,7 +19,7 @@ export function usePickerOrchestrator(
   pickedCssSelector: Ref<string>,
   pickMode: Ref<boolean>,
   scopeCanonicalSelector: Ref<string | undefined>,
-  scanDom: (scope?: string) => void,
+  scanDom: (scope?: string, fallbackTree?: SerializedDomNode[]) => void,
   togglePickMode: (scope?: string, mode?: 'smart_loop') => void,
   getFlowName: (id: string) => string,
 ) {
@@ -62,6 +62,7 @@ export function usePickerOrchestrator(
     if (reselectingLoopList.value && es.editingLoopStep) {
       reselectingLoopList.value = false
       es.editingLoopStep.selector = { cssSelector: candidate.itemSelector }
+      es.editingLoopStep.itemPreviewTree = candidate.itemPreviewTree
       es.editingLoopStep.label = makeLoopClickLabel(candidate.inferredLabel, candidate.count)
       es.showEditLoopModal = true
       return
@@ -72,6 +73,7 @@ export function usePickerOrchestrator(
       type:              'loop_items',
       label:             makeLoopClickLabel(candidate.inferredLabel, candidate.count),
       selector:          { cssSelector: candidate.itemSelector },
+      itemPreviewTree:   candidate.itemPreviewTree,
       children:          [],
       executionMode:     'natural',
     }
@@ -330,7 +332,8 @@ export function usePickerOrchestrator(
   }
 
   function scanPickerDom() {
-    scanDom(pickerScope.value)
+    const fallbackTree = selectingLoopTarget.value ? es.editingLoopStep?.itemPreviewTree : undefined
+    scanDom(pickerScope.value, fallbackTree)
   }
 
   function togglePickerPickMode() {
@@ -351,7 +354,7 @@ export function usePickerOrchestrator(
     es.showEditLoopModal = false
     pickedCssSelector.value = ''
     openPickerInScope(currentState.selector.cssSelector)
-    scanDom(currentState.selector.cssSelector)
+    scanDom(currentState.selector.cssSelector, currentState.itemPreviewTree)
   }
 
   function onLoopActionConfigure(currentState: FlowStep, actionIdx: number) {

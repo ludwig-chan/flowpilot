@@ -1,6 +1,8 @@
 // ─── 消息类型 ──────────────────────────────────────────────────────────────────
 
 // ─── Content Script → Background ──────────────────────────────────────────────
+import type { SerializedDomNode } from './dom'
+
 export interface FlowLogMessage {
   type: 'FLOW_LOG'
   text: string
@@ -75,6 +77,7 @@ export interface RepeatingCandidate {
   inferredLabel:    string
   /** 从拾取元素往上数第几层（1 = 直接父节点） */
   depth:            number
+  itemPreviewTree?: SerializedDomNode[]
 }
 
 /** Options → Content Script：激活智能列表分析拾取模式 */
