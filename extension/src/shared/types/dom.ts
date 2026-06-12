@@ -49,6 +49,7 @@ export interface RequestPickElementMessage {
   type: 'REQUEST_PICK_ELEMENT'
   /** 可选：限定拾取范围的 CSS 选择器（如 "#sidebar"），不传则全页面可拾取 */
   scope?: string
+  mode?: 'smart_loop'
 }
 
 /** 取消拾取模式 */

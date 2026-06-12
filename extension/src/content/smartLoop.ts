@@ -3,12 +3,26 @@
  * 智能循环：重复祖先分析、候选高亮
  */
 
-import type { RepeatingCandidate } from '@shared/types/message'
+import type { RepeatingCandidate, SmartLoopDebugTraceRow } from '@shared/types/message'
 import { MSG } from '@shared/types/message'
 import { getCssSelector } from './domScanner'
 
 // ─── 智能循环候选高亮状态 ─────────────────────────────────────────────────────
 const loopHighlightEls: HTMLElement[] = []
+function describeElement(el: Element | null): string {
+  if (!el) return 'null'
+  const tag = el.tagName.toLowerCase()
+  const id = el.id ? `#${el.id}` : ''
+  const cls = (el.getAttribute('class') ?? '')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 4)
+    .map(c => `.${c}`)
+    .join('')
+  const text = el.textContent?.replace(/\s+/g, ' ').trim().slice(0, 40)
+  return text ? `${tag}${id}${cls} "${text}"` : `${tag}${id}${cls}`
+}
 
 // ─── 辅助函数 ─────────────────────────────────────────────────────────────────
 
@@ -57,27 +71,62 @@ function inferCandidateLabel(el: Element): string {
 /**
  * 从拾取的元素往上爬 DOM，找出所有「同级有重复兄弟」的祖先层作为候选列表项。
  */
-function analyzeRepeatingAncestors(pickedEl: Element): RepeatingCandidate[] {
+function toErrorMessage(err: unknown): string {
+  return err instanceof Error ? err.message : String(err)
+}
+
+function emitSmartLoopDebug(debug: {
+  url: string
+  inputSelector: string
+  resolvedElement: string
+  selectorError?: string
+  trace: SmartLoopDebugTraceRow[]
+  candidates: RepeatingCandidate[]
+}): void {
+  chrome.runtime.sendMessage({ type: MSG.SMART_LOOP_DEBUG, ...debug }).catch(() => {})
+}
+
+function analyzeRepeatingAncestors(pickedEl: Element): {
+  candidates: RepeatingCandidate[]
+  trace: SmartLoopDebugTraceRow[]
+} {
   const candidates: RepeatingCandidate[] = []
+  const trace: SmartLoopDebugTraceRow[] = []
   const MAX_DEPTH = 8
+  const ownerDoc = pickedEl.ownerDocument
   let current: Element | null = pickedEl
   let depth = 0
 
   while (
     current &&
-    current !== document.body &&
-    current !== document.documentElement &&
+    current !== ownerDoc.body &&
+    current !== ownerDoc.documentElement &&
     depth <= MAX_DEPTH
   ) {
     const parent = current.parentElement
-    if (parent && parent !== document.documentElement) {
+    if (parent && parent !== ownerDoc.documentElement) {
       const sameSiblings = Array.from(parent.children).filter(s => s.tagName === current!.tagName)
+      const row: SmartLoopDebugTraceRow = {
+        depth,
+        current: describeElement(current),
+        parent: describeElement(parent),
+        sameSiblingCount: sameSiblings.length,
+        accepted: false,
+      }
       if (sameSiblings.length >= 2) {
         const parentSel  = getCssSelector(parent)
         const itemSel    = `${parentSel} > ${buildItemSegment(current)}`
         let count = 0
-        try { count = document.querySelectorAll(itemSel).length } catch { /* 无效选择器，跳过 */ }
+        row.parentSelector = parentSel
+        row.itemSelector = itemSel
+        try {
+          count = ownerDoc.querySelectorAll(itemSel).length
+        } catch (err) {
+          row.error = toErrorMessage(err)
+        }
+        row.count = count
         if (count >= 2) {
+          row.accepted = true
           candidates.push({
             itemSelector:     itemSel,
             count,
@@ -87,24 +136,47 @@ function analyzeRepeatingAncestors(pickedEl: Element): RepeatingCandidate[] {
           })
         }
       }
+      trace.push(row)
     }
     current = current.parentElement
     depth++
   }
-  return candidates
+  return { candidates, trace }
 }
 
 // ─── 对外接口 ─────────────────────────────────────────────────────────────────
 
+export function handleSmartLoopFromElement(el: Element, inputSelector: string): void {
+  const resolvedElement = describeElement(el)
+  const { candidates, trace } = analyzeRepeatingAncestors(el)
+  emitSmartLoopDebug({
+    url: location.href,
+    inputSelector,
+    resolvedElement,
+    trace,
+    candidates,
+  })
+  chrome.runtime.sendMessage({ type: MSG.SMART_LOOP_ANALYZED, candidates }).catch(() => {})
+}
+
 export function handleSmartLoopFromSelector(cssSelector: string): void {
   let el: Element | null
-  try { el = document.querySelector(cssSelector) } catch { el = null }
+  let selectorError: unknown
+  try { el = document.querySelector(cssSelector) } catch (err) { selectorError = err; el = null }
+  const resolvedElement = describeElement(el)
   if (!el) {
+    emitSmartLoopDebug({
+      url: location.href,
+      inputSelector: cssSelector,
+      resolvedElement,
+      selectorError: selectorError ? toErrorMessage(selectorError) : undefined,
+      trace: [],
+      candidates: [],
+    })
     chrome.runtime.sendMessage({ type: MSG.SMART_LOOP_ANALYZED, candidates: [] }).catch(() => {})
     return
   }
-  const candidates = analyzeRepeatingAncestors(el)
-  chrome.runtime.sendMessage({ type: MSG.SMART_LOOP_ANALYZED, candidates }).catch(() => {})
+  handleSmartLoopFromElement(el, cssSelector)
 }
 
 export function handleHighlightCandidates(selector: string): void {

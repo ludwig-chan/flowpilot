@@ -93,6 +93,28 @@ export interface SmartLoopAnalyzedMessage {
   candidates: RepeatingCandidate[]
 }
 
+export interface SmartLoopDebugTraceRow {
+  depth: number
+  current: string
+  parent: string
+  sameSiblingCount: number
+  accepted: boolean
+  parentSelector?: string
+  itemSelector?: string
+  count?: number
+  error?: string
+}
+
+export interface SmartLoopDebugMessage {
+  type: 'SMART_LOOP_DEBUG'
+  url: string
+  inputSelector: string
+  resolvedElement: string
+  selectorError?: string
+  trace: SmartLoopDebugTraceRow[]
+  candidates: RepeatingCandidate[]
+}
+
 /** Options → Content Script：高亮所有与候选选择器匹配的元素（hover 预览用） */
 export interface HighlightLoopCandidatesMessage {
   type:     'HIGHLIGHT_LOOP_CANDIDATES'
@@ -120,6 +142,7 @@ export type ExtensionMessage =
   | RequestSmartLoopAnalyzeMessage
   | RequestSmartLoopFromSelectorMessage
   | SmartLoopAnalyzedMessage
+  | SmartLoopDebugMessage
   | HighlightLoopCandidatesMessage
   | ClearLoopHighlightsMessage
 
@@ -146,6 +169,7 @@ export const MSG = {
   FLOW_ERROR_FROM_TAB:              'FLOW_ERROR_FROM_TAB',
   DOM_MUTATION:                     'DOM_MUTATION',
   SMART_LOOP_ANALYZED:              'SMART_LOOP_ANALYZED',
+  SMART_LOOP_DEBUG:                 'SMART_LOOP_DEBUG',
   FLOW_STEP_EVENT_FROM_TAB:         'FLOW_STEP_EVENT_FROM_TAB',
   // content → background
   ELEMENT_TRIGGER_FIRED:            'ELEMENT_TRIGGER_FIRED',

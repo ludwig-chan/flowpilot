@@ -5,7 +5,7 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import type { SerializedDomNode, SerializedElement } from '@shared/types/dom'
 import type { FlowStep, StepDelayLevel, StepEvent } from '@shared/types/flow'
-import type { RepeatingCandidate } from '@shared/types/message'
+import type { RepeatingCandidate, SmartLoopDebugTraceRow } from '@shared/types/message'
 import { MSG } from '@shared/types/message'
 
 export type BridgeEvent =
@@ -16,9 +16,30 @@ export type BridgeEvent =
   | { type: 'FLOW_ERROR_FROM_TAB'; tabId: number; error: string }
   | { type: 'DOM_MUTATION'; tabId: number }
   | { type: 'SMART_LOOP_ANALYZED'; tabId: number; element: SerializedElement | null; candidates: RepeatingCandidate[] }
+  | {
+      type: 'SMART_LOOP_DEBUG'
+      tabId: number
+      url: string
+      inputSelector: string
+      resolvedElement: string
+      selectorError?: string
+      trace: SmartLoopDebugTraceRow[]
+      candidates: RepeatingCandidate[]
+    }
   | { type: 'FLOW_STEP_EVENT_FROM_TAB'; tabId: number; event: StepEvent }
 
 type BridgeHandler = (e: BridgeEvent) => void
+
+function logSmartLoopDebug(msg: Extract<BridgeEvent, { type: 'SMART_LOOP_DEBUG' }>) {
+  console.groupCollapsed(`[FlowPilot SmartLoop] tab=${msg.tabId ?? 'unknown'} candidates=${msg.candidates?.length ?? 0}`)
+  console.debug('url:', msg.url)
+  console.debug('input selector:', msg.inputSelector)
+  console.debug('resolved element:', msg.resolvedElement)
+  if (msg.selectorError) console.warn('selector error:', msg.selectorError)
+  console.table(msg.trace ?? [])
+  console.debug('candidates:', msg.candidates ?? [])
+  console.groupEnd()
+}
 
 export function useExtensionBridge() {
   let port: chrome.runtime.Port | null = null
@@ -31,6 +52,7 @@ export function useExtensionBridge() {
     if (destroyed) return
     port = chrome.runtime.connect({ name: 'options-panel' })
     port.onMessage.addListener((msg: BridgeEvent) => {
+      if (msg.type === MSG.SMART_LOOP_DEBUG) logSmartLoopDebug(msg)
       handlers.forEach(h => h(msg))
     })
     port.onDisconnect.addListener(() => {
@@ -79,8 +101,8 @@ export function useExtensionBridge() {
     return send({ type: MSG.REQUEST_DOM_SCAN, scope })
   }
 
-  async function requestPickElement(scope?: string) {
-    return send({ type: MSG.REQUEST_PICK_ELEMENT, scope })
+  async function requestPickElement(scope?: string, mode?: 'smart_loop') {
+    return send({ type: MSG.REQUEST_PICK_ELEMENT, scope, mode })
   }
 
   async function cancelPickElement() {

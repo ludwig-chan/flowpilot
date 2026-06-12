@@ -48,7 +48,8 @@ export function initOptionsBridge(): void {
       return
     }
     if (msg.type === MSG.REQUEST_PICK_ELEMENT) {
-      handlePickElement((msg as { scope?: string }).scope)
+      const m = msg as { scope?: string; mode?: 'smart_loop' }
+      handlePickElement(m.scope, m.mode)
       sendResponse({ ok: true })
       return
     }

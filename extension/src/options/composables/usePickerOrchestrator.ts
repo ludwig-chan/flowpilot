@@ -1,4 +1,4 @@
-import { ref } from 'vue'
+import { ref, onUnmounted } from 'vue'
 import type { Ref } from 'vue'
 import type { LocalFlow } from '../stores/useFlowStore'
 import type { FlowStep, ActionType } from '@shared/types/flow'
@@ -8,6 +8,8 @@ import { showAlert } from '@shared/utils/dialog'
 import { useLoopEditor } from './useLoopEditor'
 import { useStepEditor } from './useStepEditor'
 import { useSmartLoop } from './useSmartLoop'
+import type { BridgeEvent } from './useExtensionBridge'
+import { MSG } from '@shared/types/message'
 import { genId } from '@shared/utils/genId'
 import { useEditorStore } from '../stores/useEditorStore'
 
@@ -18,7 +20,7 @@ export function usePickerOrchestrator(
   pickMode: Ref<boolean>,
   scopeCanonicalSelector: Ref<string | undefined>,
   scanDom: (scope?: string) => void,
-  togglePickMode: (scope?: string) => void,
+  togglePickMode: (scope?: string, mode?: 'smart_loop') => void,
   getFlowName: (id: string) => string,
 ) {
   const bridge = useBridge()
@@ -84,6 +86,18 @@ export function usePickerOrchestrator(
   const selectingLoopTargetIdx = ref<number | null>(null)
   const configuringLoopItemActionIdx = ref<number | null>(null)
   const showLoopCallFlowPicker = ref(false)
+
+  const directSmartLoopHandler = (evt: BridgeEvent) => {
+    if (evt.type !== MSG.SMART_LOOP_ANALYZED) return
+    if (!smartLoopMode.value && !reselectingLoopList.value) return
+    smartLoopMode.value = false
+    showPickerModal.value = false
+    pickedCssSelector.value = ''
+    pickerScope.value = undefined
+    pickMode.value = false
+  }
+  bridge.on(directSmartLoopHandler)
+  onUnmounted(() => bridge.off(directSmartLoopHandler))
 
   function toItemRelativeSelector(cssSelector: string): string | undefined {
     const scope = scopeCanonicalSelector.value
@@ -320,7 +334,8 @@ export function usePickerOrchestrator(
   }
 
   function togglePickerPickMode() {
-    togglePickMode(pickerScope.value)
+    const mode = smartLoopMode.value || reselectingLoopList.value ? 'smart_loop' : undefined
+    togglePickMode(pickerScope.value, mode)
   }
 
   function onLoopReselect(currentState: FlowStep) {

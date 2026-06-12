@@ -5,6 +5,7 @@
 
 import { MSG } from '@shared/types/message'
 import { serializeElement, buildSelector } from './domScanner'
+import { handleSmartLoopFromElement } from './smartLoop'
 
 // ─── 元素拾取状态 ─────────────────────────────────────────────────────────────
 let pickCleanup: (() => void) | null = null
@@ -13,7 +14,7 @@ export function cancelPickElement(): void {
   pickCleanup?.()
 }
 
-export function handlePickElement(scope?: string): void {
+export function handlePickElement(scope?: string, mode?: 'smart_loop'): void {
   pickCleanup?.()  // 取消之前可能存在的拾取
 
   // 解析范围：scope 为空 → 全页面；否则只允许 scope 内的元素
@@ -92,6 +93,10 @@ export function handlePickElement(scope?: string): void {
     const serialized = serializeElement(cur, curIframe, rootEl ?? undefined)
     const cssSelector = serialized?.selector.cssSelector ?? buildSelector(cur, curIframe, rootEl ?? undefined)?.cssSelector ?? ''
     cleanup()
+    if (mode === 'smart_loop') {
+      handleSmartLoopFromElement(cur, cssSelector)
+      return
+    }
     if (serialized) {
       chrome.runtime.sendMessage({ type: MSG.ELEMENT_PICKED, element: serialized, cssSelector }).catch(() => {})
     }

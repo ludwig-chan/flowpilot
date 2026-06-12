@@ -47,14 +47,14 @@ export function useDomPicker(
     }
   }
 
-  async function togglePickMode(scope?: string) {
+  async function togglePickMode(scope?: string, mode?: 'smart_loop') {
     if (!activeTabId.value) { await showAlert('请先选择一个目标 Tab'); return }
     if (pickMode.value) {
       pickMode.value = false
       await bridge.cancelPickElement()
     } else {
       pickMode.value = true
-      await bridge.requestPickElement(scope)
+      await bridge.requestPickElement(scope, mode)
     }
   }
 

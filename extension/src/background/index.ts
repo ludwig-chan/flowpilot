@@ -115,7 +115,7 @@ const FORWARD_TO_CONTENT: Set<string> = new Set([
 const BROADCAST_TO_OPTIONS: Set<string> = new Set([
   MSG.DOM_SCAN_RESULT, MSG.ELEMENT_PICKED, MSG.FLOW_LOG_FROM_TAB,
   MSG.FLOW_DONE_FROM_TAB, MSG.FLOW_ERROR_FROM_TAB, MSG.DOM_MUTATION,
-  MSG.SMART_LOOP_ANALYZED, MSG.FLOW_STEP_EVENT_FROM_TAB,
+  MSG.SMART_LOOP_ANALYZED, MSG.SMART_LOOP_DEBUG, MSG.FLOW_STEP_EVENT_FROM_TAB,
 ])
 
 const SCREENSHOT_BRIDGE_HOST = '127.0.0.1'
@@ -289,6 +289,16 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   // content script 推送给 Options 的结果（DOM 扫描、元素拾取、日志等）
   if (BROADCAST_TO_OPTIONS.has(message.type)) {
     const enriched = { ...message, tabId: message.tabId ?? sender.tab?.id }
+    if (message.type === MSG.SMART_LOOP_DEBUG) {
+      console.groupCollapsed(`[FlowPilot SmartLoop] tab=${enriched.tabId ?? 'unknown'} candidates=${message.candidates?.length ?? 0}`)
+      console.debug('url:', message.url)
+      console.debug('input selector:', message.inputSelector)
+      console.debug('resolved element:', message.resolvedElement)
+      if (message.selectorError) console.warn('selector error:', message.selectorError)
+      console.table(message.trace ?? [])
+      console.debug('candidates:', message.candidates ?? [])
+      console.groupEnd()
+    }
     broadcastToOptions(enriched)
     sendResponse({ ok: true })
     return true
