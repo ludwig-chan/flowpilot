@@ -12,3 +12,6 @@ server/*.log
 
 # 打包文件
 web/flowpilot.zip
+
+.trae/
+.uploads/
