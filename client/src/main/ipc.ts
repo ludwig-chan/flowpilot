@@ -1,7 +1,6 @@
 import { app, ipcMain, BrowserWindow, shell, dialog } from 'electron'
 import { spawn } from 'child_process'
-import { existsSync, mkdirSync } from 'fs'
-import { join } from 'path'
+import { existsSync } from 'fs'
 import { getEffectiveScreenshotDir, loadConfig, saveConfig, AppConfig } from './config'
 import type { AutoClickerService, AutoClickerStatus } from './autoClicker'
 import {
@@ -24,33 +23,7 @@ import {
   trashDataRecord,
   updateDataRecordTags
 } from './dataRecordLibrary'
-
-const TESS_LANGS = ['chi_sim', 'eng'] as const
-
-/**
- * 应用启动时在后台静默预下载 Tesseract 语言包。
- * 若语言包已全部缓存则立即跳过，不产生任何网络请求。
- */
-export async function prefetchTessdata(): Promise<void> {
-  const langPath = join(app.getPath('userData'), 'tessdata')
-  const allCached = TESS_LANGS.every((lang) =>
-    existsSync(join(langPath, `${lang}.traineddata`))
-  )
-  if (allCached) return
-
-  mkdirSync(langPath, { recursive: true })
-  try {
-    const { createWorker } = await import('tesseract.js')
-    const worker = await createWorker(TESS_LANGS as unknown as string[], 1, {
-      cachePath: langPath,
-      cacheMethod: 'write',
-    })
-    await worker.terminate()
-    console.log('[OCR] 语言包预下载完成')
-  } catch (err) {
-    console.warn('[OCR] 语言包预下载失败，将在首次使用时重试：', (err as Error).message)
-  }
-}
+import { recognizeText } from './ocrEngine'
 
 const BROWSER_CONFIGS: Record<string, { name: string; paths: string[]; extPage: string }> = {
   chrome: {
@@ -246,19 +219,11 @@ export function registerIpcHandlers(
 
   // OCR 识别：接收 PNG/JPEG data URL，返回识别文字（中英文）
   ipcMain.handle('ocr-image', async (_event, dataUrl: string) => {
-    const { createWorker } = await import('tesseract.js')
-    const langPath = join(app.getPath('userData'), 'tessdata')
-    const worker = await createWorker(TESS_LANGS as unknown as string[], 1, {
-      cachePath: langPath,
-      cacheMethod: 'write',
-    })
     try {
-      const { data: { text } } = await worker.recognize(dataUrl)
-      return { success: true, text: text.trim() }
+      const text = await recognizeText(dataUrl)
+      return { success: true, text }
     } catch (err) {
       return { success: false, error: (err as Error).message }
-    } finally {
-      await worker.terminate()
     }
   })
 
@@ -274,21 +239,12 @@ export function registerIpcHandlers(
     const image = getScreenshotImage(screenshotId)
     if (!image) return { success: false, error: '截图文件不存在' }
 
-    const { createWorker } = await import('tesseract.js')
-    const langPath = join(app.getPath('userData'), 'tessdata')
-    const worker = await createWorker(TESS_LANGS as unknown as string[], 1, {
-      cachePath: langPath,
-      cacheMethod: 'write',
-    })
     try {
-      const { data: { text } } = await worker.recognize(image.dataUrl)
-      const trimmed = text.trim()
+      const trimmed = await recognizeText(image.dataUrl)
       updateScreenshotOcr(screenshotId, trimmed)
       return { success: true, text: trimmed }
     } catch (err) {
       return { success: false, error: (err as Error).message }
-    } finally {
-      await worker.terminate()
     }
   })
 
@@ -307,19 +263,11 @@ export function registerIpcHandlers(
     if (targets.length === 0 && cached.length === 0) return { success: true, results: [] }
     if (targets.length === 0) return { success: true, results: cachedResults }
 
-    const { createWorker } = await import('tesseract.js')
-    const langPath = join(app.getPath('userData'), 'tessdata')
-    const worker = await createWorker(TESS_LANGS as unknown as string[], 1, {
-      cachePath: langPath,
-      cacheMethod: 'write',
-    })
-
     const results: Array<{ id: string; text?: string; error?: string; filename: string }> = []
     try {
       for (const item of targets) {
         try {
-          const { data: { text } } = await worker.recognize(item.thumbnailDataUrl)
-          const trimmed = text.trim()
+          const trimmed = await recognizeText(item.thumbnailDataUrl)
           updateScreenshotOcr(item.id, trimmed)
           results.push({ id: item.id, text: trimmed, filename: item.filename })
         } catch (err) {
@@ -329,8 +277,6 @@ export function registerIpcHandlers(
       return { success: true, results: [...cachedResults, ...results] }
     } catch (err) {
       return { success: false, error: (err as Error).message, results: [...cachedResults, ...results] }
-    } finally {
-      await worker.terminate()
     }
   })
 }

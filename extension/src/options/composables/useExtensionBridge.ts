@@ -27,6 +27,7 @@ export type BridgeEvent =
       candidates: RepeatingCandidate[]
     }
   | { type: 'FLOW_STEP_EVENT_FROM_TAB'; tabId: number; event: StepEvent }
+  | { type: 'PICK_CANCELLED'; tabId: number }
 
 type BridgeHandler = (e: BridgeEvent) => void
 

@@ -108,7 +108,12 @@ export function handlePickElement(scope?: string, mode?: 'smart_loop'): void {
     }
   }
 
-  const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') cleanup() }
+  const onKey = (e: KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      cleanup()
+      chrome.runtime.sendMessage({ type: MSG.PICK_CANCELLED }).catch(() => {})
+    }
+  }
 
   document.addEventListener('mousemove', onMove, true)
   document.addEventListener('click',     onClick, true)

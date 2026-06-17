@@ -174,6 +174,7 @@ export const MSG = {
   SMART_LOOP_ANALYZED:              'SMART_LOOP_ANALYZED',
   SMART_LOOP_DEBUG:                 'SMART_LOOP_DEBUG',
   FLOW_STEP_EVENT_FROM_TAB:         'FLOW_STEP_EVENT_FROM_TAB',
+  PICK_CANCELLED:                   'PICK_CANCELLED',
   // content → background
   ELEMENT_TRIGGER_FIRED:            'ELEMENT_TRIGGER_FIRED',
   CAPTURE_CANVAS:                   'CAPTURE_CANVAS',

@@ -19,6 +19,8 @@ files:
 asarUnpack:
   - resources/**
   - node_modules/adm-zip/**
+  - node_modules/sharp/**
+  - node_modules/@img/**
 win:
   executableName: FlowPilotClient
   icon: build/icon.ico

@@ -17,6 +17,9 @@ const optionsPorts = new Set<chrome.runtime.Port>()
 // 记录当前"工作 tab"（Options 页面选定的目标 tab）
 let activeTabId: number | null = null
 
+// 拾取模式下，完成后需要切换回的 Options 页面 tab ID
+let pickReturnTabId: number | null = null
+
 chrome.runtime.onConnect.addListener((port) => {
   if (port.name !== 'options-panel') return
   optionsPorts.add(port)
@@ -116,6 +119,7 @@ const BROADCAST_TO_OPTIONS: Set<string> = new Set([
   MSG.DOM_SCAN_RESULT, MSG.ELEMENT_PICKED, MSG.FLOW_LOG_FROM_TAB,
   MSG.FLOW_DONE_FROM_TAB, MSG.FLOW_ERROR_FROM_TAB, MSG.DOM_MUTATION,
   MSG.SMART_LOOP_ANALYZED, MSG.SMART_LOOP_DEBUG, MSG.FLOW_STEP_EVENT_FROM_TAB,
+  MSG.PICK_CANCELLED,
 ])
 
 const SCREENSHOT_BRIDGE_HOST = '127.0.0.1'
@@ -280,6 +284,30 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (FORWARD_TO_CONTENT.has(message.type)) {
     const tabId = (message.tabId as number | undefined) ?? activeTabId
     if (!tabId) { sendResponse({ ok: false, error: '未设置目标 Tab' }); return true }
+
+    // ── 进入拾取模式：记录来源 tab，切换到目标 tab ──
+    if (message.type === MSG.REQUEST_PICK_ELEMENT) {
+      pickReturnTabId = sender.tab?.id ?? null
+      if (pickReturnTabId != null && sender.tab?.id !== tabId) {
+        ;(async () => {
+          try {
+            const targetTab = await chrome.tabs.get(tabId)
+            await chrome.tabs.update(tabId, { active: true })
+            await chrome.windows.update(targetTab.windowId, { focused: true })
+          } catch { /* tab 已关闭等异常情况，继续转发 */ }
+          chrome.tabs.sendMessage(tabId, withRunMetadata(message))
+            .then(r => sendResponse(r))
+            .catch(e => sendResponse({ ok: false, error: String(e) }))
+        })()
+        return true
+      }
+    }
+
+    // ── 取消拾取模式（从 Options 页面主动取消）：清除返回 tab ──
+    if (message.type === MSG.CANCEL_PICK_ELEMENT) {
+      pickReturnTabId = null
+    }
+
     chrome.tabs.sendMessage(tabId, withRunMetadata(message)).then(r => sendResponse(r)).catch(e => {
       sendResponse({ ok: false, error: String(e) })
     })
@@ -300,6 +328,20 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       console.groupEnd()
     }
     broadcastToOptions(enriched)
+
+    // ── 拾取完成或取消：切换回 Options 页面 ──
+    if ((message.type === MSG.ELEMENT_PICKED || message.type === MSG.PICK_CANCELLED) && pickReturnTabId !== null) {
+      const returnId = pickReturnTabId
+      pickReturnTabId = null
+      ;(async () => {
+        try {
+          const returnTab = await chrome.tabs.get(returnId)
+          await chrome.tabs.update(returnId, { active: true })
+          await chrome.windows.update(returnTab.windowId, { focused: true })
+        } catch { /* Options tab 已关闭等，忽略 */ }
+      })()
+    }
+
     sendResponse({ ok: true })
     return true
   }

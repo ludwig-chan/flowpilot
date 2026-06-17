@@ -73,6 +73,9 @@ export function useDomPicker(
       pickMode.value          = false
       pickedCssSelector.value = evt.cssSelector ?? ''
     }
+    if (evt.type === MSG.PICK_CANCELLED) {
+      pickMode.value = false
+    }
   }
   bridge.on(handler)
   onUnmounted(() => { bridge.off(handler); clearScanTimer() })
