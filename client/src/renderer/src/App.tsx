@@ -4,8 +4,9 @@ import Tutorial from './pages/Tutorial'
 
 import DataRecords from './pages/DataRecords'
 import Settings from './pages/Settings'
+import OcrTest from './pages/OcrTest'
 
-type Page = 'home' | 'tutorial' | 'data-records' | 'settings'
+type Page = 'home' | 'tutorial' | 'data-records' | 'settings' | 'ocr-test'
 
 interface Toast {
   id: number
@@ -52,6 +53,12 @@ export default function App(): React.JSX.Element {
           >
             设置
           </div>
+          <div
+            className={`nav-item ${page === 'ocr-test' ? 'active' : ''}`}
+            onClick={() => setPage('ocr-test')}
+          >
+            OCR 测试
+          </div>
         </nav>
       </aside>
 
@@ -60,6 +67,7 @@ export default function App(): React.JSX.Element {
         {page === 'tutorial' && <Tutorial showToast={showToast} />}
         {page === 'data-records' && <DataRecords showToast={showToast} />}
         {page === 'settings' && <Settings showToast={showToast} />}
+        {page === 'ocr-test' && <OcrTest showToast={showToast} />}
       </main>
 
       {toasts.map((t) => (
