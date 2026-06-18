@@ -8,11 +8,7 @@ interface OcrResult {
   error?: string
 }
 
-interface OcrTestProps {
-  showToast: (msg: string, type?: 'success' | 'error' | 'info') => void
-}
-
-export default function OcrTest({ showToast }: OcrTestProps): React.JSX.Element {
+export default function OcrTest(): React.JSX.Element {
   const [results, setResults] = useState<OcrResult[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -27,9 +23,18 @@ export default function OcrTest({ showToast }: OcrTestProps): React.JSX.Element 
         const result: OcrResult = { id, imageUrl: dataUrl, text: '', loading: true }
         setResults((prev) => [result, ...prev])
         try {
-          const text = await window.api.ocrImage(dataUrl)
+          const ocrResult = await window.api.ocrImage(dataUrl)
           setResults((prev) =>
-            prev.map((r) => (r.id === id ? { ...r, text, loading: false } : r))
+            prev.map((r) =>
+              r.id === id
+                ? {
+                    ...r,
+                    text: ocrResult.success ? ocrResult.text ?? '' : '',
+                    loading: false,
+                    error: ocrResult.success ? undefined : ocrResult.error
+                  }
+                : r
+            )
           )
         } catch (err) {
           setResults((prev) =>

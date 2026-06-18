@@ -67,7 +67,7 @@ export default function App(): React.JSX.Element {
         {page === 'tutorial' && <Tutorial showToast={showToast} />}
         {page === 'data-records' && <DataRecords showToast={showToast} />}
         {page === 'settings' && <Settings showToast={showToast} />}
-        {page === 'ocr-test' && <OcrTest showToast={showToast} />}
+        {page === 'ocr-test' && <OcrTest />}
       </main>
 
       {toasts.map((t) => (
