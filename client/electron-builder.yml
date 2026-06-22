@@ -21,6 +21,8 @@ asarUnpack:
   - node_modules/adm-zip/**
   - node_modules/sharp/**
   - node_modules/@img/**
+  - node_modules/onnxruntime-node/**
+  - node_modules/@napi-rs/**
 win:
   executableName: FlowPilotClient
   icon: build/icon.ico

@@ -7,7 +7,7 @@ import { createTray } from './tray'
 import { setTrayAutoClickerStatus } from './tray'
 import { registerIpcHandlers } from './ipc'
 import { initOcrEngine } from './ocrEngine'
-import { prefetchTessdata, terminateOcrWorker } from './ocrWorker'
+import { destroyPaddleOcr } from './ocrPaddle'
 import { getEffectiveScreenshotDir, loadConfig, saveConfig, type WindowState } from './config'
 import { AutoClickerService } from './autoClicker'
 import {
@@ -389,9 +389,8 @@ app.whenReady().then(() => {
     const { launchAtStartup } = loadConfig()
     app.setLoginItemSettings({ openAtLogin: !!launchAtStartup, openAsHidden: true })
 
-    // 初始化 OCR 引擎（检测 Windows OCR 可用性）并预下载 Tesseract 语言包（备用）
+    // 初始化 OCR 引擎（PaddleOCR + Windows OCR 检测）
     initOcrEngine()
-    prefetchTessdata()
 
     mainWindow = createWindow()
     autoClicker = new AutoClickerService({
@@ -428,7 +427,7 @@ app.whenReady().then(() => {
     ;(app as typeof app & { isQuitting: boolean }).isQuitting = true
     autoClicker?.dispose()
     screenshotBridgeServer?.close()
-    void terminateOcrWorker()
+    void destroyPaddleOcr()
   })
 
   app.on('window-all-closed', () => {
