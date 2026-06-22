@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>需求 3：下载捕获 — FlowPilot v0.2.0</title>
+  <style>
+    :root {
+      --bg: #1a1b26; --bg-card: #24283b; --bg-code: #1f2335;
+      --border: #3b4261; --text: #c0caf5; --text-muted: #565f89;
+      --primary: #7aa2f7; --green: #9ece6a; --red: #f7768e;
+      --yellow: #e0af68; --orange: #ff9e64; --purple: #bb9af7;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; padding: 40px 20px; }
+    .container { max-width: 900px; margin: 0 auto; }
+    .back-link { display: inline-block; margin-bottom: 20px; color: var(--primary); text-decoration: none; font-size: 13px; }
+    .back-link:hover { text-decoration: underline; }
+    h1 { font-size: 28px; font-weight: 700; margin-bottom: 8px; color: var(--orange); }
+    .subtitle { color: var(--text-muted); margin-bottom: 40px; font-size: 14px; }
+    .req-section { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 32px; margin-bottom: 24px; }
+    .req-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+    .req-badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; color: #fff; background: var(--orange); }
+    .req-header h2 { font-size: 20px; font-weight: 600; }
+    .what-box { background: var(--bg-code); border-left: 3px solid var(--orange); padding: 14px 18px; border-radius: 0 8px 8px 0; margin-bottom: 24px; font-size: 15px; }
+    .req-list { list-style: none; margin-bottom: 24px; }
+    .req-list li { padding: 8px 0 8px 24px; position: relative; font-size: 14px; }
+    .req-list li::before { content: ''; position: absolute; left: 6px; top: 16px; width: 8px; height: 8px; border-radius: 50%; background: var(--orange); }
+    .req-list li strong { color: var(--yellow); }
+    .sub-list { list-style: none; margin-top: 4px; padding-left: 16px; }
+    .sub-list li { padding: 2px 0; font-size: 13px; color: var(--text-muted); }
+    .sub-list li::before { content: '-'; margin-right: 6px; }
+    .section-title { font-size: 13px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+
+    /* 流程图 */
+    .flow { background: var(--bg-code); border-radius: 8px; padding: 24px; margin: 16px 0; display: flex; flex-direction: column; align-items: center; }
+    .flow-node { padding: 10px 20px; border-radius: 8px; font-size: 13px; font-weight: 500; text-align: center; min-width: 160px; }
+    .flow-start { background: var(--orange); color: #1a1b26; }
+    .flow-process { background: var(--bg-card); border: 1px solid var(--border); color: var(--text); }
+    .flow-success { background: var(--green); color: #1a1b26; }
+    .flow-arrow { color: var(--text-muted); font-size: 18px; padding: 4px 0; }
+    .flow-branch { display: flex; gap: 24px; align-items: flex-start; flex-wrap: wrap; justify-content: center; }
+    .flow-branch-item { display: flex; flex-direction: column; align-items: center; }
+    .flow-branch-label { font-size: 11px; color: var(--purple); margin-bottom: 4px; font-weight: 600; }
+
+    /* 配置项模拟 */
+    .mock-settings { background: var(--bg-code); border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin: 16px 0; max-width: 520px; }
+    .mock-settings-title { font-size: 14px; font-weight: 600; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+    .mock-field { margin-bottom: 16px; }
+    .mock-field:last-child { margin-bottom: 0; }
+    .mock-label { font-size: 12px; color: var(--text-muted); margin-bottom: 6px; }
+    .mock-select { width: 100%; background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; color: var(--text); font-size: 13px; display: flex; justify-content: space-between; align-items: center; }
+    .mock-hint { font-size: 11px; color: var(--text-muted); margin-top: 6px; }
+    .mock-option-desc { margin-top: 12px; padding: 12px; background: var(--bg-card); border-radius: 6px; border: 1px solid var(--border); }
+    .mock-option-item { display: flex; gap: 8px; font-size: 12px; padding: 4px 0; }
+    .mock-option-item .label { color: var(--yellow); min-width: 80px; }
+    .mock-option-item .desc { color: var(--text-muted); }
+  </style>
+</head>
+<body>
+<div class="container">
+  <a class="back-link" href="./README.md">← 返回需求总览</a>
+
+  <h1>需求 3：下载捕获</h1>
+  <p class="subtitle">在流程设置中配置下载行为，流程执行时自动按配置处理下载文件。</p>
+
+  <!-- 做什么 -->
+  <div class="req-section">
+    <div class="req-header">
+      <span class="req-badge">需求 3</span>
+      <h2>做什么</h2>
+    </div>
+    <div class="what-box">
+      在流程设置中新增"下载处理"配置项，流程执行过程中如果触发下载，按配置自动处理，无需用户手动干预。
+    </div>
+
+    <div class="section-title">详细要求</div>
+    <ul class="req-list">
+      <li><strong>配置位置</strong>：流程设置（FlowSettingsModal）中新增"下载处理"选项</li>
+      <li>
+        <strong>三种模式</strong>
+        <ul class="sub-list">
+          <li><strong>忽略</strong>：不处理，按浏览器默认行为下载</li>
+          <li><strong>捕获为附件</strong>：拦截下载，保存到客户端，关联到当前数据记录</li>
+          <li><strong>保留并捕获</strong>：正常下载到浏览器默认目录，同时复制一份为附件关联数据记录</li>
+        </ul>
+      </li>
+      <li><strong>触发场景</strong>：流程执行中页面触发下载（a 标签 download 属性或 JS 动态触发），支持所有文件类型</li>
+      <li><strong>附件存储</strong>：保存到客户端指定目录，关联数据记录，支持后续 OCR 处理</li>
+      <li><strong>无需弹窗</strong>：按流程配置自动执行，不打断流程运行</li>
+    </ul>
+  </div>
+
+  <!-- 配置项 -->
+  <div class="req-section">
+    <div class="section-title">流程设置 — 配置项</div>
+    <div class="mock-settings">
+      <div class="mock-settings-title">流程设置</div>
+      <div class="mock-field">
+        <div class="mock-label">步骤间隔</div>
+        <div class="mock-select">
+          <span>中等</span>
+          <span style="color: var(--text-muted);">▼</span>
+        </div>
+      </div>
+      <div class="mock-field">
+        <div class="mock-label">等待超时</div>
+        <div class="mock-select">
+          <span>10000 ms</span>
+          <span style="color: var(--text-muted);">▼</span>
+        </div>
+      </div>
+      <div class="mock-field">
+        <div class="mock-label">下载处理</div>
+        <div class="mock-select">
+          <span style="color: var(--orange);">保留并捕获</span>
+          <span style="color: var(--text-muted);">▼</span>
+        </div>
+        <div class="mock-hint">流程执行中触发下载时的处理方式</div>
+      </div>
+      <div class="mock-option-desc">
+        <div class="mock-option-item">
+          <span class="label">忽略</span>
+          <span class="desc">按浏览器默认行为下载，不额外处理</span>
+        </div>
+        <div class="mock-option-item">
+          <span class="label">捕获为附件</span>
+          <span class="desc">拦截下载，保存到客户端并关联数据记录</span>
+        </div>
+        <div class="mock-option-item">
+          <span class="label">保留并捕获</span>
+          <span class="desc">正常下载的同时，也保存一份附件关联数据记录</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 处理流程 -->
+  <div class="req-section">
+    <div class="section-title">处理流程</div>
+
+    <div style="margin-bottom: 20px;">
+      <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px; text-align: center;">模式一：忽略</div>
+      <div class="flow">
+        <div class="flow-node flow-start">流程执行中触发下载</div>
+        <div class="flow-arrow">↓</div>
+        <div class="flow-node flow-process">按浏览器默认行为下载</div>
+      </div>
+    </div>
+
+    <div style="margin-bottom: 20px;">
+      <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px; text-align: center;">模式二：捕获为附件</div>
+      <div class="flow">
+        <div class="flow-node flow-start">流程执行中触发下载</div>
+        <div class="flow-arrow">↓</div>
+        <div class="flow-node flow-process">拦截下载</div>
+        <div class="flow-arrow">↓</div>
+        <div class="flow-node flow-process">保存到客户端</div>
+        <div class="flow-arrow">↓</div>
+        <div class="flow-node flow-success">关联数据记录，后续可 OCR ✓</div>
+      </div>
+    </div>
+
+    <div>
+      <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px; text-align: center;">模式三：保留并捕获</div>
+      <div class="flow">
+        <div class="flow-node flow-start">流程执行中触发下载</div>
+        <div class="flow-arrow">↓</div>
+        <div class="flow-branch">
+          <div class="flow-branch-item">
+            <div class="flow-branch-label">浏览器下载</div>
+            <div class="flow-arrow">↓</div>
+            <div class="flow-node flow-process" style="font-size: 12px;">正常下载到本地目录</div>
+          </div>
+          <div class="flow-branch-item">
+            <div class="flow-branch-label">同时复制一份</div>
+            <div class="flow-arrow">↓</div>
+            <div class="flow-node flow-process" style="font-size: 12px;">保存到客户端</div>
+            <div class="flow-arrow">↓</div>
+            <div class="flow-node flow-success" style="font-size: 12px;">关联数据记录 ✓</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

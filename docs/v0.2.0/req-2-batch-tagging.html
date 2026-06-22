@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>需求 2：批量标记 — FlowPilot v0.2.0</title>
+  <style>
+    :root {
+      --bg: #1a1b26; --bg-card: #24283b; --bg-code: #1f2335;
+      --border: #3b4261; --text: #c0caf5; --text-muted: #565f89;
+      --primary: #7aa2f7; --green: #9ece6a; --red: #f7768e;
+      --yellow: #e0af68; --orange: #ff9e64; --purple: #bb9af7;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; padding: 40px 20px; }
+    .container { max-width: 900px; margin: 0 auto; }
+    .back-link { display: inline-block; margin-bottom: 20px; color: var(--primary); text-decoration: none; font-size: 13px; }
+    .back-link:hover { text-decoration: underline; }
+    h1 { font-size: 28px; font-weight: 700; margin-bottom: 8px; color: var(--green); }
+    .subtitle { color: var(--text-muted); margin-bottom: 40px; font-size: 14px; }
+    .req-section { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 32px; margin-bottom: 24px; }
+    .req-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+    .req-badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; color: #fff; background: var(--green); }
+    .req-header h2 { font-size: 20px; font-weight: 600; }
+    .what-box { background: var(--bg-code); border-left: 3px solid var(--green); padding: 14px 18px; border-radius: 0 8px 8px 0; margin-bottom: 24px; font-size: 15px; }
+    .req-list { list-style: none; margin-bottom: 24px; }
+    .req-list li { padding: 8px 0 8px 24px; position: relative; font-size: 14px; }
+    .req-list li::before { content: ''; position: absolute; left: 6px; top: 16px; width: 8px; height: 8px; border-radius: 50%; background: var(--green); }
+    .req-list li strong { color: var(--yellow); }
+    .section-title { font-size: 13px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+    .flow { background: var(--bg-code); border-radius: 8px; padding: 24px; margin: 16px 0; display: flex; flex-direction: column; align-items: center; }
+    .flow-node { padding: 10px 20px; border-radius: 8px; font-size: 13px; font-weight: 500; text-align: center; min-width: 160px; }
+    .flow-start { background: var(--green); color: #1a1b26; }
+    .flow-process { background: var(--bg-card); border: 1px solid var(--border); color: var(--text); }
+    .flow-success { background: var(--green); color: #1a1b26; }
+    .flow-arrow { color: var(--text-muted); font-size: 18px; padding: 4px 0; }
+    .mock-dialog { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; margin: 16px auto; max-width: 480px; overflow: hidden; }
+    .mock-dialog-header { background: var(--bg-code); padding: 12px 18px; font-size: 14px; font-weight: 600; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+    .mock-dialog-body { padding: 20px 18px; }
+    .mock-field { margin-bottom: 16px; }
+    .mock-field:last-child { margin-bottom: 0; }
+    .mock-label { font-size: 12px; color: var(--text-muted); margin-bottom: 6px; }
+    .mock-field-input { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; color: var(--text); font-size: 13px; }
+    .mock-btn { padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: 500; border: none; cursor: default; }
+    .mock-btn-primary { background: var(--primary); color: #1a1b26; }
+    .mock-btn-secondary { background: var(--bg-card); border: 1px solid var(--border); color: var(--text); }
+    .mock-btn-row { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <a class="back-link" href="./README.md">← 返回需求总览</a>
+
+  <h1>需求 2：批量标记</h1>
+  <p class="subtitle">筛选后，用户可全选或选择部分记录，点击"打标签"按钮，弹窗选择已有标签或输入新标签，批量打标。</p>
+
+  <!-- 做什么 -->
+  <div class="req-section">
+    <div class="req-header">
+      <span class="req-badge">需求 2</span>
+      <h2>做什么</h2>
+    </div>
+    <div class="what-box">
+      筛选后，用户可全选或选择部分记录，点击"打标签"按钮，弹窗选择已有标签或输入新标签，批量打标。
+    </div>
+
+    <div class="section-title">详细要求</div>
+    <ul class="req-list">
+      <li><strong>操作流程</strong>：筛选 → 勾选记录 → 点击"打标签" → 选择/输入标签 → 确认</li>
+      <li><strong>交互</strong>：工具栏新增"打标签"按钮（需先勾选记录），弹窗显示已选中数量，下拉选择已有标签，或输入新标签名</li>
+    </ul>
+  </div>
+
+  <!-- 操作流程 -->
+  <div class="req-section">
+    <div class="section-title">操作流程</div>
+    <div class="flow">
+      <div class="flow-node flow-start">筛选出目标记录</div>
+      <div class="flow-arrow">↓</div>
+      <div class="flow-node flow-process">勾选记录（全选 / 部分选择）</div>
+      <div class="flow-arrow">↓</div>
+      <div class="flow-node flow-process">点击 [打标签]</div>
+      <div class="flow-arrow">↓</div>
+      <div class="flow-node flow-process" style="font-size: 12px;">弹窗选择 / 输入标签</div>
+      <div class="flow-arrow">↓</div>
+      <div class="flow-node flow-success">批量打标完成 ✓</div>
+    </div>
+  </div>
+
+  <!-- 打标签弹窗 -->
+  <div class="req-section">
+    <div class="section-title">打标签弹窗</div>
+    <div class="mock-dialog">
+      <div class="mock-dialog-header">
+        <span>批量打标签</span>
+        <span style="cursor: pointer; color: var(--text-muted);">×</span>
+      </div>
+      <div class="mock-dialog-body">
+        <div style="font-size: 14px; color: var(--green); margin-bottom: 16px;">已选中 23 条记录</div>
+        <div class="mock-field">
+          <div class="mock-label">选择标签</div>
+          <div class="mock-field-input" style="display: flex; justify-content: space-between; align-items: center;">
+            <span>优质简历</span>
+            <span style="color: var(--text-muted);">▼</span>
+          </div>
+        </div>
+        <div class="mock-field">
+          <div class="mock-label">或输入新标签</div>
+          <div class="mock-field-input" style="color: var(--text-muted);">请输入标签名...</div>
+        </div>
+        <div class="mock-btn-row">
+          <div class="mock-btn mock-btn-secondary">取消</div>
+          <div class="mock-btn mock-btn-primary">确定</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

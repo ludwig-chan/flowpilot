@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>需求 1：关键字筛选 — FlowPilot v0.2.0</title>
+  <style>
+    :root {
+      --bg: #1a1b26; --bg-card: #24283b; --bg-code: #1f2335;
+      --border: #3b4261; --text: #c0caf5; --text-muted: #565f89;
+      --primary: #7aa2f7; --green: #9ece6a; --red: #f7768e;
+      --yellow: #e0af68; --orange: #ff9e64; --purple: #bb9af7;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; padding: 40px 20px; }
+    .container { max-width: 900px; margin: 0 auto; }
+    .back-link { display: inline-block; margin-bottom: 20px; color: var(--primary); text-decoration: none; font-size: 13px; }
+    .back-link:hover { text-decoration: underline; }
+    h1 { font-size: 28px; font-weight: 700; margin-bottom: 8px; color: var(--primary); }
+    .subtitle { color: var(--text-muted); margin-bottom: 40px; font-size: 14px; }
+    .req-section { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 32px; margin-bottom: 24px; }
+    .req-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+    .req-badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; color: #fff; background: var(--primary); }
+    .req-header h2 { font-size: 20px; font-weight: 600; }
+    .what-box { background: var(--bg-code); border-left: 3px solid var(--primary); padding: 14px 18px; border-radius: 0 8px 8px 0; margin-bottom: 24px; font-size: 15px; }
+    .req-list { list-style: none; margin-bottom: 24px; }
+    .req-list li { padding: 8px 0 8px 24px; position: relative; font-size: 14px; }
+    .req-list li::before { content: ''; position: absolute; left: 6px; top: 16px; width: 8px; height: 8px; border-radius: 50%; background: var(--primary); }
+    .req-list li strong { color: var(--yellow); }
+    .sub-list { list-style: none; margin-top: 4px; padding-left: 16px; }
+    .sub-list li { padding: 2px 0; font-size: 13px; color: var(--text-muted); }
+    .sub-list li::before { content: '-'; margin-right: 6px; }
+    .section-title { font-size: 13px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+    .flow { background: var(--bg-code); border-radius: 8px; padding: 24px; margin: 16px 0; display: flex; flex-direction: column; align-items: center; }
+    .flow-node { padding: 10px 20px; border-radius: 8px; font-size: 13px; font-weight: 500; text-align: center; min-width: 160px; }
+    .flow-start { background: var(--primary); color: #1a1b26; }
+    .flow-process { background: var(--bg-card); border: 1px solid var(--border); color: var(--text); }
+    .flow-success { background: var(--green); color: #1a1b26; }
+    .flow-fail { background: var(--red); color: #1a1b26; }
+    .flow-arrow { color: var(--text-muted); font-size: 18px; padding: 4px 0; }
+    .flow-row { display: flex; align-items: center; gap: 24px; }
+    .flow-branch { display: flex; gap: 32px; align-items: flex-start; }
+    .flow-branch-item { display: flex; flex-direction: column; align-items: center; }
+    .flow-branch-label { font-size: 11px; color: var(--purple); margin-bottom: 4px; }
+    .mock-toolbar { background: var(--bg-code); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 16px 0; font-size: 13px; }
+    .mock-select, .mock-input { background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px; padding: 6px 12px; color: var(--text); font-size: 12px; }
+    .mock-select { min-width: 100px; }
+    .mock-input { min-width: 140px; color: var(--text-muted); }
+    .mock-btn { padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: 500; border: none; cursor: default; }
+    .mock-btn-primary { background: var(--primary); color: #1a1b26; }
+    .mock-btn-secondary { background: var(--bg-card); border: 1px solid var(--border); color: var(--text); }
+    .mock-btn-success { background: var(--green); color: #1a1b26; }
+    .mock-dialog { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; margin: 16px auto; max-width: 480px; overflow: hidden; }
+    .mock-dialog-header { background: var(--bg-code); padding: 12px 18px; font-size: 14px; font-weight: 600; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+    .mock-dialog-body { padding: 20px 18px; }
+    .mock-field { margin-bottom: 16px; }
+    .mock-field:last-child { margin-bottom: 0; }
+    .mock-label { font-size: 12px; color: var(--text-muted); margin-bottom: 6px; }
+    .mock-field-input { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; color: var(--text); font-size: 13px; }
+    .mock-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+    .mock-tag { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 14px; font-size: 12px; font-weight: 500; }
+    .mock-tag-blue { background: rgba(122,162,247,0.15); color: var(--primary); }
+    .mock-tag-red { background: rgba(247,118,142,0.15); color: var(--red); }
+    .mock-tag-close { font-size: 10px; opacity: 0.7; }
+    .mock-radio-group { display: flex; gap: 20px; font-size: 13px; }
+    .mock-radio { display: flex; align-items: center; gap: 6px; }
+    .mock-radio-dot { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--border); }
+    .mock-radio-dot.active { border-color: var(--primary); background: var(--primary); box-shadow: inset 0 0 0 3px var(--bg-card); }
+    .mock-btn-row { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; }
+    .mock-shortcuts { display: flex; gap: 6px; margin-top: 8px; }
+    .mock-shortcut { padding: 4px 10px; border-radius: 4px; font-size: 11px; background: var(--bg-card); border: 1px solid var(--border); color: var(--text-muted); }
+  </style>
+</head>
+<body>
+<div class="container">
+  <a class="back-link" href="./README.md">← 返回需求总览</a>
+
+  <h1>需求 1：关键字筛选</h1>
+  <p class="subtitle">在数据记录页面提供关键字筛选功能，帮助用户从大量采集数据中快速定位目标记录。</p>
+
+  <!-- 做什么 -->
+  <div class="req-section">
+    <div class="req-header">
+      <span class="req-badge">需求 1</span>
+      <h2>做什么</h2>
+    </div>
+    <div class="what-box">
+      在数据记录页面提供关键字筛选功能，帮助用户从大量采集数据中快速定位目标记录。
+    </div>
+
+    <div class="section-title">详细要求</div>
+    <ul class="req-list">
+      <li><strong>搜索范围</strong>：搜索文本 = 所有字段值 + 关联截图的 OCR 文本</li>
+      <li>
+        <strong>筛选规则</strong>
+        <ul class="sub-list">
+          <li>包含关键字（白名单）：命中任一或全部才保留</li>
+          <li>排除关键字（黑名单）：命中任一就排除</li>
+          <li>匹配模式：任一匹配 / 全部匹配（针对白名单）</li>
+        </ul>
+      </li>
+      <li><strong>时间筛选</strong>：支持时间范围筛选，快捷选项（今天、最近 7 天、最近 30 天、自定义）</li>
+      <li><strong>筛选预设</strong>：条件可保存为预设，支持编辑、删除</li>
+    </ul>
+  </div>
+
+  <!-- 匹配流程 -->
+  <div class="req-section">
+    <div class="section-title">匹配流程</div>
+    <div class="flow">
+      <div class="flow-node flow-start">数据记录</div>
+      <div class="flow-arrow">↓</div>
+      <div class="flow-node flow-process">检查黑名单（排除关键字）</div>
+      <div class="flow-arrow">↓</div>
+      <div class="flow-row">
+        <span style="color: var(--red); font-size: 12px;">命中 → 排除 ✗</span>
+        <span style="color: var(--green); font-size: 12px;">未命中 ↓</span>
+      </div>
+      <div class="flow-arrow">↓</div>
+      <div class="flow-node flow-process">检查白名单（包含关键字）</div>
+      <div class="flow-arrow">↓</div>
+      <div class="flow-branch">
+        <div class="flow-branch-item">
+          <div class="flow-branch-label">任一匹配</div>
+          <div class="flow-arrow">↓</div>
+          <div style="font-size: 12px; color: var(--text-muted);">命中任一关键字</div>
+        </div>
+        <div class="flow-branch-item">
+          <div class="flow-branch-label">全部匹配</div>
+          <div class="flow-arrow">↓</div>
+          <div style="font-size: 12px; color: var(--text-muted);">命中全部关键字</div>
+        </div>
+      </div>
+      <div class="flow-arrow" style="margin-top: 8px;">↓</div>
+      <div class="flow-node flow-success">保留 ✓</div>
+    </div>
+  </div>
+
+  <!-- 工具栏布局 -->
+  <div class="req-section">
+    <div class="section-title">工具栏布局</div>
+    <div class="mock-toolbar">
+      <div class="mock-select">标签 ▼</div>
+      <div class="mock-select">📅 时间范围 ▼</div>
+      <div class="mock-input">🔍 输入关键字...</div>
+      <div class="mock-select">预设 ▼</div>
+      <div style="flex: 1;"></div>
+      <div class="mock-btn mock-btn-secondary">+ 新建规则</div>
+      <div class="mock-btn mock-btn-primary">筛选</div>
+      <div class="mock-btn mock-btn-success">打标签</div>
+    </div>
+  </div>
+
+  <!-- 规则编辑弹窗 -->
+  <div class="req-section">
+    <div class="section-title">规则编辑弹窗</div>
+    <div class="mock-dialog">
+      <div class="mock-dialog-header">
+        <span>新建筛选规则</span>
+        <span style="cursor: pointer; color: var(--text-muted);">×</span>
+      </div>
+      <div class="mock-dialog-body">
+        <div class="mock-field">
+          <div class="mock-label">规则名称</div>
+          <div class="mock-field-input">前端工程师-优质简历</div>
+        </div>
+        <div class="mock-field">
+          <div class="mock-label">包含关键字</div>
+          <div class="mock-tags">
+            <span class="mock-tag mock-tag-blue">React <span class="mock-tag-close">×</span></span>
+            <span class="mock-tag mock-tag-blue">Vue <span class="mock-tag-close">×</span></span>
+            <span class="mock-tag mock-tag-blue">TypeScript <span class="mock-tag-close">×</span></span>
+            <span class="mock-tag" style="background: var(--bg); border: 1px dashed var(--border); color: var(--text-muted); cursor: pointer;">+ 添加</span>
+          </div>
+        </div>
+        <div class="mock-field">
+          <div class="mock-label">排除关键字</div>
+          <div class="mock-tags">
+            <span class="mock-tag mock-tag-red">外包 <span class="mock-tag-close">×</span></span>
+            <span class="mock-tag mock-tag-red">实习 <span class="mock-tag-close">×</span></span>
+            <span class="mock-tag" style="background: var(--bg); border: 1px dashed var(--border); color: var(--text-muted); cursor: pointer;">+ 添加</span>
+          </div>
+        </div>
+        <div class="mock-field">
+          <div class="mock-label">匹配模式</div>
+          <div class="mock-radio-group">
+            <div class="mock-radio"><div class="mock-radio-dot active"></div> 任一匹配</div>
+            <div class="mock-radio"><div class="mock-radio-dot"></div> 全部匹配</div>
+          </div>
+        </div>
+        <div class="mock-field">
+          <div class="mock-label">时间范围</div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <div class="mock-field-input" style="width: 140px;">2026-06-01</div>
+            <span style="color: var(--text-muted);">~</span>
+            <div class="mock-field-input" style="width: 140px;">2026-06-22</div>
+          </div>
+          <div class="mock-shortcuts">
+            <span class="mock-shortcut">今天</span>
+            <span class="mock-shortcut">最近7天</span>
+            <span class="mock-shortcut">最近30天</span>
+          </div>
+        </div>
+        <div class="mock-btn-row">
+          <div class="mock-btn mock-btn-secondary">取消</div>
+          <div class="mock-btn mock-btn-primary">保存并应用</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
