@@ -12,7 +12,7 @@
 
 | # | 需求 | 文档 |
 |---|------|------|
-| 1 | 关键字筛选 | [req-1-keyword-filter.html](./req-1-keyword-filter.html) |
+| 1 | 搜索与筛选 | [req-1-keyword-filter.html](./req-1-keyword-filter.html) |
 | 2 | 批量标记 | [req-2-batch-tagging.html](./req-2-batch-tagging.html) |
 | 3 | 下载捕获 | [req-3-download-capture.html](./req-3-download-capture.html) |
 | 4 | 附件 OCR | [req-4-attachment-ocr.html](./req-4-attachment-ocr.html) |
