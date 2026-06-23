@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>日程管理 — cueOne</title>
+  <style>
+    :root {
+      --bg: #1a1b26; --bg-card: #24283b; --bg-code: #1f2335;
+      --border: #3b4261; --text: #c0caf5; --text-muted: #565f89;
+      --primary: #7aa2f7; --green: #9ece6a; --red: #f7768e;
+      --yellow: #e0af68; --orange: #ff9e64; --purple: #bb9af7;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; padding: 40px 20px; }
+    .container { max-width: 900px; margin: 0 auto; }
+    .back-link { display: inline-block; margin-bottom: 20px; color: var(--primary); text-decoration: none; font-size: 13px; }
+    .back-link:hover { text-decoration: underline; }
+    h1 { font-size: 28px; font-weight: 700; margin-bottom: 8px; color: var(--yellow); }
+    .subtitle { color: var(--text-muted); margin-bottom: 40px; font-size: 14px; }
+    .req-section { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 32px; margin-bottom: 24px; }
+    .req-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+    .req-badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; color: #fff; background: var(--yellow); }
+    .req-header h2 { font-size: 20px; font-weight: 600; }
+    .what-box { background: var(--bg-code); border-left: 3px solid var(--yellow); padding: 14px 18px; border-radius: 0 8px 8px 0; margin-bottom: 24px; font-size: 15px; }
+    .req-list { list-style: none; margin-bottom: 24px; }
+    .req-list li { padding: 8px 0 8px 24px; position: relative; font-size: 14px; }
+    .req-list li::before { content: ''; position: absolute; left: 6px; top: 16px; width: 8px; height: 8px; border-radius: 50%; background: var(--yellow); }
+    .req-list li strong { color: var(--yellow); }
+    .section-title { font-size: 13px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+    .mock-calendar { background: var(--bg-code); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin: 16px 0; }
+    .mock-calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; font-size: 14px; font-weight: 600; }
+    .mock-calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+    .mock-calendar-day { padding: 8px 4px; text-align: center; font-size: 12px; border-radius: 4px; }
+    .mock-calendar-day.header { color: var(--text-muted); font-weight: 600; }
+    .mock-calendar-day.has-event { background: rgba(224,175,104,0.15); color: var(--yellow); }
+    .mock-calendar-day.today { background: var(--yellow); color: #1a1b26; font-weight: 600; }
+    .mock-event { background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px; margin-top: 12px; font-size: 12px; }
+    .mock-event-title { font-weight: 600; margin-bottom: 4px; }
+    .mock-event-time { color: var(--text-muted); }
+  </style>
+</head>
+<body>
+<div class="container">
+  <a class="back-link" href="./README.md">← 返回需求总览</a>
+
+  <h1>日程管理</h1>
+  <p class="subtitle">AI 自动创建日历事件，手动管理日程安排</p>
+
+  <!-- 做什么 -->
+  <div class="req-section">
+    <div class="req-header">
+      <span class="req-badge">需求 5</span>
+      <h2>做什么</h2>
+    </div>
+    <div class="what-box">
+      提供日程管理功能。AI 可从截图文本（如会议通知）中自动提取时间、地点、主题，创建日历事件。支持日/周/月视图，提醒功能。
+    </div>
+
+    <div class="section-title">详细要求</div>
+    <ul class="req-list">
+      <li><strong>AI 自动生成</strong>：从截图 OCR 文本中提取时间、地点、主题，自动创建事件</li>
+      <li><strong>手动创建</strong>：支持手动添加日程，设置时间、地点、备注</li>
+      <li><strong>日历视图</strong>：日视图、周视图、月视图切换</li>
+      <li><strong>提醒功能</strong>：事件提醒，支持自定义提前时间</li>
+      <li><strong>重复事件</strong>：支持每日、每周、每月重复</li>
+      <li><strong>分类标签</strong>：工作、生活、会议等分类</li>
+      <li><strong>同步能力</strong>：可选同步到系统日历（待设计）</li>
+    </ul>
+  </div>
+
+  <!-- 日历示例 -->
+  <div class="req-section">
+    <div class="section-title">日历视图示例</div>
+    <div class="mock-calendar">
+      <div class="mock-calendar-header">
+        <span>2026 年 6 月</span>
+      </div>
+      <div class="mock-calendar-grid">
+        <div class="mock-calendar-day header">日</div>
+        <div class="mock-calendar-day header">一</div>
+        <div class="mock-calendar-day header">二</div>
+        <div class="mock-calendar-day header">三</div>
+        <div class="mock-calendar-day header">四</div>
+        <div class="mock-calendar-day header">五</div>
+        <div class="mock-calendar-day header">六</div>
+        <div class="mock-calendar-day">1</div>
+        <div class="mock-calendar-day">2</div>
+        <div class="mock-calendar-day has-event">3</div>
+        <div class="mock-calendar-day">4</div>
+        <div class="mock-calendar-day">5</div>
+        <div class="mock-calendar-day">6</div>
+        <div class="mock-calendar-day">7</div>
+        <div class="mock-calendar-day">8</div>
+        <div class="mock-calendar-day">9</div>
+        <div class="mock-calendar-day">10</div>
+        <div class="mock-calendar-day">11</div>
+        <div class="mock-calendar-day today">12</div>
+        <div class="mock-calendar-day has-event">13</div>
+        <div class="mock-calendar-day">14</div>
+        <div class="mock-calendar-day">15</div>
+        <div class="mock-calendar-day">16</div>
+        <div class="mock-calendar-day has-event">17</div>
+        <div class="mock-calendar-day">18</div>
+        <div class="mock-calendar-day">19</div>
+        <div class="mock-calendar-day">20</div>
+        <div class="mock-calendar-day">21</div>
+      </div>
+      <div class="mock-event">
+        <div class="mock-event-title">产品评审会议</div>
+        <div class="mock-event-time">6 月 13 日 14:00 - 15:30 · 会议室 A</div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

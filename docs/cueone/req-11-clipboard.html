@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>剪贴板管理 — cueOne</title>
+  <style>
+    :root {
+      --bg: #1a1b26; --bg-card: #24283b; --bg-code: #1f2335;
+      --border: #3b4261; --text: #c0caf5; --text-muted: #565f89;
+      --primary: #7aa2f7; --green: #9ece6a; --red: #f7768e;
+      --yellow: #e0af68; --orange: #ff9e64; --purple: #bb9af7;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; padding: 40px 20px; }
+    .container { max-width: 900px; margin: 0 auto; }
+    .back-link { display: inline-block; margin-bottom: 20px; color: var(--primary); text-decoration: none; font-size: 13px; }
+    .back-link:hover { text-decoration: underline; }
+    h1 { font-size: 28px; font-weight: 700; margin-bottom: 8px; color: var(--orange); }
+    .subtitle { color: var(--text-muted); margin-bottom: 40px; font-size: 14px; }
+    .req-section { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 32px; margin-bottom: 24px; }
+    .req-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+    .req-badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; color: #fff; background: var(--orange); }
+    .req-header h2 { font-size: 20px; font-weight: 600; }
+    .what-box { background: var(--bg-code); border-left: 3px solid var(--orange); padding: 14px 18px; border-radius: 0 8px 8px 0; margin-bottom: 24px; font-size: 15px; }
+    .req-list { list-style: none; margin-bottom: 24px; }
+    .req-list li { padding: 8px 0 8px 24px; position: relative; font-size: 14px; }
+    .req-list li::before { content: ''; position: absolute; left: 6px; top: 16px; width: 8px; height: 8px; border-radius: 50%; background: var(--orange); }
+    .req-list li strong { color: var(--yellow); }
+    .section-title { font-size: 13px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+    .mock-clipboard { background: var(--bg-code); border: 1px solid var(--border); border-radius: 8px; margin: 16px 0; overflow: hidden; }
+    .mock-clipboard-search { padding: 12px 16px; border-bottom: 1px solid var(--border); }
+    .mock-clipboard-input { width: 100%; background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; color: var(--text); font-size: 13px; }
+    .mock-clipboard-item { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--border); cursor: default; }
+    .mock-clipboard-item:last-child { border-bottom: none; }
+    .mock-clipboard-item:hover { background: rgba(122,162,247,0.05); }
+    .mock-clipboard-type { width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0; }
+    .mock-clipboard-content { flex: 1; min-width: 0; }
+    .mock-clipboard-text { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .mock-clipboard-meta { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+    .mock-clipboard-img { width: 40px; height: 40px; border-radius: 4px; background: var(--bg-card); border: 1px solid var(--border); object-fit: cover; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <a class="back-link" href="./README.md">← 返回需求总览</a>
+
+  <h1>剪贴板管理</h1>
+  <p class="subtitle">记录剪贴板历史，支持搜索和快速粘贴</p>
+
+  <!-- 做什么 -->
+  <div class="req-section">
+    <div class="req-header">
+      <span class="req-badge">需求 11</span>
+      <h2>做什么</h2>
+    </div>
+    <div class="what-box">
+      记录用户复制过的文本、图片等内容，形成剪贴板历史。支持搜索、收藏、快速粘贴。可通过万能输入框快速搜索剪贴板内容。
+    </div>
+
+    <div class="section-title">详细要求</div>
+    <ul class="req-list">
+      <li><strong>自动记录</strong>：自动记录每次复制的内容（文本、图片）</li>
+      <li><strong>历史列表</strong>：按时间倒序展示剪贴板历史</li>
+      <li><strong>搜索</strong>：按关键词搜索剪贴板历史</li>
+      <li><strong>收藏</strong>：支持收藏常用内容，置顶显示</li>
+      <li><strong>快速粘贴</strong>：点击历史记录直接粘贴到当前输入位置</li>
+      <li><strong>类型过滤</strong>：按文本、图片、链接等类型过滤</li>
+      <li><strong>容量限制</strong>：可配置保留条数（如最近 500 条）</li>
+      <li><strong>万能输入框</strong>：可通过万能输入框搜索剪贴板内容</li>
+    </ul>
+  </div>
+
+  <!-- 剪贴板历史示例 -->
+  <div class="req-section">
+    <div class="section-title">剪贴板历史示例</div>
+    <div class="mock-clipboard">
+      <div class="mock-clipboard-search">
+        <input class="mock-clipboard-input" placeholder="搜索剪贴板历史..." value="需求">
+      </div>
+      <div class="mock-clipboard-item">
+        <div class="mock-clipboard-type" style="background: rgba(122,162,247,0.15); color: var(--primary);">T</div>
+        <div class="mock-clipboard-content">
+          <div class="mock-clipboard-text">FlowPilot v0.2.0 迭代需求文档</div>
+          <div class="mock-clipboard-meta">2 分钟前 · 文本</div>
+        </div>
+      </div>
+      <div class="mock-clipboard-item">
+        <div class="mock-clipboard-type" style="background: rgba(158,206,106,0.15); color: var(--green);">🔗</div>
+        <div class="mock-clipboard-content">
+          <div class="mock-clipboard-text">https://github.com/example/flowpilot</div>
+          <div class="mock-clipboard-meta">15 分钟前 · 链接</div>
+        </div>
+      </div>
+      <div class="mock-clipboard-item">
+        <div class="mock-clipboard-type" style="background: rgba(255,158,100,0.15); color: var(--orange);">IMG</div>
+        <div class="mock-clipboard-content">
+          <div class="mock-clipboard-text">截图 - 产品需求评审.png</div>
+          <div class="mock-clipboard-meta">1 小时前 · 图片</div>
+        </div>
+        <img class="mock-clipboard-img" alt="thumb">
+      </div>
+      <div class="mock-clipboard-item">
+        <div class="mock-clipboard-type" style="background: rgba(122,162,247,0.15); color: var(--primary);">T</div>
+        <div class="mock-clipboard-content">
+          <div class="mock-clipboard-text">const result = await ocrEngine.recognize(image)</div>
+          <div class="mock-clipboard-meta">3 小时前 · 代码</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

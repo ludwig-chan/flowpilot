@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>文件搜索 — cueOne</title>
+  <style>
+    :root {
+      --bg: #1a1b26; --bg-card: #24283b; --bg-code: #1f2335;
+      --border: #3b4261; --text: #c0caf5; --text-muted: #565f89;
+      --primary: #7aa2f7; --green: #9ece6a; --red: #f7768e;
+      --yellow: #e0af68; --orange: #ff9e64; --purple: #bb9af7;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; padding: 40px 20px; }
+    .container { max-width: 900px; margin: 0 auto; }
+    .back-link { display: inline-block; margin-bottom: 20px; color: var(--primary); text-decoration: none; font-size: 13px; }
+    .back-link:hover { text-decoration: underline; }
+    h1 { font-size: 28px; font-weight: 700; margin-bottom: 8px; color: var(--primary); }
+    .subtitle { color: var(--text-muted); margin-bottom: 40px; font-size: 14px; }
+    .req-section { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 32px; margin-bottom: 24px; }
+    .req-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+    .req-badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; color: #fff; background: var(--primary); }
+    .req-header h2 { font-size: 20px; font-weight: 600; }
+    .what-box { background: var(--bg-code); border-left: 3px solid var(--primary); padding: 14px 18px; border-radius: 0 8px 8px 0; margin-bottom: 24px; font-size: 15px; }
+    .req-list { list-style: none; margin-bottom: 24px; }
+    .req-list li { padding: 8px 0 8px 24px; position: relative; font-size: 14px; }
+    .req-list li::before { content: ''; position: absolute; left: 6px; top: 16px; width: 8px; height: 8px; border-radius: 50%; background: var(--primary); }
+    .req-list li strong { color: var(--yellow); }
+    .section-title { font-size: 13px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+    .mock-search { background: var(--bg-code); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin: 16px 0; }
+    .mock-search-input { width: 100%; background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px; padding: 10px 14px; color: var(--text); font-size: 14px; margin-bottom: 12px; }
+    .mock-search-results { display: flex; flex-direction: column; gap: 8px; }
+    .mock-search-item { display: flex; align-items: center; gap: 12px; padding: 10px 12px; background: var(--bg-card); border-radius: 6px; font-size: 13px; }
+    .mock-file-icon { width: 24px; height: 24px; border-radius: 4px; background: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 10px; color: #1a1b26; font-weight: 600; flex-shrink: 0; }
+    .mock-file-info { flex: 1; }
+    .mock-file-name { font-weight: 500; }
+    .mock-file-path { font-size: 11px; color: var(--text-muted); }
+  </style>
+</head>
+<body>
+<div class="container">
+  <a class="back-link" href="./README.md">← 返回需求总览</a>
+
+  <h1>文件搜索</h1>
+  <p class="subtitle">类似 Everything 的本地文件快速搜索</p>
+
+  <!-- 做什么 -->
+  <div class="req-section">
+    <div class="req-header">
+      <span class="req-badge">需求 6</span>
+      <h2>做什么</h2>
+    </div>
+    <div class="what-box">
+      提供本地文件快速搜索能力，类似 Everything。支持文件名搜索、内容搜索、文件类型过滤。可通过万能输入框快速唤起。
+    </div>
+
+    <div class="section-title">详细要求</div>
+    <ul class="req-list">
+      <li><strong>文件名搜索</strong>：按文件名关键词快速搜索</li>
+      <li><strong>内容搜索</strong>：搜索文件内容（文本文件、PDF、Office 文档等）</li>
+      <li><strong>文件类型过滤</strong>：按文件类型过滤（图片、文档、视频等）</li>
+      <li><strong>路径过滤</strong>：指定搜索目录范围</li>
+      <li><strong>实时搜索</strong>：输入即搜索，无需按回车</li>
+      <li><strong>快速打开</strong>：搜索结果可直接打开、打开所在目录</li>
+      <li><strong>索引机制</strong>：后台建立文件索引，搜索秒级响应</li>
+    </ul>
+  </div>
+
+  <!-- 搜索示例 -->
+  <div class="req-section">
+    <div class="section-title">搜索示例</div>
+    <div class="mock-search">
+      <div class="mock-search-input">产品需求文档</div>
+      <div class="mock-search-results">
+        <div class="mock-search-item">
+          <div class="mock-file-icon">PDF</div>
+          <div class="mock-file-info">
+            <div class="mock-file-name">产品需求文档 v0.2.0.pdf</div>
+            <div class="mock-file-path">D:\Documents\FlowPilot\docs\</div>
+          </div>
+        </div>
+        <div class="mock-search-item">
+          <div class="mock-file-icon" style="background: var(--green);">DOC</div>
+          <div class="mock-file-info">
+            <div class="mock-file-name">产品需求文档 - 副本.docx</div>
+            <div class="mock-file-path">D:\Documents\备份\</div>
+          </div>
+        </div>
+        <div class="mock-search-item">
+          <div class="mock-file-icon" style="background: var(--yellow);">MD</div>
+          <div class="mock-file-info">
+            <div class="mock-file-name">iteration-v0.2.0.md</div>
+            <div class="mock-file-path">D:\Documents\FlowPilot\docs\v0.2.0\</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

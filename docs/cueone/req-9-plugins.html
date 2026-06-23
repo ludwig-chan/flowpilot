@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>插件系统 — cueOne</title>
+  <style>
+    :root {
+      --bg: #1a1b26; --bg-card: #24283b; --bg-code: #1f2335;
+      --border: #3b4261; --text: #c0caf5; --text-muted: #565f89;
+      --primary: #7aa2f7; --green: #9ece6a; --red: #f7768e;
+      --yellow: #e0af68; --orange: #ff9e64; --purple: #bb9af7;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; padding: 40px 20px; }
+    .container { max-width: 900px; margin: 0 auto; }
+    .back-link { display: inline-block; margin-bottom: 20px; color: var(--primary); text-decoration: none; font-size: 13px; }
+    .back-link:hover { text-decoration: underline; }
+    h1 { font-size: 28px; font-weight: 700; margin-bottom: 8px; color: var(--purple); }
+    .subtitle { color: var(--text-muted); margin-bottom: 40px; font-size: 14px; }
+    .req-section { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 32px; margin-bottom: 24px; }
+    .req-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+    .req-badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; color: #fff; background: var(--purple); }
+    .req-header h2 { font-size: 20px; font-weight: 600; }
+    .what-box { background: var(--bg-code); border-left: 3px solid var(--purple); padding: 14px 18px; border-radius: 0 8px 8px 0; margin-bottom: 24px; font-size: 15px; }
+    .req-list { list-style: none; margin-bottom: 24px; }
+    .req-list li { padding: 8px 0 8px 24px; position: relative; font-size: 14px; }
+    .req-list li::before { content: ''; position: absolute; left: 6px; top: 16px; width: 8px; height: 8px; border-radius: 50%; background: var(--purple); }
+    .req-list li strong { color: var(--yellow); }
+    .section-title { font-size: 13px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+    .mock-plugin-list { background: var(--bg-code); border: 1px solid var(--border); border-radius: 8px; margin: 16px 0; overflow: hidden; }
+    .mock-plugin-item { display: flex; align-items: center; gap: 16px; padding: 16px 20px; border-bottom: 1px solid var(--border); }
+    .mock-plugin-item:last-child { border-bottom: none; }
+    .mock-plugin-icon { width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+    .mock-plugin-info { flex: 1; }
+    .mock-plugin-name { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+    .mock-plugin-desc { font-size: 12px; color: var(--text-muted); }
+    .mock-plugin-actions { display: flex; gap: 8px; }
+    .mock-btn { padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: 500; border: none; cursor: default; }
+    .mock-btn-primary { background: var(--primary); color: #1a1b26; }
+    .mock-btn-secondary { background: var(--bg-card); border: 1px solid var(--border); color: var(--text); }
+    .mock-btn-danger { background: var(--red); color: #1a1b26; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <a class="back-link" href="./README.md">← 返回需求总览</a>
+
+  <h1>插件系统</h1>
+  <p class="subtitle">提供 API 接口，支持第三方开发者扩展功能</p>
+
+  <!-- 做什么 -->
+  <div class="req-section">
+    <div class="req-header">
+      <span class="req-badge">需求 9</span>
+      <h2>做什么</h2>
+    </div>
+    <div class="what-box">
+      类似 uTools 的插件机制，提供开放接口供第三方开发者扩展功能。插件可注册到万能输入框，访问 cueOne 的核心能力（OCR、AI、文件系统等）。
+    </div>
+
+    <div class="section-title">详细要求</div>
+    <ul class="req-list">
+      <li><strong>插件 SDK</strong>：提供开发文档、示例代码、CLI 工具</li>
+      <li><strong>插件注册</strong>：插件可注册到万能输入框，作为可执行操作</li>
+      <li><strong>API 访问</strong>：插件可调用 OCR、AI、文件系统、剪贴板等核心能力</li>
+      <li><strong>插件市场</strong>：内置插件浏览、安装、更新（待设计）</li>
+      <li><strong>本地安装</strong>：支持从本地文件安装插件</li>
+      <li><strong>权限管理</strong>：插件需声明所需权限，用户授权后使用</li>
+      <li><strong>插件管理</strong>：启用/禁用/卸载插件</li>
+    </ul>
+  </div>
+
+  <!-- 插件列表示例 -->
+  <div class="req-section">
+    <div class="section-title">插件管理示例</div>
+    <div class="mock-plugin-list">
+      <div class="mock-plugin-item">
+        <div class="mock-plugin-icon" style="background: rgba(122,162,247,0.15); color: var(--primary);">📝</div>
+        <div class="mock-plugin-info">
+          <div class="mock-plugin-name">Markdown 编辑器</div>
+          <div class="mock-plugin-desc">快速编辑和预览 Markdown 文件</div>
+        </div>
+        <div class="mock-plugin-actions">
+          <div class="mock-btn mock-btn-secondary">禁用</div>
+          <div class="mock-btn mock-btn-danger">卸载</div>
+        </div>
+      </div>
+      <div class="mock-plugin-item">
+        <div class="mock-plugin-icon" style="background: rgba(158,206,106,0.15); color: var(--green);">🌐</div>
+        <div class="mock-plugin-info">
+          <div class="mock-plugin-name">翻译助手</div>
+          <div class="mock-plugin-desc">选中文本快速翻译，支持多语言</div>
+        </div>
+        <div class="mock-plugin-actions">
+          <div class="mock-btn mock-btn-secondary">禁用</div>
+          <div class="mock-btn mock-btn-danger">卸载</div>
+        </div>
+      </div>
+      <div class="mock-plugin-item">
+        <div class="mock-plugin-icon" style="background: rgba(255,158,100,0.15); color: var(--orange);">🔧</div>
+        <div class="mock-plugin-info">
+          <div class="mock-plugin-name">JSON 格式化</div>
+          <div class="mock-plugin-desc">格式化、压缩、校验 JSON 数据</div>
+        </div>
+        <div class="mock-plugin-actions">
+          <div class="mock-btn mock-btn-primary">安装</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

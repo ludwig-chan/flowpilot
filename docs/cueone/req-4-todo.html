@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>待办管理 — cueOne</title>
+  <style>
+    :root {
+      --bg: #1a1b26; --bg-card: #24283b; --bg-code: #1f2335;
+      --border: #3b4261; --text: #c0caf5; --text-muted: #565f89;
+      --primary: #7aa2f7; --green: #9ece6a; --red: #f7768e;
+      --yellow: #e0af68; --orange: #ff9e64; --purple: #bb9af7;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; padding: 40px 20px; }
+    .container { max-width: 900px; margin: 0 auto; }
+    .back-link { display: inline-block; margin-bottom: 20px; color: var(--primary); text-decoration: none; font-size: 13px; }
+    .back-link:hover { text-decoration: underline; }
+    h1 { font-size: 28px; font-weight: 700; margin-bottom: 8px; color: var(--orange); }
+    .subtitle { color: var(--text-muted); margin-bottom: 40px; font-size: 14px; }
+    .req-section { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 32px; margin-bottom: 24px; }
+    .req-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+    .req-badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; color: #fff; background: var(--orange); }
+    .req-header h2 { font-size: 20px; font-weight: 600; }
+    .what-box { background: var(--bg-code); border-left: 3px solid var(--orange); padding: 14px 18px; border-radius: 0 8px 8px 0; margin-bottom: 24px; font-size: 15px; }
+    .req-list { list-style: none; margin-bottom: 24px; }
+    .req-list li { padding: 8px 0 8px 24px; position: relative; font-size: 14px; }
+    .req-list li::before { content: ''; position: absolute; left: 6px; top: 16px; width: 8px; height: 8px; border-radius: 50%; background: var(--orange); }
+    .req-list li strong { color: var(--yellow); }
+    .section-title { font-size: 13px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+    .mock-todo { background: var(--bg-code); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin: 16px 0; }
+    .mock-todo-item { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+    .mock-todo-item:last-child { border-bottom: none; }
+    .mock-checkbox { width: 18px; height: 18px; border: 2px solid var(--border); border-radius: 4px; flex-shrink: 0; }
+    .mock-checkbox.checked { background: var(--green); border-color: var(--green); }
+    .mock-todo-text { flex: 1; font-size: 13px; }
+    .mock-todo-text.done { text-decoration: line-through; color: var(--text-muted); }
+    .mock-todo-tag { padding: 2px 8px; border-radius: 10px; font-size: 11px; background: rgba(255,158,100,0.15); color: var(--orange); }
+  </style>
+</head>
+<body>
+<div class="container">
+  <a class="back-link" href="./README.md">← 返回需求总览</a>
+
+  <h1>待办管理</h1>
+  <p class="subtitle">AI 自动生成待办，手动管理，支持分类和优先级</p>
+
+  <!-- 做什么 -->
+  <div class="req-section">
+    <div class="req-header">
+      <span class="req-badge">需求 4</span>
+      <h2>做什么</h2>
+    </div>
+    <div class="what-box">
+      提供待办事项管理功能。AI 可从截图文本中自动提取待办项，用户也可手动创建。支持分类、优先级、截止日期、完成状态等。
+    </div>
+
+    <div class="section-title">详细要求</div>
+    <ul class="req-list">
+      <li><strong>AI 自动生成</strong>：从截图 OCR 文本中自动提取待办事项</li>
+      <li><strong>手动创建</strong>：支持手动添加待办，设置标题、描述、截止日期</li>
+      <li><strong>分类管理</strong>：支持标签/分类，如工作、生活、学习等</li>
+      <li><strong>优先级</strong>：支持设置优先级（高、中、低）</li>
+      <li><strong>提醒功能</strong>：到期提醒，支持自定义提醒时间</li>
+      <li><strong>完成状态</strong>：标记完成/未完成，支持重复任务</li>
+      <li><strong>搜索筛选</strong>：按关键词、分类、状态筛选</li>
+    </ul>
+  </div>
+
+  <!-- 待办列表示例 -->
+  <div class="req-section">
+    <div class="section-title">待办列表示例</div>
+    <div class="mock-todo">
+      <div class="mock-todo-item">
+        <div class="mock-checkbox checked"></div>
+        <div class="mock-todo-text done">购买牛奶和面包</div>
+        <div class="mock-todo-tag">生活</div>
+      </div>
+      <div class="mock-todo-item">
+        <div class="mock-checkbox"></div>
+        <div class="mock-todo-text">完成项目报告</div>
+        <div class="mock-todo-tag">工作</div>
+      </div>
+      <div class="mock-todo-item">
+        <div class="mock-checkbox"></div>
+        <div class="mock-todo-text">预约牙医（周三下午）</div>
+        <div class="mock-todo-tag">生活</div>
+      </div>
+      <div class="mock-todo-item">
+        <div class="mock-checkbox"></div>
+        <div class="mock-todo-text">复习 TypeScript 类型系统</div>
+        <div class="mock-todo-tag">学习</div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

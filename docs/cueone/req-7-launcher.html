@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>万能输入框 — cueOne</title>
+  <style>
+    :root {
+      --bg: #1a1b26; --bg-card: #24283b; --bg-code: #1f2335;
+      --border: #3b4261; --text: #c0caf5; --text-muted: #565f89;
+      --primary: #7aa2f7; --green: #9ece6a; --red: #f7768e;
+      --yellow: #e0af68; --orange: #ff9e64; --purple: #bb9af7;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; padding: 40px 20px; }
+    .container { max-width: 900px; margin: 0 auto; }
+    .back-link { display: inline-block; margin-bottom: 20px; color: var(--primary); text-decoration: none; font-size: 13px; }
+    .back-link:hover { text-decoration: underline; }
+    h1 { font-size: 28px; font-weight: 700; margin-bottom: 8px; color: var(--green); }
+    .subtitle { color: var(--text-muted); margin-bottom: 40px; font-size: 14px; }
+    .req-section { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 32px; margin-bottom: 24px; }
+    .req-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+    .req-badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; color: #fff; background: var(--green); }
+    .req-header h2 { font-size: 20px; font-weight: 600; }
+    .what-box { background: var(--bg-code); border-left: 3px solid var(--green); padding: 14px 18px; border-radius: 0 8px 8px 0; margin-bottom: 24px; font-size: 15px; }
+    .req-list { list-style: none; margin-bottom: 24px; }
+    .req-list li { padding: 8px 0 8px 24px; position: relative; font-size: 14px; }
+    .req-list li::before { content: ''; position: absolute; left: 6px; top: 16px; width: 8px; height: 8px; border-radius: 50%; background: var(--green); }
+    .req-list li strong { color: var(--yellow); }
+    .section-title { font-size: 13px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+    .mock-input-box { background: var(--bg-code); border: 1px solid var(--border); border-radius: 12px; padding: 0; margin: 16px auto; max-width: 600px; overflow: hidden; box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
+    .mock-input-header { padding: 16px 20px; border-bottom: 1px solid var(--border); }
+    .mock-input-field { width: 100%; background: transparent; border: none; color: var(--text); font-size: 16px; outline: none; }
+    .mock-input-results { max-height: 300px; overflow-y: auto; }
+    .mock-input-item { display: flex; align-items: center; gap: 12px; padding: 12px 20px; border-bottom: 1px solid var(--border); cursor: default; }
+    .mock-input-item:last-child { border-bottom: none; }
+    .mock-input-item.selected { background: rgba(122,162,247,0.1); }
+    .mock-input-icon { width: 32px; height: 32px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+    .mock-input-text { flex: 1; }
+    .mock-input-title { font-size: 13px; font-weight: 500; }
+    .mock-input-desc { font-size: 11px; color: var(--text-muted); }
+    .mock-input-shortcut { font-size: 11px; color: var(--text-muted); padding: 2px 6px; background: var(--bg-card); border-radius: 4px; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <a class="back-link" href="./README.md">← 返回需求总览</a>
+
+  <h1>万能输入框</h1>
+  <p class="subtitle">全局快捷键唤起的统一入口，搜索文件、提问 AI、执行操作</p>
+
+  <!-- 做什么 -->
+  <div class="req-section">
+    <div class="req-header">
+      <span class="req-badge">需求 7</span>
+      <h2>做什么</h2>
+    </div>
+    <div class="what-box">
+      全局快捷键唤起的统一输入框，类似 uTools。输入内容后实时显示匹配结果，支持文件搜索、AI 提问、执行操作（待办、日历等）。插件也可注册到此入口。
+    </div>
+
+    <div class="section-title">详细要求</div>
+    <ul class="req-list">
+      <li><strong>全局唤起</strong>：自定义快捷键唤起/隐藏输入框</li>
+      <li><strong>实时搜索</strong>：输入即搜索，无需按回车</li>
+      <li><strong>多源结果</strong>：同时展示文件、待办、日历、AI 回答等</li>
+      <li><strong>键盘导航</strong>：上下键选择，回车执行，Esc 关闭</li>
+      <li><strong>命令前缀</strong>：支持前缀指定操作类型（如 /ai 提问、/todo 创建待办）</li>
+      <li><strong>历史记录</strong>：记录最近使用的命令和搜索</li>
+      <li><strong>插件扩展</strong>：插件可注册新的操作类型</li>
+    </ul>
+  </div>
+
+  <!-- 输入框示例 -->
+  <div class="req-section">
+    <div class="section-title">万能输入框示例</div>
+    <div class="mock-input-box">
+      <div class="mock-input-header">
+        <input class="mock-input-field" value="产品需求" readonly>
+      </div>
+      <div class="mock-input-results">
+        <div class="mock-input-item selected">
+          <div class="mock-input-icon" style="background: var(--primary); color: #1a1b26;">📄</div>
+          <div class="mock-input-text">
+            <div class="mock-input-title">产品需求文档 v0.2.0.pdf</div>
+            <div class="mock-input-desc">D:\Documents\FlowPilot\docs\</div>
+          </div>
+          <div class="mock-input-shortcut">文件</div>
+        </div>
+        <div class="mock-input-item">
+          <div class="mock-input-icon" style="background: var(--orange); color: #1a1b26;">✓</div>
+          <div class="mock-input-text">
+            <div class="mock-input-title">创建待办：产品需求评审</div>
+            <div class="mock-input-desc">按回车创建待办事项</div>
+          </div>
+          <div class="mock-input-shortcut">待办</div>
+        </div>
+        <div class="mock-input-item">
+          <div class="mock-input-icon" style="background: var(--purple); color: #1a1b26;">AI</div>
+          <div class="mock-input-text">
+            <div class="mock-input-title">向 AI 提问："产品需求"</div>
+            <div class="mock-input-desc">按回车发送给 AI</div>
+          </div>
+          <div class="mock-input-shortcut">AI</div>
+        </div>
+        <div class="mock-input-item">
+          <div class="mock-input-icon" style="background: var(--yellow); color: #1a1b26;">📅</div>
+          <div class="mock-input-text">
+            <div class="mock-input-title">创建日程：产品需求讨论</div>
+            <div class="mock-input-desc">按回车创建日历事件</div>
+          </div>
+          <div class="mock-input-shortcut">日程</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
