@@ -3,6 +3,7 @@ import DataRecordList from './DataRecordList'
 import DataRecordTrash from './DataRecordTrash'
 import DataRecordTagManager from './DataRecordTagManager'
 import FilterToolbar from '../components/FilterToolbar'
+import BatchTagDialog from '../components/BatchTagDialog'
 import type { FilterState } from '../components/AdvancedFilterPanel'
 import { applyFilter, type FilterCriteria } from '../utils/filterUtils'
 
@@ -56,6 +57,7 @@ export default function DataRecords({ showToast }: DataRecordsProps): React.JSX.
     timeRange: { type: 'today' },
   })
   const [ocrResults, setOcrResults] = useState<Record<string, string>>({})
+  const [showBatchTagDialog, setShowBatchTagDialog] = useState(false)
 
   const loadData = async (): Promise<void> => {
     setLoading(true)
@@ -125,6 +127,29 @@ export default function DataRecords({ showToast }: DataRecordsProps): React.JSX.
     setOcrResults(results)
   }
 
+  const handleBatchTag = async (tagId: string | null, newTagName: string): Promise<void> => {
+    const ids = Array.from(selectedIds)
+    if (ids.length === 0) return
+
+    let targetTagId = tagId
+    if (!targetTagId && newTagName) {
+      const tag = await window.api.createDataRecordTag(newTagName)
+      targetTagId = tag.id
+    }
+    if (!targetTagId) return
+
+    for (const id of ids) {
+      const record = data.records.find((r) => r.id === id)
+      if (record && !record.tagIds.includes(targetTagId)) {
+        await window.api.updateDataRecordTags(id, [...record.tagIds, targetTagId])
+      }
+    }
+    showToast(`已为 ${ids.length} 条记录打标签`, 'success')
+    setShowBatchTagDialog(false)
+    setSelectedIds(new Set())
+    await loadData()
+  }
+
   return (
     <>
       <div className="page-title">数据</div>
@@ -170,6 +195,7 @@ export default function DataRecords({ showToast }: DataRecordsProps): React.JSX.
                 onApplyFilter={handleApplyFilter}
                 onClearFilter={handleClearFilter}
                 onRefresh={loadData}
+                onTagRecords={() => setShowBatchTagDialog(true)}
                 selectedCount={selectedIds.size}
               />
               <DataRecordList
@@ -202,6 +228,15 @@ export default function DataRecords({ showToast }: DataRecordsProps): React.JSX.
             />
           )}
         </>
+      )}
+
+      {showBatchTagDialog && (
+        <BatchTagDialog
+          selectedCount={selectedIds.size}
+          allTags={data.tags}
+          onConfirm={handleBatchTag}
+          onClose={() => setShowBatchTagDialog(false)}
+        />
       )}
     </>
   )
