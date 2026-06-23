@@ -35,10 +35,18 @@ export interface DataRecordItem {
   sourceTitle?: string
 }
 
+export interface DataRecordFilterPreset {
+  id: string
+  name: string
+  createdAt: string
+  filterState: unknown
+}
+
 export interface DataRecordLibrary {
   schemaVersion: 2
   records: DataRecordItem[]
   tags: DataRecordTag[]
+  filterPresets?: DataRecordFilterPreset[]
 }
 
 export interface DataRecordSaveMetadata {
@@ -254,6 +262,41 @@ export function deleteDataRecordPermanently(id: string): boolean {
   if (item.status !== 'trash') throw new Error('只能永久删除回收站中的记录')
 
   library.records.splice(index, 1)
+  saveLibrary(library)
+  return true
+}
+
+/** 列出所有筛选预设 */
+export function listFilterPresets(): DataRecordFilterPreset[] {
+  const library = loadLibrary()
+  return library.filterPresets ?? []
+}
+
+/** 保存筛选预设 */
+export function saveFilterPreset(name: string, filterState: unknown): DataRecordFilterPreset {
+  const library = loadLibrary()
+  if (!library.filterPresets) library.filterPresets = []
+
+  const preset: DataRecordFilterPreset = {
+    id: newId('preset'),
+    name: name.trim(),
+    createdAt: nowIso(),
+    filterState,
+  }
+  library.filterPresets.push(preset)
+  saveLibrary(library)
+  return preset
+}
+
+/** 删除筛选预设 */
+export function deleteFilterPreset(id: string): boolean {
+  const library = loadLibrary()
+  if (!library.filterPresets) return false
+
+  const index = library.filterPresets.findIndex((p) => p.id === id)
+  if (index < 0) return false
+
+  library.filterPresets.splice(index, 1)
   saveLibrary(library)
   return true
 }

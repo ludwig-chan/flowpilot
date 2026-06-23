@@ -72,6 +72,13 @@ interface DataRecordTag {
   updatedAt: string
 }
 
+interface DataRecordFilterPreset {
+  id: string
+  name: string
+  createdAt: string
+  filterState: unknown
+}
+
 interface DataRecordItem {
   id: string
   createdAt: string
@@ -127,6 +134,9 @@ interface FlowPilotAPI {
   trashDataRecord: (id: string) => Promise<boolean>
   restoreDataRecord: (id: string) => Promise<boolean>
   deleteDataRecordPermanently: (id: string) => Promise<boolean>
+  listFilterPresets: () => Promise<DataRecordFilterPreset[]>
+  saveFilterPreset: (name: string, filterState: unknown) => Promise<DataRecordFilterPreset>
+  deleteFilterPreset: (id: string) => Promise<boolean>
   onScreenshotsUpdated: (callback: () => void) => () => void
   onAutoClickerStatusChanged: (callback: (status: AutoClickerStatus) => void) => () => void
   onDataRecordsUpdated: (callback: () => void) => () => void

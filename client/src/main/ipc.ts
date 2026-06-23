@@ -21,7 +21,10 @@ import {
   listDataRecords,
   restoreDataRecord,
   trashDataRecord,
-  updateDataRecordTags
+  updateDataRecordTags,
+  listFilterPresets,
+  saveFilterPreset,
+  deleteFilterPreset,
 } from './dataRecordLibrary'
 import { recognizeText } from './ocrEngine'
 
@@ -143,6 +146,19 @@ export function registerIpcHandlers(
 
   ipcMain.handle('delete-data-record-permanently', (_event, id: string) => {
     return deleteDataRecordPermanently(id)
+  })
+
+  // 筛选预设
+  ipcMain.handle('list-filter-presets', () => {
+    return listFilterPresets()
+  })
+
+  ipcMain.handle('save-filter-preset', (_event, name: string, filterState: unknown) => {
+    return saveFilterPreset(name, filterState)
+  })
+
+  ipcMain.handle('delete-filter-preset', (_event, id: string) => {
+    return deleteFilterPreset(id)
   })
 
   // 检测已安装的浏览器

@@ -1,7 +1,10 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useMemo } from 'react'
 import DataRecordList from './DataRecordList'
 import DataRecordTrash from './DataRecordTrash'
 import DataRecordTagManager from './DataRecordTagManager'
+import FilterToolbar from '../components/FilterToolbar'
+import type { FilterState } from '../components/AdvancedFilterPanel'
+import { applyFilter, type FilterCriteria } from '../utils/filterUtils'
 
 type DataTab = 'records' | 'trash' | 'tags'
 type ViewMode = 'active' | 'trash'
@@ -33,6 +36,10 @@ interface DataRecordsProps {
   showToast: (msg: string, type?: 'success' | 'error' | 'info') => void
 }
 
+function generateId(): string {
+  return `group-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+}
+
 export default function DataRecords({ showToast }: DataRecordsProps): React.JSX.Element {
   const [data, setData] = useState<DataRecordListResult>({ records: [], tags: [] })
   const [loading, setLoading] = useState(true)
@@ -40,6 +47,15 @@ export default function DataRecords({ showToast }: DataRecordsProps): React.JSX.
   const [viewMode, setViewMode] = useState<ViewMode>('active')
   const [tagFilter, setTagFilter] = useState('all')
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+
+  // 筛选状态
+  const [searchKeyword, setSearchKeyword] = useState('')
+  const [filterState, setFilterState] = useState<FilterState>({
+    whitelistGroups: [{ id: generateId(), keywords: [], matchMode: 'AND' }],
+    blacklistGroups: [{ id: generateId(), keywords: [], matchMode: 'OR' }],
+    timeRange: { type: 'today' },
+  })
+  const [ocrResults, setOcrResults] = useState<Record<string, string>>({})
 
   const loadData = async (): Promise<void> => {
     setLoading(true)
@@ -60,11 +76,54 @@ export default function DataRecords({ showToast }: DataRecordsProps): React.JSX.
     return unsub
   }, [])
 
-  const displayRecords = React.useMemo(() => {
+  // 预加载 OCR 结果
+  useEffect(() => {
+    window.api.listScreenshots().then((list) => {
+      const map: Record<string, string> = {}
+      for (const s of list.screenshots) {
+        if (typeof s.ocrText === 'string') map[s.id] = s.ocrText
+      }
+      setOcrResults(map)
+    }).catch(() => { /* 忽略错误 */ })
+  }, [])
+
+  const displayRecords = useMemo(() => {
     return viewMode === 'active'
       ? data.records.filter((r) => r.status === 'active')
       : data.records.filter((r) => r.status === 'trash')
   }, [data.records, viewMode])
+
+  // 应用筛选
+  const filteredRecords = useMemo(() => {
+    if (viewMode !== 'active') return displayRecords
+
+    const criteria: FilterCriteria = {
+      searchKeyword,
+      whitelistGroups: filterState.whitelistGroups,
+      blacklistGroups: filterState.blacklistGroups,
+      timeRange: filterState.timeRange,
+      tagFilter,
+    }
+
+    return applyFilter(displayRecords, criteria, ocrResults)
+  }, [displayRecords, searchKeyword, filterState, ocrResults, tagFilter])
+
+  const handleApplyFilter = (): void => {
+    // 筛选已经通过 useMemo 自动应用
+  }
+
+  const handleClearFilter = (): void => {
+    setSearchKeyword('')
+    setFilterState({
+      whitelistGroups: [{ id: generateId(), keywords: [], matchMode: 'AND' }],
+      blacklistGroups: [{ id: generateId(), keywords: [], matchMode: 'OR' }],
+      timeRange: { type: 'today' },
+    })
+  }
+
+  const handleOcrResultsUpdate = (results: Record<string, string>): void => {
+    setOcrResults(results)
+  }
 
   return (
     <>
@@ -99,16 +158,31 @@ export default function DataRecords({ showToast }: DataRecordsProps): React.JSX.
       ) : (
         <>
           {tab === 'records' && (
-            <DataRecordList
-              records={displayRecords}
-              tags={data.tags}
-              tagFilter={tagFilter}
-              selectedIds={selectedIds}
-              showToast={showToast}
-              onTagFilterChange={setTagFilter}
-              onSelectionChange={setSelectedIds}
-              onRefresh={loadData}
-            />
+            <>
+              <FilterToolbar
+                tags={data.tags}
+                tagFilter={tagFilter}
+                searchKeyword={searchKeyword}
+                filterState={filterState}
+                onTagFilterChange={setTagFilter}
+                onSearchChange={setSearchKeyword}
+                onFilterStateChange={setFilterState}
+                onApplyFilter={handleApplyFilter}
+                onClearFilter={handleClearFilter}
+                onRefresh={loadData}
+                selectedCount={selectedIds.size}
+              />
+              <DataRecordList
+                records={filteredRecords}
+                tags={data.tags}
+                selectedIds={selectedIds}
+                showToast={showToast}
+                onSelectionChange={setSelectedIds}
+                onRefresh={loadData}
+                ocrResults={ocrResults}
+                onOcrResultsUpdate={handleOcrResultsUpdate}
+              />
+            </>
           )}
           {tab === 'trash' && (
             <DataRecordTrash

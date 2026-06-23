@@ -34,6 +34,10 @@ const api = {
   restoreDataRecord: (id: string) => ipcRenderer.invoke('restore-data-record', id),
   deleteDataRecordPermanently: (id: string) =>
     ipcRenderer.invoke('delete-data-record-permanently', id),
+  listFilterPresets: () => ipcRenderer.invoke('list-filter-presets'),
+  saveFilterPreset: (name: string, filterState: unknown) =>
+    ipcRenderer.invoke('save-filter-preset', name, filterState),
+  deleteFilterPreset: (id: string) => ipcRenderer.invoke('delete-filter-preset', id),
   onScreenshotsUpdated: (callback: () => void) => {
     const listener = (): void => callback()
     ipcRenderer.on('screenshots-updated', listener)

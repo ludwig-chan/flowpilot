@@ -26,12 +26,12 @@ interface RecordItem {
 interface DataRecordListProps {
   records: RecordItem[]
   tags: Tag[]
-  tagFilter: string
   selectedIds: Set<string>
   showToast: (msg: string, type?: 'success' | 'error' | 'info') => void
-  onTagFilterChange: (tagId: string) => void
   onSelectionChange: (ids: Set<string>) => void
   onRefresh: () => void
+  ocrResults: Record<string, string>
+  onOcrResultsUpdate: (results: Record<string, string>) => void
 }
 
 /** 根据别名映射显示友好的字段名，无映射时对 varN 格式生成默认别名 */
@@ -68,49 +68,26 @@ function collectScreenshotIds(records: RecordItem[]): string[] {
 export default function DataRecordList({
   records,
   tags,
-  tagFilter,
   selectedIds,
   showToast,
-  onTagFilterChange,
   onSelectionChange,
   onRefresh,
+  ocrResults,
+  onOcrResultsUpdate,
 }: DataRecordListProps): React.JSX.Element {
   const [detailRecord, setDetailRecord] = useState<RecordItem | null>(null)
   const [thumbnails, setThumbnails] = useState<Record<string, string>>({})
   const [newTagById, setNewTagById] = useState<Record<string, string>>({})
   const [lightboxImage, setLightboxImage] = useState<{ src: string; alt: string } | null>(null)
   const [lightboxLoading, setLightboxLoading] = useState(false)
-  const [ocrResults, setOcrResults] = useState<Record<string, string>>({})
   const [ocrErrors, setOcrErrors] = useState<Record<string, string>>({})
   const [ocrLoading, setOcrLoading] = useState<Record<string, boolean>>({})
-  const [ocrPreloaded, setOcrPreloaded] = useState(false)
   const [ocrDialog, setOcrDialog] = useState<{ text: string; label: string } | null>(null)
   const [tagEditRecord, setTagEditRecord] = useState<RecordItem | null>(null)
   const queuedOcrIdsRef = useRef<Set<string>>(new Set())
 
-  // ── 预加载截图库已有 OCR 结果，避免重复识别 ──
-  useEffect(() => {
-    window.api.listScreenshots().then((list) => {
-      const map: Record<string, string> = {}
-      for (const s of list.screenshots) {
-        if (typeof s.ocrText === 'string') map[s.id] = s.ocrText
-      }
-      setOcrResults(map)
-      setOcrPreloaded(true)
-    }).catch(() => { setOcrPreloaded(true) })
-  }, [])
-
-  const activeRecords = React.useMemo(
-    () => records.filter((r) => {
-      if (r.status !== 'active') return false
-      if (tagFilter !== 'all' && !r.tagIds.includes(tagFilter)) return false
-      return true
-    }),
-    [records, tagFilter],
-  )
-
   const recordScreenshotIds = React.useMemo(
-    () => collectScreenshotIds(records.filter((record) => record.status === 'active')),
+    () => collectScreenshotIds(records),
     [records],
   )
 
@@ -126,7 +103,7 @@ export default function DataRecordList({
   }
 
   const handleBatchTrash = async (): Promise<void> => {
-    const items = activeRecords.filter((r) => selectedIds.has(r.id))
+    const items = records.filter((r) => selectedIds.has(r.id))
     if (items.length === 0) return
     if (!window.confirm(`移入回收站 ${items.length} 条记录？`)) return
     for (const item of items) {
@@ -186,13 +163,12 @@ export default function DataRecordList({
       const result = await window.api.ocrScreenshotsBatch(targets)
       const returnedIds = new Set(result.results.map((item) => item.id))
 
-      setOcrResults((prev) => {
-        const next = { ...prev }
-        for (const item of result.results) {
-          if (typeof item.text === 'string') next[item.id] = item.text
-        }
-        return next
-      })
+      const newOcrResults = { ...ocrResults }
+      for (const item of result.results) {
+        if (typeof item.text === 'string') newOcrResults[item.id] = item.text
+      }
+      onOcrResultsUpdate(newOcrResults)
+
       setOcrErrors((prev) => {
         const next = { ...prev }
         for (const item of result.results) {
@@ -220,9 +196,8 @@ export default function DataRecordList({
   }
 
   useEffect(() => {
-    if (!ocrPreloaded) return
     void runOcrForScreenshots(recordScreenshotIds)
-  }, [ocrPreloaded, recordScreenshotIds, ocrResults, ocrErrors])
+  }, [recordScreenshotIds])
 
   const openDetail = async (item: RecordItem): Promise<void> => {
     setDetailRecord(item)
@@ -237,16 +212,15 @@ export default function DataRecordList({
       }
     }
     setThumbnails(newThumbs)
-
   }
 
   // ── 详情弹窗的上/下条导航 ──
   const detailIndex = detailRecord
-    ? activeRecords.findIndex((r) => r.id === detailRecord.id)
+    ? records.findIndex((r) => r.id === detailRecord.id)
     : -1
 
-  const prevRecord = detailIndex > 0 ? activeRecords[detailIndex - 1] : null
-  const nextRecord = detailIndex < activeRecords.length - 1 ? activeRecords[detailIndex + 1] : null
+  const prevRecord = detailIndex > 0 ? records[detailIndex - 1] : null
+  const nextRecord = detailIndex < records.length - 1 ? records[detailIndex + 1] : null
 
   const goToPrev = () => { if (prevRecord) void openDetail(prevRecord) }
   const goToNext = () => { if (nextRecord) void openDetail(nextRecord) }
@@ -332,43 +306,28 @@ export default function DataRecordList({
         </div>
       ),
     },
-  ], [activeRecords])
+  ], [records])
 
   return (
     <>
-      <div className="screenshot-toolbar">
-        <select
-          className="form-select screenshot-filter"
-          value={tagFilter}
-          onChange={(e) => onTagFilterChange(e.target.value)}
-        >
-          <option value="all">全部标签</option>
-          {tags.map((tag) => (
-            <option key={tag.id} value={tag.id}>{tag.name}</option>
-          ))}
-        </select>
-        <button className="btn btn-secondary" onClick={onRefresh}>
-          刷新
-        </button>
-        {selectedIds.size > 0 ? (
-          <>
-            <span className="batch-hint">已选 {selectedIds.size} 条</span>
-            <button className="btn btn-danger" onClick={handleBatchTrash}>
-              删除选中
-            </button>
-            <button className="btn btn-secondary" onClick={() => onSelectionChange(new Set())}>
-              取消选择
-            </button>
-          </>
-        ) : null}
-      </div>
+      {selectedIds.size > 0 && (
+        <div className="screenshot-toolbar" style={{ marginTop: 8 }}>
+          <span className="batch-hint">已选 {selectedIds.size} 条</span>
+          <button className="btn btn-danger" onClick={handleBatchTrash}>
+            删除选中
+          </button>
+          <button className="btn btn-secondary" onClick={() => onSelectionChange(new Set())}>
+            取消选择
+          </button>
+        </div>
+      )}
 
-      {activeRecords.length === 0 ? (
-        <div className="empty-tip">还没有数据记录</div>
+      {records.length === 0 ? (
+        <div className="empty-tip">没有匹配的数据记录</div>
       ) : (
         <DataTable
           columns={columns}
-          data={activeRecords}
+          data={records}
           rowKey={(item) => item.id}
           selectable
           selectedIds={selectedIds}
@@ -402,9 +361,9 @@ export default function DataRecordList({
                 </button>
                 <span>
                   字段详情
-                  {activeRecords.length > 1 && (
+                  {records.length > 1 && (
                     <span style={{ fontWeight: 400, color: '#a6adc8', marginLeft: 6, fontSize: 12 }}>
-                      {detailIndex + 1} / {activeRecords.length}
+                      {detailIndex + 1} / {records.length}
                     </span>
                   )}
                 </span>
