@@ -2,11 +2,12 @@
 // MVP 阶段：保持 Service Worker 存活，透传消息
 // v0.2 起承担任务调度、状态持久化职责
 
-import type { UrlMatchMode } from '@shared/types/flow'
+import type { UrlMatchMode, DownloadMode } from '@shared/types/flow'
 import { genId } from '@shared/utils/genId'
 import { toLocalTimeString } from '@shared/utils/time'
 import { MSG } from '@shared/types/message'
 import { BUILTIN_PRESETS } from '@/presets/index'
+import { initDownloadCapture, setFlowDownloadConfig, clearFlowDownloadConfig } from './downloadCapture'
 
 const MAX_LOGS = 500
 const bgLogs: string[] = []
@@ -34,6 +35,9 @@ function broadcastToOptions(msg: object): void {
 chrome.runtime.onInstalled.addListener(() => {
   console.log('[FlowPilot] 插件已安装')
 })
+
+// 初始化下载捕获模块（Service Worker 启动时调用）
+initDownloadCapture()
 
 // 点击扩展图标时打开选项页
 chrome.action.onClicked.addListener(() => {
@@ -308,6 +312,25 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       pickReturnTabId = null
     }
 
+    // ── 流程运行：存储下载配置 ──
+    if (message.type === MSG.RUN_FLOW_IN_TAB) {
+      const downloadMode = (message.downloadMode as DownloadMode) ?? 'ignore'
+      const enrichedMsg = withRunMetadata(message)
+      if (downloadMode !== 'ignore') {
+        setFlowDownloadConfig(tabId, {
+          downloadMode,
+          runId: enrichedMsg.runId,
+          runStartedAt: enrichedMsg.runStartedAt,
+          flowId: enrichedMsg.flowId,
+          flowName: enrichedMsg.flowName,
+        })
+      }
+      chrome.tabs.sendMessage(tabId, enrichedMsg).then(r => sendResponse(r)).catch(e => {
+        sendResponse({ ok: false, error: String(e) })
+      })
+      return true
+    }
+
     chrome.tabs.sendMessage(tabId, withRunMetadata(message)).then(r => sendResponse(r)).catch(e => {
       sendResponse({ ok: false, error: String(e) })
     })
@@ -328,6 +351,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       console.groupEnd()
     }
     broadcastToOptions(enriched)
+
+    // ── 流程结束：清除下载配置 ──
+    if ((message.type === MSG.FLOW_DONE_FROM_TAB || message.type === MSG.FLOW_ERROR_FROM_TAB) && enriched.tabId) {
+      clearFlowDownloadConfig(enriched.tabId)
+    }
 
     // ── 拾取完成或取消：切换回 Options 页面 ──
     if ((message.type === MSG.ELEMENT_PICKED || message.type === MSG.PICK_CANCELLED) && pickReturnTabId !== null) {
@@ -364,7 +392,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         const flow = [...userFlows, ...presetFlows]
           .find(f => f.id === message.flowId)
         if (!flow) return
-        chrome.tabs.sendMessage(tabId, withRunMetadata({
+        const downloadMode = (flow.downloadMode as DownloadMode) ?? 'ignore'
+        const enrichedMsg = withRunMetadata({
           type: MSG.RUN_FLOW_IN_TAB,
           flowId: flow.id,
           flowName: flow.name,
@@ -373,7 +402,18 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           stepDelayLevel: flow.stepDelayLevel,
           stepDelayRange: flow.stepDelayRange,
           waitTimeout: flow.waitTimeout,
-        })).catch(() => {})
+          downloadMode,
+        })
+        if (downloadMode !== 'ignore') {
+          setFlowDownloadConfig(tabId, {
+            downloadMode,
+            runId: enrichedMsg.runId,
+            runStartedAt: enrichedMsg.runStartedAt,
+            flowId: enrichedMsg.flowId,
+            flowName: enrichedMsg.flowName,
+          })
+        }
+        chrome.tabs.sendMessage(tabId, enrichedMsg).catch(() => {})
       })
     }
     sendResponse({ ok: true })
@@ -464,7 +504,7 @@ type RawTrigger = { enabled: boolean; type: string; urlPattern?: string; urlMatc
 type RawFlow   = {
   id: string; kind?: string; name?: string; steps: unknown[]; pinnedInMenu?: boolean;
   stepDelayLevel?: string; stepDelayRange?: [number, number]; waitTimeout?: number;
-  trigger?: RawTrigger; children?: RawFlow[]
+  trigger?: RawTrigger; children?: RawFlow[]; downloadMode?: string;
 }
 
 function flattenFlows(nodes: RawFlow[]): RawFlow[] {
@@ -530,18 +570,30 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
       // 类型一：URL 匹配则直接运行流程
       if (trigger.type === 'url_match' && trigger.urlPattern) {
         if (!matchUrl(url, trigger.urlPattern, (trigger.urlMatchMode as UrlMatchMode) ?? 'contains')) continue
+        const downloadMode = (flow.downloadMode as DownloadMode) ?? 'ignore'
         setTimeout(() => {
-          chrome.tabs.sendMessage(tabId, withRunMetadata({
-          type: MSG.RUN_FLOW_IN_TAB,
-          flowId: flow.id,
-          flowName: flow.name,
-          steps: flow.steps,
-          variables: {},
-          stepDelayLevel: flow.stepDelayLevel,
-          stepDelayRange: flow.stepDelayRange,
-          waitTimeout: flow.waitTimeout,
-        })).catch(() => {})
-      }, trigger.delay ?? 0)
+          const enrichedMsg = withRunMetadata({
+            type: MSG.RUN_FLOW_IN_TAB,
+            flowId: flow.id,
+            flowName: flow.name,
+            steps: flow.steps,
+            variables: {},
+            stepDelayLevel: flow.stepDelayLevel,
+            stepDelayRange: flow.stepDelayRange,
+            waitTimeout: flow.waitTimeout,
+            downloadMode,
+          })
+          if (downloadMode !== 'ignore') {
+            setFlowDownloadConfig(tabId, {
+              downloadMode,
+              runId: enrichedMsg.runId,
+              runStartedAt: enrichedMsg.runStartedAt,
+              flowId: enrichedMsg.flowId,
+              flowName: enrichedMsg.flowName,
+            })
+          }
+          chrome.tabs.sendMessage(tabId, enrichedMsg).catch(() => {})
+        }, trigger.delay ?? 0)
       }
 
       // 类型二：元素出现——通知 content script 建立监听

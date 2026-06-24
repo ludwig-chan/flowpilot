@@ -193,4 +193,5 @@ export const MSG = {
   GET_ACTIVE_TAB:                   'GET_ACTIVE_TAB',
   SAVE_SCREENSHOT:                  'SAVE_SCREENSHOT',
   SAVE_DATA_RECORD:                 'SAVE_DATA_RECORD',
+  SAVE_ATTACHMENT:                  'SAVE_ATTACHMENT',
 } as const

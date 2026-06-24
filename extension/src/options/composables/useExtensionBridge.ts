@@ -4,7 +4,7 @@
  */
 import { ref, onMounted, onUnmounted } from 'vue'
 import type { SerializedDomNode, SerializedElement } from '@shared/types/dom'
-import type { FlowStep, StepDelayLevel, StepEvent } from '@shared/types/flow'
+import type { FlowStep, StepDelayLevel, StepEvent, DownloadMode } from '@shared/types/flow'
 import type { RepeatingCandidate, SmartLoopDebugTraceRow } from '@shared/types/message'
 import { MSG } from '@shared/types/message'
 
@@ -138,6 +138,7 @@ export function useExtensionBridge() {
     waitTimeout?: number,
     flowId?: string,
     flowName?: string,
+    downloadMode?: DownloadMode,
   ) {
     return send({
       type: MSG.RUN_FLOW_IN_TAB,
@@ -148,6 +149,7 @@ export function useExtensionBridge() {
       waitTimeout,
       flowId,
       flowName,
+      downloadMode,
     })
   }
 

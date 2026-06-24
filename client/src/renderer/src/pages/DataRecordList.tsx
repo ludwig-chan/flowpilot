@@ -17,10 +17,21 @@ interface RecordItem {
   status: 'active' | 'trash'
   tagIds: string[]
   deletedAt?: string
+  runId?: string
   flowName?: string
   sourceUrl?: string
   sourceTitle?: string
   tags: Tag[]
+}
+
+interface AttachmentItem {
+  id: string
+  filename: string
+  fileSize: number
+  createdAt: string
+  sourceUrl?: string
+  ocrStatus?: 'pending' | 'processing' | 'done' | 'failed'
+  ocrText?: string
 }
 
 interface DataRecordListProps {
@@ -45,6 +56,14 @@ function displayFieldKey(key: string, aliases?: Record<string, string>): string 
 function formatDate(value: string): string {
   if (!value) return '-'
   return value
+}
+
+function formatFileSize(bytes: number): string {
+  if (bytes === 0) return '0 B'
+  const k = 1024
+  const sizes = ['B', 'KB', 'MB', 'GB']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
 }
 
 function isScreenshotId(value: string): boolean {
@@ -84,6 +103,8 @@ export default function DataRecordList({
   const [ocrLoading, setOcrLoading] = useState<Record<string, boolean>>({})
   const [ocrDialog, setOcrDialog] = useState<{ text: string; label: string } | null>(null)
   const [tagEditRecord, setTagEditRecord] = useState<RecordItem | null>(null)
+  const [attachments, setAttachments] = useState<AttachmentItem[]>([])
+  const [attachmentsLoading, setAttachmentsLoading] = useState(false)
   const queuedOcrIdsRef = useRef<Set<string>>(new Set())
 
   const recordScreenshotIds = React.useMemo(
@@ -212,6 +233,20 @@ export default function DataRecordList({
       }
     }
     setThumbnails(newThumbs)
+
+    // 加载附件
+    setAttachments([])
+    if (item.runId) {
+      setAttachmentsLoading(true)
+      try {
+        const atts = await window.api.listAttachmentsByRunId(item.runId)
+        setAttachments(atts)
+      } catch {
+        // 忽略加载失败
+      } finally {
+        setAttachmentsLoading(false)
+      }
+    }
   }
 
   // ── 详情弹窗的上/下条导航 ──
@@ -224,6 +259,25 @@ export default function DataRecordList({
 
   const goToPrev = () => { if (prevRecord) void openDetail(prevRecord) }
   const goToNext = () => { if (nextRecord) void openDetail(nextRecord) }
+
+  const handleDownloadAttachment = async (att: AttachmentItem): Promise<void> => {
+    try {
+      const result = await window.api.getAttachmentFile(att.id)
+      if (!result) {
+        showToast('附件文件不存在', 'error')
+        return
+      }
+      // 创建下载链接
+      const link = document.createElement('a')
+      link.href = result.dataUrl
+      link.download = result.filename
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+    } catch (err) {
+      showToast(`下载失败：${(err as Error).message}`, 'error')
+    }
+  }
 
   const renderFieldPreview = (item: RecordItem): React.ReactNode => {
     const entries = Object.entries(item.fields)
@@ -448,6 +502,50 @@ export default function DataRecordList({
                   })}
                 </tbody>
               </table>
+
+              {/* 附件区域 */}
+              {detailRecord.runId && (
+                <div className="detail-attachments-section">
+                  <div className="detail-attachments-header">
+                    <span>附件</span>
+                    {attachments.length > 0 && (
+                      <span className="detail-attachments-count">{attachments.length}</span>
+                    )}
+                  </div>
+                  {attachmentsLoading ? (
+                    <div className="detail-attachments-loading">加载中...</div>
+                  ) : attachments.length === 0 ? (
+                    <div className="detail-attachments-empty">暂无附件</div>
+                  ) : (
+                    <div className="detail-attachments-list">
+                      {attachments.map((att) => (
+                        <div key={att.id} className="detail-attachment-item">
+                          <div className="detail-attachment-info">
+                            <span className="detail-attachment-name">{att.filename}</span>
+                            <span className="detail-attachment-size">
+                              {formatFileSize(att.fileSize)}
+                            </span>
+                            {att.ocrStatus === 'done' && att.ocrText ? (
+                              <button
+                                className="ocr-view-btn"
+                                onClick={() => setOcrDialog({ text: att.ocrText!, label: att.filename })}
+                              >
+                                查看OCR结果
+                              </button>
+                            ) : null}
+                          </div>
+                          <button
+                            className="btn btn-secondary btn-sm"
+                            onClick={() => handleDownloadAttachment(att)}
+                          >
+                            下载
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
 
             </div>
           </div>

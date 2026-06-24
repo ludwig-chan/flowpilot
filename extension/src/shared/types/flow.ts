@@ -112,6 +112,15 @@ export interface FlowTrigger {
   delay?:        number
 }
 
+// ─── 下载处理模式 ──────────────────────────────────────────────────────────────
+export type DownloadMode = 'ignore' | 'capture' | 'keep_and_capture'
+
+export const DOWNLOAD_MODE_OPTIONS: { value: DownloadMode; label: string; desc: string }[] = [
+  { value: 'ignore',            label: '忽略',       desc: '按浏览器默认行为下载，不额外处理' },
+  { value: 'capture',           label: '捕获为附件', desc: '拦截下载，保存到客户端并关联数据记录' },
+  { value: 'keep_and_capture',  label: '保留并捕获', desc: '正常下载的同时，也保存一份附件关联数据记录' },
+]
+
 // ─── 运行时状态 ────────────────────────────────────────────────────────────────
 export type TaskStatus = 'idle' | 'running' | 'done' | 'error'
 

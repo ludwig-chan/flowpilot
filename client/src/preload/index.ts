@@ -38,6 +38,12 @@ const api = {
   saveFilterPreset: (name: string, filterState: unknown) =>
     ipcRenderer.invoke('save-filter-preset', name, filterState),
   deleteFilterPreset: (id: string) => ipcRenderer.invoke('delete-filter-preset', id),
+  listAttachments: () => ipcRenderer.invoke('list-attachments'),
+  listAttachmentsByRunId: (runId: string) => ipcRenderer.invoke('list-attachments-by-run-id', runId),
+  getAttachmentFile: (id: string) => ipcRenderer.invoke('get-attachment-file', id),
+  trashAttachment: (id: string) => ipcRenderer.invoke('trash-attachment', id),
+  restoreAttachment: (id: string) => ipcRenderer.invoke('restore-attachment', id),
+  deleteAttachmentPermanently: (id: string) => ipcRenderer.invoke('delete-attachment-permanently', id),
   onScreenshotsUpdated: (callback: () => void) => {
     const listener = (): void => callback()
     ipcRenderer.on('screenshots-updated', listener)
@@ -52,6 +58,11 @@ const api = {
     const listener = (): void => callback()
     ipcRenderer.on('data-records-updated', listener)
     return () => ipcRenderer.removeListener('data-records-updated', listener)
+  },
+  onAttachmentsUpdated: (callback: () => void) => {
+    const listener = (): void => callback()
+    ipcRenderer.on('attachments-updated', listener)
+    return () => ipcRenderer.removeListener('attachments-updated', listener)
   }
 }
 

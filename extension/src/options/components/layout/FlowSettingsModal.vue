@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import type { LocalFlow } from '../stores/useFlowStore'
-import type { StepDelayLevel, FlowTrigger, TriggerType, UrlMatchMode } from '@shared/types/flow'
-import { STEP_DELAY_PRESETS } from '@shared/types/flow'
+import type { StepDelayLevel, FlowTrigger, TriggerType, UrlMatchMode, DownloadMode } from '@shared/types/flow'
+import { STEP_DELAY_PRESETS, DOWNLOAD_MODE_OPTIONS } from '@shared/types/flow'
 import RangeInput from '@shared/components/RangeInput.vue'
 
 const props = defineProps<{ flow: LocalFlow }>()
@@ -14,10 +14,12 @@ const emit = defineEmits<{
     stepDelayLevel: StepDelayLevel
     stepDelayRange: [number, number] | undefined
     trigger:        FlowTrigger | undefined
+    downloadMode:   DownloadMode
   }): void
 }>()
 
 const waitTimeout    = ref(props.flow.waitTimeout ?? 10000)
+const downloadMode   = ref<DownloadMode>(props.flow.downloadMode ?? 'ignore')
 
 const triggerEnabled  = ref(props.flow.trigger?.enabled ?? false)
 const triggerType     = ref<TriggerType>(props.flow.trigger?.type ?? 'url_match')
@@ -73,6 +75,7 @@ function onConfirm() {
     stepDelayLevel: stepDelayLevel.value,
     stepDelayRange: isRangeEmpty.value ? undefined : stepDelayRange.value as [number, number],
     trigger,
+    downloadMode:   downloadMode.value,
   })
 }
 </script>
@@ -160,6 +163,17 @@ function onConfirm() {
           <button v-if="!isRangeEmpty" class="delay-clear" title="清空间隔" @click="clearRange">✕</button>
         </div>
         <span v-if="isRangeEmpty" class="delay-warn">⚠ 不设置间隔可能被风控识别</span>
+      </div>
+
+      <!-- 下载处理 -->
+      <div class="fs-modal__field">
+        <div class="fs-modal__row">
+          <span class="fs-modal__label">下载处理：</span>
+          <select class="trigger-select" v-model="downloadMode">
+            <option v-for="opt in DOWNLOAD_MODE_OPTIONS" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+          </select>
+        </div>
+        <span class="fs-modal__hint">{{ DOWNLOAD_MODE_OPTIONS.find(o => o.value === downloadMode)?.desc }}</span>
       </div>
 
     </div>

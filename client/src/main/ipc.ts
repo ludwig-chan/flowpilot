@@ -26,6 +26,14 @@ import {
   saveFilterPreset,
   deleteFilterPreset,
 } from './dataRecordLibrary'
+import {
+  listAttachments,
+  listAttachmentsByRunId,
+  getAttachmentFile,
+  trashAttachment,
+  restoreAttachment,
+  deleteAttachmentPermanently,
+} from './attachmentLibrary'
 import { recognizeText } from './ocrEngine'
 
 const BROWSER_CONFIGS: Record<string, { name: string; paths: string[]; extPage: string }> = {
@@ -159,6 +167,31 @@ export function registerIpcHandlers(
 
   ipcMain.handle('delete-filter-preset', (_event, id: string) => {
     return deleteFilterPreset(id)
+  })
+
+  // 附件管理
+  ipcMain.handle('list-attachments', () => {
+    return listAttachments()
+  })
+
+  ipcMain.handle('list-attachments-by-run-id', (_event, runId: string) => {
+    return listAttachmentsByRunId(runId)
+  })
+
+  ipcMain.handle('get-attachment-file', (_event, id: string) => {
+    return getAttachmentFile(id)
+  })
+
+  ipcMain.handle('trash-attachment', (_event, id: string) => {
+    return trashAttachment(id)
+  })
+
+  ipcMain.handle('restore-attachment', (_event, id: string) => {
+    return restoreAttachment(id)
+  })
+
+  ipcMain.handle('delete-attachment-permanently', (_event, id: string) => {
+    return deleteAttachmentPermanently(id)
   })
 
   // 检测已安装的浏览器

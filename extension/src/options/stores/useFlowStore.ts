@@ -5,7 +5,7 @@
  */
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import type { FlowStep, StepDelayLevel, FlowTrigger } from '@shared/types/flow'
+import type { FlowStep, StepDelayLevel, FlowTrigger, DownloadMode } from '@shared/types/flow'
 import { genId } from '@shared/utils/genId'
 import { toLocalTimeString } from '@shared/utils/time'
 import { BUILTIN_PRESETS } from '@/presets/index'
@@ -20,6 +20,7 @@ export interface LocalFlow {
   waitTimeout?:     number                // 等待元素出现的默认超时 ms（默认 10000）
   pinnedInMenu?:    boolean               // 是否钉选到悬浮按钮菜单
   trigger?:         FlowTrigger           // 自动触发配置
+  downloadMode?:    DownloadMode          // 下载处理模式（默认 ignore）
   targetTabId?:     number                // 上次运行绑定的目标 Tab ID
   builtin?:         boolean               // 内置预设标记（只读）
   customized?:      boolean               // 内置预设已保存本地覆盖
@@ -103,6 +104,7 @@ function stripBuiltinMarkers(nodes: FlowNode[]): FlowNode[] {
       waitTimeout:    flow.waitTimeout,
       pinnedInMenu:   flow.pinnedInMenu,
       trigger:        flow.trigger,
+      downloadMode:   flow.downloadMode,
     } as LocalFlow
   })
 }
@@ -187,6 +189,7 @@ function migrateBuiltinPresetOverrides(raw: unknown): Record<string, LocalFlow> 
       waitTimeout:    typeof item.waitTimeout === 'number' ? item.waitTimeout : undefined,
       pinnedInMenu:   item.pinnedInMenu as boolean | undefined,
       trigger:        item.trigger as FlowTrigger | undefined,
+      downloadMode:   item.downloadMode as DownloadMode | undefined,
     }
   }
   return result
@@ -474,6 +477,7 @@ export const useFlowStore = defineStore('flows', () => {
       waitTimeout:    flow.waitTimeout,
       pinnedInMenu:   flow.pinnedInMenu,
       trigger:        flow.trigger,
+      downloadMode:   flow.downloadMode,
     }
     await persistBuiltinPresetOverrides()
     const updated = findNode(displayTree.value, flow.id)

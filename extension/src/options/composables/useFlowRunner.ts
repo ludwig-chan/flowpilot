@@ -57,6 +57,7 @@ export function useFlowRunner(
       editingFlow.value.waitTimeout,
       editingFlow.value.id,
       editingFlow.value.name,
+      editingFlow.value.downloadMode,
     )
   }
 

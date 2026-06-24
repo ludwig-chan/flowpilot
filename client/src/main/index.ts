@@ -16,6 +16,7 @@ import {
   type ScreenshotSaveMetadata
 } from './screenshotLibrary'
 import { recordDataRecord } from './dataRecordLibrary'
+import { recordAttachment } from './attachmentLibrary'
 
 const pad2 = (n: number) => String(n).padStart(2, '0')
 function localTimeString(): string {
@@ -333,6 +334,46 @@ function createScreenshotBridgeServer(): Server {
           mainWindow.webContents.send('data-records-updated')
         }
         sendJson(res, 200, { ok: true, id: item.id }, originValue)
+      } catch (err) {
+        const message = (err as Error).message
+        sendJson(res, message === '请求体过大' ? 413 : 400, { ok: false, error: message }, originValue)
+      }
+      return
+    }
+
+    // POST /attachments - 保存附件（从浏览器下载目录移动或复制）
+    if (req.method === 'POST' && url.pathname === '/attachments') {
+      try {
+        const body = await readJsonBody(req) as {
+          filePath?: unknown
+          filename?: unknown
+          mode?: unknown
+          runId?: unknown
+          runStartedAt?: unknown
+          flowId?: unknown
+          flowName?: unknown
+          sourceUrl?: unknown
+        }
+        if (typeof body.filePath !== 'string') {
+          sendJson(res, 400, { ok: false, error: 'filePath 必须为字符串' }, originValue)
+          return
+        }
+        if (typeof body.filename !== 'string') {
+          sendJson(res, 400, { ok: false, error: 'filename 必须为字符串' }, originValue)
+          return
+        }
+        const mode = body.mode === 'capture' ? 'capture' : 'keep_and_capture'
+        const item = recordAttachment(body.filePath, body.filename, mode, {
+          runId: typeof body.runId === 'string' ? body.runId : undefined,
+          runStartedAt: typeof body.runStartedAt === 'string' ? body.runStartedAt : undefined,
+          flowId: typeof body.flowId === 'string' ? body.flowId : undefined,
+          flowName: typeof body.flowName === 'string' ? body.flowName : undefined,
+          sourceUrl: typeof body.sourceUrl === 'string' ? body.sourceUrl : undefined,
+        })
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.webContents.send('attachments-updated')
+        }
+        sendJson(res, 200, { ok: true, id: item.id, filename: item.filename }, originValue)
       } catch (err) {
         const message = (err as Error).message
         sendJson(res, message === '请求体过大' ? 413 : 400, { ok: false, error: message }, originValue)

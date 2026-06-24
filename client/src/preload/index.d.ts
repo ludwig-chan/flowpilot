@@ -101,6 +101,32 @@ interface DataRecordListResult {
   tags: DataRecordTag[]
 }
 
+interface AttachmentItem {
+  id: string
+  filename: string
+  storedFilename: string
+  filePath: string
+  fileSize: number
+  mimeType?: string
+  createdAt: string
+  status: 'active' | 'trash'
+  deletedAt?: string
+  runId?: string
+  runStartedAt?: string
+  flowId?: string
+  flowName?: string
+  sourceUrl?: string
+  ocrStatus?: 'pending' | 'processing' | 'done' | 'failed'
+  ocrText?: string
+  ocrAt?: string
+}
+
+interface AttachmentFileResult {
+  id: string
+  filename: string
+  dataUrl: string
+}
+
 interface FlowPilotAPI {
   getConfig: () => Promise<AppConfig>
   saveConfig: (config: AppConfig) => Promise<boolean>
@@ -137,9 +163,16 @@ interface FlowPilotAPI {
   listFilterPresets: () => Promise<DataRecordFilterPreset[]>
   saveFilterPreset: (name: string, filterState: unknown) => Promise<DataRecordFilterPreset>
   deleteFilterPreset: (id: string) => Promise<boolean>
+  listAttachments: () => Promise<AttachmentItem[]>
+  listAttachmentsByRunId: (runId: string) => Promise<AttachmentItem[]>
+  getAttachmentFile: (id: string) => Promise<AttachmentFileResult | null>
+  trashAttachment: (id: string) => Promise<boolean>
+  restoreAttachment: (id: string) => Promise<boolean>
+  deleteAttachmentPermanently: (id: string) => Promise<boolean>
   onScreenshotsUpdated: (callback: () => void) => () => void
   onAutoClickerStatusChanged: (callback: (status: AutoClickerStatus) => void) => () => void
   onDataRecordsUpdated: (callback: () => void) => () => void
+  onAttachmentsUpdated: (callback: () => void) => () => void
 }
 
 interface AutoClickerStatus {
