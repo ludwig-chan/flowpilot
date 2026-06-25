@@ -17,6 +17,7 @@ import {
 } from './screenshotLibrary'
 import { recordDataRecord } from './dataRecordLibrary'
 import { recordAttachment } from './attachmentLibrary'
+import { processAttachment } from './attachmentOcr'
 
 const pad2 = (n: number) => String(n).padStart(2, '0')
 function localTimeString(): string {
@@ -374,6 +375,13 @@ function createScreenshotBridgeServer(): Server {
           mainWindow.webContents.send('attachments-updated')
         }
         sendJson(res, 200, { ok: true, id: item.id, filename: item.filename }, originValue)
+
+        // 异步 OCR 识别：不阻塞 HTTP 响应，完成后通知前端刷新
+        processAttachment(item).then(() => {
+          if (mainWindow && !mainWindow.isDestroyed()) {
+            mainWindow.webContents.send('attachments-updated')
+          }
+        })
       } catch (err) {
         const message = (err as Error).message
         sendJson(res, message === '请求体过大' ? 413 : 400, { ok: false, error: message }, originValue)

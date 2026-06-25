@@ -51,3 +51,36 @@ export async function recognizeText(dataUrl: string): Promise<string> {
 
   throw new Error('没有可用的 OCR 引擎：PaddleOCR 不可用，Windows OCR 不可用')
 }
+
+/**
+ * 统一 OCR 识别入口（Buffer 版本）。
+ * 适用于已有原始图片 Buffer 的场景（如 PDF 渲染、图片文件读取）。
+ * 自动选择最优引擎：PaddleOCR（主） → Windows OCR（备用）。
+ *
+ * @param imageBuffer 原始图片 Buffer（PNG / JPEG 等）
+ * @returns 识别出的文本
+ */
+export async function recognizeTextFromBuffer(imageBuffer: Buffer): Promise<string> {
+  // 步骤1: 尝试 PaddleOCR（使用原图，不做预处理）
+  if (isPaddleOcrAvailable()) {
+    try {
+      const text = await recognizeWithPaddleOcr(imageBuffer)
+      console.log('[OCR] PaddleOCR 识别成功')
+      return text
+    } catch (err) {
+      console.warn('[OCR] PaddleOCR 识别失败，降级到 Windows OCR:', (err as Error).message)
+    }
+  }
+
+  // 步骤2: 降级到 Windows OCR（使用预处理后的图片）
+  if (isWindowsOcrAvailable()) {
+    const base64 = imageBuffer.toString('base64')
+    const dataUrl = `data:image/png;base64,${base64}`
+    const preprocessed = await preprocessImageForOcr(dataUrl)
+    const text = await recognizeWithWindowsOcr(preprocessed)
+    console.log('[OCR] Windows OCR 识别成功（备用引擎）')
+    return text
+  }
+
+  throw new Error('没有可用的 OCR 引擎：PaddleOCR 不可用，Windows OCR 不可用')
+}
