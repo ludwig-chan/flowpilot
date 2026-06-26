@@ -26,6 +26,23 @@ interface PendingDownload {
   filename: string
 }
 
+export interface DownloadWaitResult {
+  ok: boolean
+  id?: string
+  filename?: string
+  filePath?: string
+  fileSize?: number
+  sourceUrl?: string
+  error?: string
+}
+
+interface DownloadWaiter {
+  id: string
+  config?: FlowDownloadConfig
+  resolve: (result: DownloadWaitResult) => void
+  timer: ReturnType<typeof setTimeout>
+}
+
 // ─── 状态管理 ──────────────────────────────────────────────────────────────────
 
 /** tabId → 流程下载配置 */
@@ -33,6 +50,9 @@ const flowDownloadConfigs = new Map<number, FlowDownloadConfig>()
 
 /** downloadId → 待处理的下载信息 */
 const pendingDownloads = new Map<number, PendingDownload>()
+
+/** 一次性下载等待器队列：流程点击前注册，后续第一个完成的下载会归属给最早等待器 */
+const downloadWaiters: DownloadWaiter[] = []
 
 // ─── 本地 HTTP 桥接（复用 background/index.ts 的逻辑）──────────────────────────
 
@@ -105,6 +125,29 @@ export function clearFlowDownloadConfig(tabId: number): void {
  */
 function getFlowDownloadConfig(tabId: number): FlowDownloadConfig | undefined {
   return flowDownloadConfigs.get(tabId)
+}
+
+export function waitForNextDownload(
+  timeout = 30_000,
+  config?: FlowDownloadConfig,
+): Promise<DownloadWaitResult> {
+  return new Promise((resolve) => {
+    const id = `dw_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`
+    const timer = setTimeout(() => {
+      const idx = downloadWaiters.findIndex(waiter => waiter.id === id)
+      if (idx >= 0) downloadWaiters.splice(idx, 1)
+      resolve({ ok: false, error: `等待下载超时（${timeout}ms）` })
+    }, timeout)
+
+    downloadWaiters.push({ id, config, resolve, timer })
+    console.log(`[DownloadCapture] 注册下载等待器: id=${id} timeout=${timeout}`)
+  })
+}
+
+function shiftDownloadWaiter(): DownloadWaiter | undefined {
+  const waiter = downloadWaiters.shift()
+  if (waiter) clearTimeout(waiter.timer)
+  return waiter
 }
 
 // ─── 发送附件到 Electron ───────────────────────────────────────────────────────
@@ -224,29 +267,42 @@ export function initDownloadCapture(): void {
         const filePath = downloadItem.filename
         const filename = filePath.split(/[\\/]/).pop() ?? pending.filename ?? 'unknown'
         const mode = GLOBAL_CAPTURE_MODE
+        const waiter = shiftDownloadWaiter()
+        const attachmentConfig = waiter?.config ?? pending.config
 
         console.log(
-          `[DownloadCapture] 发送附件到 Electron: filePath=${filePath} mode=${mode} tabId=${pending.tabId}`,
+          `[DownloadCapture] 发送附件到 Electron: filePath=${filePath} mode=${mode} tabId=${pending.tabId} waiter=${waiter?.id ?? 'none'}`,
         )
 
         const result = await sendAttachmentToClient(
           filePath,
           filename,
           mode,
-          pending.config,
+          attachmentConfig,
           pending.url,
         )
 
         if (result.ok) {
           console.log(`[DownloadCapture] 附件保存成功: id=${result.id}`)
+          waiter?.resolve({
+            ok: true,
+            id: result.id,
+            filename,
+            filePath,
+            fileSize: downloadItem.fileSize || downloadItem.totalBytes,
+            sourceUrl: pending.url,
+          })
         } else {
           console.error(`[DownloadCapture] 附件保存失败: ${result.error}`)
+          waiter?.resolve({ ok: false, error: result.error ?? '附件保存失败' })
         }
 
         pendingDownloads.delete(downloadId)
       } else if (newState === 'interrupted') {
         // 下载被中断（用户取消或错误）
         console.warn(`[DownloadCapture] 下载中断: downloadId=${downloadId} error=${delta.error?.current}`)
+        const waiter = shiftDownloadWaiter()
+        waiter?.resolve({ ok: false, error: `下载中断：${delta.error?.current ?? 'unknown'}` })
         pendingDownloads.delete(downloadId)
       }
     }

@@ -129,6 +129,15 @@ export interface ClearLoopHighlightsMessage {
   type: 'CLEAR_LOOP_HIGHLIGHTS'
 }
 
+export interface WaitForNextDownloadMessage {
+  type: 'WAIT_FOR_NEXT_DOWNLOAD'
+  timeout?: number
+  runId?: string
+  runStartedAt?: string
+  flowId?: string
+  flowName?: string
+}
+
 // ─── 联合类型 ──────────────────────────────────────────────────────────────────
 export type ExtensionMessage =
   | FlowLogMessage
@@ -148,6 +157,7 @@ export type ExtensionMessage =
   | SmartLoopDebugMessage
   | HighlightLoopCandidatesMessage
   | ClearLoopHighlightsMessage
+  | WaitForNextDownloadMessage
 
 // ─── 消息类型常量（统一所有消息名，避免散落的字符串字面量）─────────────────────────
 export const MSG = {
@@ -181,6 +191,7 @@ export const MSG = {
   FLOW_LOG:                         'FLOW_LOG',
   FLOW_DONE:                        'FLOW_DONE',
   FLOW_ERROR:                       'FLOW_ERROR',
+  WAIT_FOR_NEXT_DOWNLOAD:           'WAIT_FOR_NEXT_DOWNLOAD',
   // background handlers（options/content → background）
   GET_LOGS:                         'GET_LOGS',
   CLEAR_LOGS:                       'CLEAR_LOGS',

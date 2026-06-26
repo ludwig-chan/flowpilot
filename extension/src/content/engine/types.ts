@@ -12,6 +12,7 @@ export interface RunMetadata {
 /** 运行上下文（替代模块级全局变量，支持并发独立控制） */
 export interface RunContext {
   variables: Record<string, string>
+  attachmentVariables: Record<string, { id: string; filename?: string; fileSize?: number; sourceUrl?: string; source: 'download' | 'screenshot' }>
   onLog: (text: string) => void
   onStep?: (event: StepEvent) => void
   waitTimeout: number

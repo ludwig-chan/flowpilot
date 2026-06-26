@@ -7,7 +7,7 @@ import { genId } from '@shared/utils/genId'
 import { toLocalTimeString } from '@shared/utils/time'
 import { MSG } from '@shared/types/message'
 import { BUILTIN_PRESETS } from '@/presets/index'
-import { initDownloadCapture, setFlowDownloadConfig, clearFlowDownloadConfig } from './downloadCapture'
+import { initDownloadCapture, setFlowDownloadConfig, clearFlowDownloadConfig, waitForNextDownload } from './downloadCapture'
 
 const MAX_LOGS = 500
 const bgLogs: string[] = []
@@ -218,6 +218,18 @@ function handleSaveScreenshot(msg: any, _s: any, sr: (r: unknown) => void): true
   return true
 }
 
+function handleWaitForNextDownload(msg: any, _s: any, sr: (r?: unknown) => void): true {
+  const timeout = typeof msg.timeout === 'number' ? msg.timeout : 30_000
+  waitForNextDownload(timeout, {
+    downloadMode: 'keep_and_capture',
+    runId: typeof msg.runId === 'string' ? msg.runId : genId('run'),
+    runStartedAt: typeof msg.runStartedAt === 'string' ? msg.runStartedAt : toLocalTimeString(),
+    flowId: typeof msg.flowId === 'string' ? msg.flowId : undefined,
+    flowName: typeof msg.flowName === 'string' ? msg.flowName : undefined,
+  }).then(sr).catch(err => sr({ ok: false, error: (err as Error).message }))
+  return true
+}
+
 function handleSaveDataRecord(msg: any, _s: any, sr: (r?: unknown) => void): true {
   const fields: Record<string, string> = msg.fields ?? {}
   console.log('[SAVE_DATA_RECORD] 保存数据记录，字段数：', Object.keys(fields).length)
@@ -273,6 +285,7 @@ const MSG_HANDLERS: Record<string, MsgHandler> = {
   [MSG.SET_ACTIVE_TAB]:    handleSetActiveTab,
   [MSG.GET_ACTIVE_TAB]:    handleGetActiveTab,
   [MSG.SAVE_SCREENSHOT]:   handleSaveScreenshot,
+  [MSG.WAIT_FOR_NEXT_DOWNLOAD]: handleWaitForNextDownload,
   [MSG.SAVE_DATA_RECORD]: handleSaveDataRecord,
 }
 

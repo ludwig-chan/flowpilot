@@ -40,6 +40,7 @@ export function runFlow(
 
     const ctx: RunContext = {
       variables,
+      attachmentVariables: {},
       onLog,
       onStep,
       waitTimeout: waitTimeout ?? 10000,

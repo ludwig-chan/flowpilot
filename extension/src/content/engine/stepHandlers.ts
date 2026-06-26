@@ -404,9 +404,58 @@ async function executeLoopItemAction(
   }
 }
 
-async function handleClick(step: FlowStep, _ctx: RunContext, resolve: ResolveFn): Promise<void> {
+interface DownloadWaitResult {
+  ok?: boolean
+  id?: string
+  filename?: string
+  filePath?: string
+  fileSize?: number
+  sourceUrl?: string
+  error?: string
+}
+
+async function handleClick(step: FlowStep, ctx: RunContext, resolve: ResolveFn): Promise<void> {
   const el = await resolve(step.selector!) as HTMLElement
+
+  if (!step.captureDownload) {
+    await simulateClickAsync(el)
+    return
+  }
+
+  const varKey = step.downloadVarName?.trim()
+  if (!varKey) {
+    ctx.onLog('  [下载] 已标记下载点击，但未填写下载变量名')
+    await simulateClickAsync(el)
+    return
+  }
+
+  const timeout = step.downloadWaitTimeout ?? 30_000
+  ctx.onLog(`  等待下载：{{${varKey}}}，超时 ${timeout}ms`)
+  const downloadPromise = chrome.runtime.sendMessage({
+    type: MSG.WAIT_FOR_NEXT_DOWNLOAD,
+    timeout,
+    runId: ctx.runId,
+    runStartedAt: ctx.runStartedAt,
+    flowId: ctx.flowId,
+    flowName: ctx.flowName,
+  }) as Promise<DownloadWaitResult | undefined>
+
   await simulateClickAsync(el)
+
+  const result = await downloadPromise
+  if (!result?.ok || !result.id) {
+    throw new Error(result?.error ?? '等待下载失败')
+  }
+
+  ctx.variables[varKey] = result.id
+  ctx.attachmentVariables[varKey] = {
+    id: result.id,
+    filename: result.filename,
+    fileSize: result.fileSize,
+    sourceUrl: result.sourceUrl,
+    source: 'download',
+  }
+  ctx.onLog(`  下载附件变量 → {{${varKey}}}（${result.filename ?? result.id}）`)
 }
 
 async function handleFocus(step: FlowStep, _ctx: RunContext, resolve: ResolveFn): Promise<void> {
