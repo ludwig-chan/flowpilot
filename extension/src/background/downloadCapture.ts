@@ -1,11 +1,11 @@
 /**
  * downloadCapture.ts
- * 下载捕获模块：监听流程执行中的下载事件，按配置处理附件
+ * 下载捕获模块：监听下载事件，按配置处理附件
  *
- * 三种模式：
- * - ignore: 不处理，浏览器默认行为
- * - capture: 拦截下载，移动文件到附件目录（不保留原始文件）
- * - keep_and_capture: 复制文件到附件目录（保留原始文件）
+ * 当前验证版策略：
+ * - 全局捕获所有下载
+ * - 统一复制文件到附件目录（保留原始文件）
+ * - 如果下载来自正在运行的流程 tab，则附带流程元数据
  */
 import type { DownloadMode } from '@shared/types/flow'
 
@@ -20,7 +20,8 @@ interface FlowDownloadConfig {
 }
 
 interface PendingDownload {
-  config: FlowDownloadConfig
+  config?: FlowDownloadConfig
+  tabId: number
   url: string
   filename: string
 }
@@ -38,6 +39,7 @@ const pendingDownloads = new Map<number, PendingDownload>()
 const SCREENSHOT_BRIDGE_HOST = '127.0.0.1'
 const SCREENSHOT_BRIDGE_PORTS = Array.from({ length: 11 }, (_, i) => 17365 + i)
 const SCREENSHOT_BRIDGE_TIMEOUT = 2000
+const GLOBAL_CAPTURE_MODE = 'keep_and_capture' as const
 
 async function fetchWithTimeout(url: string, init: RequestInit = {}, timeout = SCREENSHOT_BRIDGE_TIMEOUT): Promise<Response> {
   const controller = new AbortController()
@@ -81,7 +83,7 @@ async function findScreenshotBridge(): Promise<{ port: number; error?: string }>
  */
 export function setFlowDownloadConfig(tabId: number, config: FlowDownloadConfig): void {
   if (config.downloadMode === 'ignore') {
-    // ignore 模式不需要记录
+    // ignore 模式不需要记录流程元数据；全局验证捕获仍会复制下载文件
     flowDownloadConfigs.delete(tabId)
     return
   }
@@ -111,7 +113,7 @@ async function sendAttachmentToClient(
   filePath: string,
   filename: string,
   mode: 'capture' | 'keep_and_capture',
-  config: FlowDownloadConfig,
+  config: FlowDownloadConfig | undefined,
   sourceUrl: string,
 ): Promise<{ ok: boolean; id?: string; error?: string }> {
   try {
@@ -128,10 +130,10 @@ async function sendAttachmentToClient(
         filePath,
         filename,
         mode,
-        runId: config.runId,
-        runStartedAt: config.runStartedAt,
-        flowId: config.flowId,
-        flowName: config.flowName,
+        runId: config?.runId,
+        runStartedAt: config?.runStartedAt,
+        flowId: config?.flowId,
+        flowName: config?.flowName,
         sourceUrl,
       }),
     }, 30_000)
@@ -166,40 +168,32 @@ export function initDownloadCapture(): void {
   isInitialized = true
 
   // ── onCreated：下载任务创建时触发 ─────────────────────────────────────────────
-  // 用于记录需要处理的下载任务
+  // 验证版全局捕获：所有下载都记录，后续完成时复制到附件库
   chrome.downloads.onCreated.addListener((downloadItem) => {
     const tabId = downloadItem.tabId
-    if (tabId < 0) return // tabId=-1 表示非 tab 触发的下载
+    const config = tabId >= 0 ? getFlowDownloadConfig(tabId) : undefined
 
-    const config = getFlowDownloadConfig(tabId)
-    if (!config) return // 不是流程 tab 的下载，忽略
+    console.log(
+      `[DownloadCapture] 全局捕获下载: downloadId=${downloadItem.id} tabId=${tabId} url=${downloadItem.url}`,
+    )
 
-    console.log(`[DownloadCapture] onCreated: downloadId=${downloadItem.id} tabId=${tabId} url=${downloadItem.url}`)
-
-    // 记录待处理的下载
     pendingDownloads.set(downloadItem.id, {
       config,
+      tabId,
       url: downloadItem.url,
       filename: downloadItem.filename,
     })
   })
 
   // ── onDeterminingFilename：文件名决策（同步回调）──────────────────────────────
-  // 注册此监听器后，Chrome 会跳过"下载前询问"弹窗
-  // 我们只是调用 suggest() 放行，让浏览器正常下载
+  // 不修改文件名，只放行浏览器默认下载流程
   chrome.downloads.onDeterminingFilename.addListener((downloadItem, suggest) => {
-    // 检查是否是我们跟踪的下载
     const pending = pendingDownloads.get(downloadItem.id)
-    if (!pending) {
-      // 不是流程下载，直接放行
-      suggest()
-      return
+    if (pending) {
+      pending.filename = downloadItem.filename
+      console.log(`[DownloadCapture] 确认下载文件名: downloadId=${downloadItem.id} filename=${downloadItem.filename}`)
     }
 
-    console.log(`[DownloadCapture] onDeterminingFilename: downloadId=${downloadItem.id} filename=${downloadItem.filename}`)
-
-    // 调用 suggest() 让浏览器用默认文件名和路径保存
-    // 不做任何修改，只是跳过保存弹窗
     suggest()
   })
 
@@ -228,10 +222,12 @@ export function initDownloadCapture(): void {
         }
 
         const filePath = downloadItem.filename
-        const filename = filePath.split(/[\\/]/).pop() ?? 'unknown'
-        const mode = pending.config.downloadMode as 'capture' | 'keep_and_capture'
+        const filename = filePath.split(/[\\/]/).pop() ?? pending.filename ?? 'unknown'
+        const mode = GLOBAL_CAPTURE_MODE
 
-        console.log(`[DownloadCapture] 发送附件到 Electron: filePath=${filePath} mode=${mode}`)
+        console.log(
+          `[DownloadCapture] 发送附件到 Electron: filePath=${filePath} mode=${mode} tabId=${pending.tabId}`,
+        )
 
         const result = await sendAttachmentToClient(
           filePath,
@@ -247,16 +243,6 @@ export function initDownloadCapture(): void {
           console.error(`[DownloadCapture] 附件保存失败: ${result.error}`)
         }
 
-        // capture 模式下，清除下载记录
-        if (mode === 'capture') {
-          try {
-            await chrome.downloads.erase({ id: downloadId })
-            console.log(`[DownloadCapture] 已清除下载记录: downloadId=${downloadId}`)
-          } catch (err) {
-            console.warn(`[DownloadCapture] 清除下载记录失败: ${(err as Error).message}`)
-          }
-        }
-
         pendingDownloads.delete(downloadId)
       } else if (newState === 'interrupted') {
         // 下载被中断（用户取消或错误）
@@ -266,5 +252,5 @@ export function initDownloadCapture(): void {
     }
   })
 
-  console.log('[DownloadCapture] 下载捕获模块已初始化')
+  console.log('[DownloadCapture] 下载捕获模块已初始化（全局复制捕获验证版）')
 }

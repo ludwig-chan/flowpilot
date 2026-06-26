@@ -3,10 +3,11 @@ import Home from './pages/Home'
 import Tutorial from './pages/Tutorial'
 
 import DataRecords from './pages/DataRecords'
+import Captures from './pages/Captures'
 import Settings from './pages/Settings'
 import OcrTest from './pages/OcrTest'
 
-type Page = 'home' | 'tutorial' | 'data-records' | 'settings' | 'ocr-test'
+type Page = 'home' | 'tutorial' | 'data-records' | 'captures' | 'settings' | 'ocr-test'
 
 interface Toast {
   id: number
@@ -48,6 +49,12 @@ export default function App(): React.JSX.Element {
             数据
           </div>
           <div
+            className={`nav-item ${page === 'captures' ? 'active' : ''}`}
+            onClick={() => setPage('captures')}
+          >
+            捕获
+          </div>
+          <div
             className={`nav-item ${page === 'settings' ? 'active' : ''}`}
             onClick={() => setPage('settings')}
           >
@@ -66,6 +73,7 @@ export default function App(): React.JSX.Element {
         {page === 'home' && <Home showToast={showToast} />}
         {page === 'tutorial' && <Tutorial showToast={showToast} />}
         {page === 'data-records' && <DataRecords showToast={showToast} />}
+        {page === 'captures' && <Captures showToast={showToast} />}
         {page === 'settings' && <Settings showToast={showToast} />}
         {page === 'ocr-test' && <OcrTest />}
       </main>
