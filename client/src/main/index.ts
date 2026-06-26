@@ -304,6 +304,7 @@ function createScreenshotBridgeServer(): Server {
       try {
         const body = await readJsonBody(req) as {
           fields?: unknown
+          attachmentFields?: unknown
           fieldAliases?: unknown
           runId?: unknown
           runStartedAt?: unknown
@@ -320,6 +321,21 @@ function createScreenshotBridgeServer(): Server {
         for (const [k, v] of Object.entries(body.fields as Record<string, unknown>)) {
           fields[k] = typeof v === 'string' ? v : String(v ?? '')
         }
+        const attachmentFields: Record<string, { attachmentId: string; filename?: string; fileSize?: number; sourceUrl?: string; source: 'download' | 'screenshot' }> = {}
+        if (body.attachmentFields && typeof body.attachmentFields === 'object' && !Array.isArray(body.attachmentFields)) {
+          for (const [k, raw] of Object.entries(body.attachmentFields as Record<string, unknown>)) {
+            if (!raw || typeof raw !== 'object' || Array.isArray(raw)) continue
+            const item = raw as Record<string, unknown>
+            if (typeof item.attachmentId !== 'string') continue
+            attachmentFields[k] = {
+              attachmentId: item.attachmentId,
+              filename: typeof item.filename === 'string' ? item.filename : undefined,
+              fileSize: typeof item.fileSize === 'number' ? item.fileSize : undefined,
+              sourceUrl: typeof item.sourceUrl === 'string' ? item.sourceUrl : undefined,
+              source: item.source === 'screenshot' ? 'screenshot' : 'download',
+            }
+          }
+        }
         const item = recordDataRecord(fields, {
           runId: typeof body.runId === 'string' ? body.runId : undefined,
           runStartedAt: typeof body.runStartedAt === 'string' ? body.runStartedAt : undefined,
@@ -330,6 +346,7 @@ function createScreenshotBridgeServer(): Server {
           fieldAliases: typeof body.fieldAliases === 'object' && body.fieldAliases !== null && !Array.isArray(body.fieldAliases)
             ? body.fieldAliases as Record<string, string>
             : undefined,
+          attachmentFields: Object.keys(attachmentFields).length ? attachmentFields : undefined,
         })
         if (mainWindow && !mainWindow.isDestroyed()) {
           mainWindow.webContents.send('data-records-updated')

@@ -248,6 +248,7 @@ function handleSaveDataRecord(msg: any, _s: any, sr: (r?: unknown) => void): tru
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           fields,
+          attachmentFields: msg.attachmentFields,
           fieldAliases: msg.fieldAliases,
           runId: msg.runId,
           runStartedAt: msg.runStartedAt,

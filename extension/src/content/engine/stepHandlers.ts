@@ -374,17 +374,30 @@ async function executeLoopItemAction(
       const fieldNames = action.recordFields ?? []
       if (!fieldNames.length) { ctx.onLog('  [跳过] 保存数据：未选择任何变量'); break }
       const fields: Record<string, string> = {}
+      const attachmentFields: Record<string, { attachmentId: string; filename?: string; fileSize?: number; sourceUrl?: string; source: 'download' | 'screenshot' }> = {}
       for (const name of fieldNames) {
+        const attachment = ctx.attachmentVariables[name]
+        if (attachment) {
+          attachmentFields[name] = {
+            attachmentId: attachment.id,
+            filename: attachment.filename,
+            fileSize: attachment.fileSize,
+            sourceUrl: attachment.sourceUrl,
+            source: attachment.source,
+          }
+          continue
+        }
         const val = ctx.variables[name]
         if (val !== undefined) fields[name] = val
         else ctx.onLog(`  变量 {{${name}}} 尚未赋值，跳过`)
       }
-      if (!Object.keys(fields).length) { ctx.onLog('  [跳过] 保存数据：所有变量均未赋值'); break }
-      ctx.onLog(`  保存数据：${Object.keys(fields).join(', ')}`)
+      if (!Object.keys(fields).length && !Object.keys(attachmentFields).length) { ctx.onLog('  [跳过] 保存数据：所有变量均未赋值'); break }
+      ctx.onLog(`  保存数据：${[...Object.keys(fields), ...Object.keys(attachmentFields)].join(', ')}`)
       try {
         const result = await chrome.runtime.sendMessage({
           type: MSG.SAVE_DATA_RECORD,
           fields,
+          attachmentFields,
           runId: ctx.runId,
           runStartedAt: ctx.runStartedAt,
           flowId: ctx.flowId,
@@ -741,7 +754,19 @@ async function handleSaveData(
   if (!fieldNames.length) { onLog('  [跳过] 保存数据：未选择任何变量'); return }
 
   const fields: Record<string, string> = {}
+  const attachmentFields: Record<string, { attachmentId: string; filename?: string; fileSize?: number; sourceUrl?: string; source: 'download' | 'screenshot' }> = {}
   for (const name of fieldNames) {
+    const attachment = ctx.attachmentVariables[name]
+    if (attachment) {
+      attachmentFields[name] = {
+        attachmentId: attachment.id,
+        filename: attachment.filename,
+        fileSize: attachment.fileSize,
+        sourceUrl: attachment.sourceUrl,
+        source: attachment.source,
+      }
+      continue
+    }
     const val = ctx.variables[name]
     if (val !== undefined) {
       fields[name] = val
@@ -750,14 +775,15 @@ async function handleSaveData(
     }
   }
 
-  if (!Object.keys(fields).length) { onLog('  [跳过] 保存数据：所有变量均未赋值'); return }
+  if (!Object.keys(fields).length && !Object.keys(attachmentFields).length) { onLog('  [跳过] 保存数据：所有变量均未赋值'); return }
 
-  onLog(`  保存数据：${Object.keys(fields).join(', ')}`)
+  onLog(`  保存数据：${[...Object.keys(fields), ...Object.keys(attachmentFields)].join(', ')}`)
 
   try {
     const result = await chrome.runtime.sendMessage({
       type: MSG.SAVE_DATA_RECORD,
       fields,
+      attachmentFields,
       fieldAliases: step.recordFieldAliases,
       runId: ctx.runId,
       runStartedAt: ctx.runStartedAt,

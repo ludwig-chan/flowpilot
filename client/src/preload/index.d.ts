@@ -79,10 +79,19 @@ interface DataRecordFilterPreset {
   filterState: unknown
 }
 
+interface DataRecordAttachmentField {
+  attachmentId: string
+  filename?: string
+  fileSize?: number
+  sourceUrl?: string
+  source: 'download' | 'screenshot'
+}
+
 interface DataRecordItem {
   id: string
   createdAt: string
   fields: Record<string, string>
+  attachmentFields?: Record<string, DataRecordAttachmentField>
   fieldAliases?: Record<string, string>
   status: 'active' | 'trash'
   tagIds: string[]

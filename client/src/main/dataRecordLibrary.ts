@@ -19,10 +19,19 @@ export interface DataRecordTag {
   updatedAt: string
 }
 
+export interface DataRecordAttachmentField {
+  attachmentId: string
+  filename?: string
+  fileSize?: number
+  sourceUrl?: string
+  source: 'download' | 'screenshot'
+}
+
 export interface DataRecordItem {
   id: string
   createdAt: string
   fields: Record<string, string>
+  attachmentFields?: Record<string, DataRecordAttachmentField>
   fieldAliases?: Record<string, string>  // 变量别名映射（内部名→别名），用于友好显示
   status: DataRecordStatus
   tagIds: string[]
@@ -57,6 +66,7 @@ export interface DataRecordSaveMetadata {
   sourceUrl?: string
   sourceTitle?: string
   fieldAliases?: Record<string, string>
+  attachmentFields?: Record<string, DataRecordAttachmentField>
 }
 
 export interface DataRecordViewItem extends DataRecordItem {
@@ -102,6 +112,25 @@ function normalizeStringRecord(value: unknown): Record<string, string> | undefin
   )
 }
 
+function normalizeAttachmentFields(value: unknown): Record<string, DataRecordAttachmentField> | undefined {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined
+  const result: Record<string, DataRecordAttachmentField> = {}
+  for (const [key, raw] of Object.entries(value as Record<string, unknown>)) {
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) continue
+    const item = raw as Record<string, unknown>
+    const attachmentId = typeof item.attachmentId === 'string' ? item.attachmentId : undefined
+    if (!attachmentId) continue
+    result[key] = {
+      attachmentId,
+      filename: typeof item.filename === 'string' ? item.filename : undefined,
+      fileSize: typeof item.fileSize === 'number' ? item.fileSize : undefined,
+      sourceUrl: typeof item.sourceUrl === 'string' ? item.sourceUrl : undefined,
+      source: item.source === 'screenshot' ? 'screenshot' : 'download',
+    }
+  }
+  return Object.keys(result).length ? result : undefined
+}
+
 function loadLibrary(): DataRecordLibrary {
   ensureDirs()
   if (!existsSync(LIBRARY_FILE)) return emptyLibrary()
@@ -115,6 +144,7 @@ function loadLibrary(): DataRecordLibrary {
       id:          String(r.id ?? ''),
       createdAt:   String(r.createdAt ?? ''),
       fields:      normalizeStringRecord(r.fields) ?? {},
+      attachmentFields: normalizeAttachmentFields(r.attachmentFields),
       fieldAliases: normalizeStringRecord(r.fieldAliases),
       status:      (r.status === 'active' || r.status === 'trash') ? r.status : 'active',
       tagIds:      Array.isArray(r.tagIds) ? r.tagIds.filter((t): t is string => typeof t === 'string') : [],
@@ -160,6 +190,7 @@ export function recordDataRecord(
     id: newId('dr'),
     createdAt: nowIso(),
     fields,
+    attachmentFields: metadata.attachmentFields,
     fieldAliases: metadata.fieldAliases,
     status: 'active',
     tagIds: [],
