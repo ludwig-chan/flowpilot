@@ -26,6 +26,9 @@ export const useEditorStore = defineStore('editor', () => {
   const editingInitialFoundDelay  = ref<[number, number] | undefined>(undefined)
   const editingInitialLabel       = ref<string | undefined>(undefined)
   const editingInitialVarAlias    = ref<string | undefined>(undefined)
+  const editingInitialCaptureDownload = ref<boolean | undefined>(undefined)
+  const editingInitialDownloadVarName = ref<string | undefined>(undefined)
+  const editingInitialDownloadWaitTimeout = ref<number | undefined>(undefined)
 
   // ── 分支编辑共享状态 ─────────────────────────────────────────────
   const addingToBranch        = ref<{ condStepId: string; branch: 'if' | 'else' } | null>(null)
@@ -42,6 +45,9 @@ export const useEditorStore = defineStore('editor', () => {
       initialWaitTimeout?: number
       initialFoundDelay?: [number, number]
       initialLabel?: string
+      initialCaptureDownload?: boolean
+      initialDownloadVarName?: string
+      initialDownloadWaitTimeout?: number
     } = {},
   ) {
     actionModalEl.value = el
@@ -51,6 +57,9 @@ export const useEditorStore = defineStore('editor', () => {
     if (opts.initialWaitTimeout !== undefined) editingInitialWaitTimeout.value = opts.initialWaitTimeout
     if (opts.initialFoundDelay !== undefined)  editingInitialFoundDelay.value  = opts.initialFoundDelay
     if (opts.initialLabel !== undefined)       editingInitialLabel.value       = opts.initialLabel
+    if (opts.initialCaptureDownload !== undefined) editingInitialCaptureDownload.value = opts.initialCaptureDownload
+    if (opts.initialDownloadVarName !== undefined) editingInitialDownloadVarName.value = opts.initialDownloadVarName
+    if (opts.initialDownloadWaitTimeout !== undefined) editingInitialDownloadWaitTimeout.value = opts.initialDownloadWaitTimeout
     showActionModal.value = true
   }
 
@@ -61,6 +70,9 @@ export const useEditorStore = defineStore('editor', () => {
     editingInitialWaitTimeout.value = undefined
     editingInitialFoundDelay.value  = undefined
     editingInitialLabel.value       = undefined
+    editingInitialCaptureDownload.value = undefined
+    editingInitialDownloadVarName.value = undefined
+    editingInitialDownloadWaitTimeout.value = undefined
     actionModalEl.value             = null
   }
 
@@ -76,6 +88,9 @@ export const useEditorStore = defineStore('editor', () => {
     editingInitialWaitTimeout.value = undefined
     editingInitialFoundDelay.value  = undefined
     editingInitialLabel.value       = undefined
+    editingInitialCaptureDownload.value = undefined
+    editingInitialDownloadVarName.value = undefined
+    editingInitialDownloadWaitTimeout.value = undefined
     // branch
     addingToBranch.value            = null
     editingBranchStep.value         = null
@@ -99,6 +114,9 @@ export const useEditorStore = defineStore('editor', () => {
     editingInitialFoundDelay,
     editingInitialLabel,
     editingInitialVarAlias,
+    editingInitialCaptureDownload,
+    editingInitialDownloadVarName,
+    editingInitialDownloadWaitTimeout,
     openActionModal,
     clearEditState,
     resetAll,

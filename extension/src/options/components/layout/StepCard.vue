@@ -75,6 +75,9 @@ function formatCondition(cond: ConditionItem): string {
     <div class="step-card__body">
       <div class="step-card__label">{{ step.label }}</div>
       <div class="step-card__type">{{ stepTypeLabels[step.type] ?? step.type }}</div>
+      <div v-if="step.captureDownload" class="step-card__download">
+        下载 → {{ step.downloadVarName || '未命名附件变量' }}
+      </div>
       <!-- 多条件摘要 -->
       <div v-if="step.type === 'condition' && step.conditions?.length" class="step-card__cond-summary">
         <code v-for="(c, i) in step.conditions" :key="c.id">
@@ -168,6 +171,7 @@ function formatCondition(cond: ConditionItem): string {
 .step-card__body { flex: 1; min-width: 0; }
 .step-card__label { font-size: 13px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .step-card__type  { font-size: 11px; color: #89b4fa; margin-top: 2px; }
+.step-card__download { font-size: 11px; color: #a6e3a1; margin-top: 2px; }
 .step-card__cond-summary {
   margin-top: 3px; font-size: 10px; line-height: 1.5;
   code { font-family: 'Cascadia Code', monospace; color: #a6adc8; background: rgba(166, 173, 200, .08); padding: 1px 4px; border-radius: 2px; }

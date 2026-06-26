@@ -7,7 +7,7 @@ export interface VarInfo {
 }
 
 /**
- * 递归收集流程中所有 get_text / save_canvas 步骤的变量信息
+ * 递归收集流程中所有 get_text / save_canvas / 下载点击步骤的变量信息
  * 返回 { internal → alias } 的映射数组
  */
 export function collectVarInfos(steps: FlowStep[]): VarInfo[] {
@@ -19,6 +19,10 @@ export function collectVarInfos(steps: FlowStep[]): VarInfo[] {
           internal: s.value.trim(),
           alias:    s.varAlias || s.value.trim(),   // fallback 到 value（兼容旧格式）
         })
+      }
+      if (s.captureDownload && s.downloadVarName?.trim()) {
+        const name = s.downloadVarName.trim()
+        infos.push({ internal: name, alias: name })
       }
       if (s.children?.length)     walk(s.children)
       if (s.elseChildren?.length) walk(s.elseChildren)

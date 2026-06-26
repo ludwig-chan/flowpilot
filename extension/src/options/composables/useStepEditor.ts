@@ -48,6 +48,9 @@ export function useStepEditor(
       initialWaitTimeout: step.waitTimeout,
       initialFoundDelay:  step.foundDelay,
       initialLabel:       step.label,
+      initialCaptureDownload: step.captureDownload,
+      initialDownloadVarName: step.downloadVarName,
+      initialDownloadWaitTimeout: step.downloadWaitTimeout,
     })
   }
 
@@ -56,12 +59,18 @@ export function useStepEditor(
     type: ActionType,
     value: string | undefined,
     varAlias: string | undefined,
+    captureDownload: boolean | undefined,
+    downloadVarName: string | undefined,
+    downloadWaitTimeout: number | undefined,
     showPickerModal: Ref<boolean>,
     pickedCssSelector: Ref<string>,
   ) {
     es.editingInitialType     = type
     es.editingInitialValue    = value
     es.editingInitialVarAlias = varAlias
+    es.editingInitialCaptureDownload = captureDownload
+    es.editingInitialDownloadVarName = downloadVarName
+    es.editingInitialDownloadWaitTimeout = downloadWaitTimeout
     es.showActionModal        = false
     pickedCssSelector.value   = ''
     showPickerModal.value     = true
@@ -138,6 +147,9 @@ export function useStepEditor(
       initialWaitTimeout: childStep.waitTimeout,
       initialFoundDelay:  childStep.foundDelay,
       initialLabel:       childStep.label,
+      initialCaptureDownload: childStep.captureDownload,
+      initialDownloadVarName: childStep.downloadVarName,
+      initialDownloadWaitTimeout: childStep.downloadWaitTimeout,
     })
   }
 

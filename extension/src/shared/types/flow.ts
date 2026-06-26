@@ -80,6 +80,9 @@ export interface FlowStep {
   delay?: [number, number]  // [min, max] ms，步骤执行完后的随机延迟
   waitTimeout?: number      // 等待元素出现的超时时间 ms（覆盖流程级默认值）
   foundDelay?: [number, number]  // 元素出现后、执行动作前的随机等待 ms
+  captureDownload?: boolean // click: 此点击会触发下载，后续执行时捕获为附件型变量
+  downloadVarName?: string  // click + captureDownload: 下载附件变量名
+  downloadWaitTimeout?: number // click + captureDownload: 等待下载完成的超时时间 ms
   children?: FlowStep[]     // loop_items / condition 子步骤
   flowRef?: string          // call_flow: 引用的已保存流程 ID
   executionMode?: 'center' | 'natural' // loop_items: 执行模式，默认 natural（自然模式，模拟真人操作防风控）

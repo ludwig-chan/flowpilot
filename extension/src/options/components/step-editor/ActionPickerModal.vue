@@ -72,6 +72,9 @@ const props = defineProps<{
   initialLabel?:       string
   initialWaitTimeout?: number
   initialFoundDelay?:  [number, number]
+  initialCaptureDownload?: boolean
+  initialDownloadVarName?: string
+  initialDownloadWaitTimeout?: number
   existingSteps?:      FlowStep[]
 }>()
 
@@ -79,7 +82,7 @@ const emit = defineEmits<{
   (e: 'confirm', step: FlowStep): void
   (e: 'try',     step: FlowStep): void
   (e: 'cancel'): void
-  (e: 're-pick', type: ActionType, value: string | undefined, varAlias: string | undefined): void
+  (e: 're-pick', type: ActionType, value: string | undefined, varAlias: string | undefined, captureDownload?: boolean, downloadVarName?: string, downloadWaitTimeout?: number): void
 }>()
 
 function inferDefault(el: SerializedElement): ActionType {
@@ -97,9 +100,13 @@ const stepLabel         = ref(props.initialLabel ?? '')
 const tryState          = ref<'idle' | 'running' | 'done'>('idle')
 const stepWaitTimeout   = ref<number | undefined>(props.initialWaitTimeout)
 const stepFoundDelay    = ref<[number | undefined, number | undefined]>([props.initialFoundDelay?.[0], props.initialFoundDelay?.[1]])
+const captureDownload   = ref(!!props.initialCaptureDownload)
+const downloadVarName   = ref(props.initialDownloadVarName ?? '')
+const downloadWaitTimeout = ref<number | undefined>(props.initialDownloadWaitTimeout ?? 30_000)
 const showAdvanced      = ref(!!(props.initialWaitTimeout || props.initialFoundDelay))
 
 const currentOpt = computed(() => ACTION_OPTIONS.find(o => o.type === selectedType.value)!)
+const canCaptureDownload = computed(() => selectedType.value === 'click')
 
 const displaySel = computed(() => props.element.selector.cssSelector)
 const autoLabel  = computed(() => {
@@ -137,6 +144,8 @@ function buildStep(): FlowStep {
     finalValue = inputValue.value.trim() || undefined
   }
 
+  const shouldCaptureDownload = selectedType.value === 'click' && captureDownload.value
+
   return {
     id:               `step_${Date.now()}_${Math.random().toString(36).slice(2, 5)}`,
     type:             selectedType.value,
@@ -146,6 +155,9 @@ function buildStep(): FlowStep {
     varAlias:         finalVarAlias,
     waitTimeout:      stepWaitTimeout.value || undefined,
     foundDelay:       ((fdMin ?? 0) > 0 || (fdMax ?? 0) > 0) ? [fdMin ?? 0, fdMax ?? 0] : undefined,
+    captureDownload:  shouldCaptureDownload || undefined,
+    downloadVarName:  shouldCaptureDownload ? downloadVarName.value.trim() || undefined : undefined,
+    downloadWaitTimeout: shouldCaptureDownload ? downloadWaitTimeout.value || undefined : undefined,
   }
 }
 
@@ -170,7 +182,7 @@ function tryAction() {
         <BaseButton
           class="action-modal__repick-btn"
           title="重新选择元素"
-          @click="emit('re-pick', selectedType, inputValue.trim() || undefined, inputVarAlias.trim() || undefined)"
+          @click="emit('re-pick', selectedType, inputValue.trim() || undefined, inputVarAlias.trim() || undefined, captureDownload, downloadVarName.trim() || undefined, downloadWaitTimeout)"
         >🎯 换元素</BaseButton>      </div>
 
       <div class="action-modal__body">
@@ -187,7 +199,7 @@ function tryAction() {
           <select
             class="action-modal__action-select"
             :value="selectedType"
-            @change="selectedType = ($event.target as HTMLSelectElement).value as ActionType; inputValue = ''; inputVarAlias = ''"
+            @change="selectedType = ($event.target as HTMLSelectElement).value as ActionType; inputValue = ''; inputVarAlias = ''; if (selectedType !== 'click') captureDownload = false"
           >
             <optgroup v-for="group in ACTION_GROUPS" :key="group.label" :label="group.label">
               <option v-for="opt in group.options" :key="opt.type" :value="opt.type">{{ opt.label }}</option>
@@ -206,6 +218,29 @@ function tryAction() {
             v-model="inputValue"
             :placeholder="currentOpt.valuePlaceholder"
           />
+        </div>
+        <div v-if="canCaptureDownload" class="action-modal__download">
+          <label class="action-modal__download-toggle">
+            <input v-model="captureDownload" type="checkbox" />
+            <span>此点击会触发下载</span>
+          </label>
+          <div v-if="captureDownload" class="action-modal__download-body">
+            <div class="action-modal__value-row">
+              <span class="action-modal__value-label">下载变量</span>
+              <BaseInput v-model="downloadVarName" placeholder="如 发票附件、invoiceFile" />
+            </div>
+            <div class="action-modal__adv-row">
+              <span class="action-modal__adv-label">下载超时</span>
+              <BaseNumberInput
+                min="1000" step="1000"
+                style="width: 120px"
+                :modelValue="downloadWaitTimeout"
+                @update:modelValue="downloadWaitTimeout = $event || undefined"
+              />
+              <span class="action-modal__adv-unit">ms</span>
+              <span class="action-modal__adv-hint">后续执行时等待下载完成，第一轮仅保存配置</span>
+            </div>
+          </div>
         </div>
         <div class="action-modal__adv">
           <BaseButton type="button" class="action-modal__adv-toggle" @click="showAdvanced = !showAdvanced">
@@ -283,6 +318,22 @@ function tryAction() {
   }
   &__value-row { display: flex; align-items: center; gap: 8px; }
   &__value-label { font-size: 11px; color: $color-text-muted; flex-shrink: 0; width: 52px; }
+
+  &__download {
+    padding: 8px 10px;
+    border: 1px solid $color-surface-1;
+    border-radius: $radius;
+    background: rgba(137, 180, 250, 0.06);
+  }
+  &__download-toggle {
+    display: flex; align-items: center; gap: 7px;
+    font-size: 12px; color: $color-text; cursor: pointer;
+  }
+  &__download-body {
+    display: flex; flex-direction: column; gap: 7px;
+    padding-top: 8px; margin-top: 8px;
+    border-top: 1px solid $color-surface-1;
+  }
 
   &__adv {
     padding-top: 8px; border-top: 1px solid $color-surface-1;
