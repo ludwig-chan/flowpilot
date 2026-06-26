@@ -1,4 +1,3 @@
-import { preprocessImageForOcr } from './ocrPreprocess'
 import {
   checkWindowsOcrAvailability,
   isWindowsOcrAvailable,
@@ -41,10 +40,11 @@ export async function recognizeText(dataUrl: string): Promise<string> {
     }
   }
 
-  // 步骤2: 降级到 Windows OCR（使用预处理后的图片）
+  // 步骤2: 降级到 Windows OCR
   if (isWindowsOcrAvailable()) {
-    const preprocessed = await preprocessImageForOcr(dataUrl)
-    const text = await recognizeWithWindowsOcr(preprocessed)
+    const base64 = dataUrl.replace(/^data:image\/\w+;base64,/, '')
+    const rawBuffer = Buffer.from(base64, 'base64')
+    const text = await recognizeWithWindowsOcr(rawBuffer)
     console.log('[OCR] Windows OCR 识别成功（备用引擎）')
     return text
   }
@@ -72,12 +72,9 @@ export async function recognizeTextFromBuffer(imageBuffer: Buffer): Promise<stri
     }
   }
 
-  // 步骤2: 降级到 Windows OCR（使用预处理后的图片）
+  // 步骤2: 降级到 Windows OCR
   if (isWindowsOcrAvailable()) {
-    const base64 = imageBuffer.toString('base64')
-    const dataUrl = `data:image/png;base64,${base64}`
-    const preprocessed = await preprocessImageForOcr(dataUrl)
-    const text = await recognizeWithWindowsOcr(preprocessed)
+    const text = await recognizeWithWindowsOcr(imageBuffer)
     console.log('[OCR] Windows OCR 识别成功（备用引擎）')
     return text
   }

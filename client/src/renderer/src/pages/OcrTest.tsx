@@ -12,7 +12,7 @@ interface OcrResult {
   text: string
   loading: boolean
   error?: string
-  pageMethods?: Array<{ pageNum: number; method: 'text' | 'ocr' }>
+  pageMethods?: Array<{ pageNum: number; method: 'text' | 'skipped' }>
 }
 
 export default function OcrTest(): React.JSX.Element {
@@ -72,7 +72,7 @@ export default function OcrTest(): React.JSX.Element {
     try {
       const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise
       const pageTexts: string[] = []
-      const pageMethods: Array<{ pageNum: number; method: 'text' | 'ocr' }> = []
+      const pageMethods: Array<{ pageNum: number; method: 'text' | 'skipped' }> = []
 
       for (let i = 1; i <= pdf.numPages; i++) {
         const page = await pdf.getPage(i)
@@ -99,14 +99,14 @@ export default function OcrTest(): React.JSX.Element {
         const ocrResult = await window.api.ocrImage(dataUrl)
         const ocrText = ocrResult.success ? (ocrResult.text || '') : ''
         pageTexts.push(ocrText)
-        pageMethods.push({ pageNum: i, method: 'ocr' })
+        pageMethods.push({ pageNum: i, method: 'skipped' })
       }
 
       // 拼接所有页文字，标注来源
       const fullText = pageTexts
         .map((pageText, idx) => {
           const pm = pageMethods[idx]
-          const label = pm.method === 'text' ? '[文本提取]' : '[OCR识别]'
+          const label = pm.method === 'text' ? '[文本提取]' : '[扫描件-暂不支持]'
           return `--- 第${pm.pageNum}页 ${label} ---\n${pageText}`
         })
         .join('\n\n')
