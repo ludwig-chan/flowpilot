@@ -9,10 +9,19 @@ interface Tag {
   name: string
 }
 
+interface DataRecordAttachmentField {
+  attachmentId: string
+  filename?: string
+  fileSize?: number
+  sourceUrl?: string
+  source: 'download' | 'screenshot'
+}
+
 interface RecordItem {
   id: string
   createdAt: string
   fields: Record<string, string>
+  attachmentFields?: Record<string, DataRecordAttachmentField>
   fieldAliases?: Record<string, string>
   status: 'active' | 'trash'
   tagIds: string[]
@@ -260,14 +269,13 @@ export default function DataRecordList({
   const goToPrev = () => { if (prevRecord) void openDetail(prevRecord) }
   const goToNext = () => { if (nextRecord) void openDetail(nextRecord) }
 
-  const handleDownloadAttachment = async (att: AttachmentItem): Promise<void> => {
+  const downloadAttachmentFile = async (attachmentId: string): Promise<void> => {
     try {
-      const result = await window.api.getAttachmentFile(att.id)
+      const result = await window.api.getAttachmentFile(attachmentId)
       if (!result) {
         showToast('附件文件不存在', 'error')
         return
       }
-      // 创建下载链接
       const link = document.createElement('a')
       link.href = result.dataUrl
       link.download = result.filename
@@ -279,12 +287,18 @@ export default function DataRecordList({
     }
   }
 
+  const handleDownloadAttachment = async (att: AttachmentItem): Promise<void> => {
+    await downloadAttachmentFile(att.id)
+  }
+
   const renderFieldPreview = (item: RecordItem): React.ReactNode => {
     const entries = Object.entries(item.fields)
-    if (!entries.length) return <span className="tag-empty">无字段</span>
+    const attachmentEntries = Object.entries(item.attachmentFields ?? {})
+    if (!entries.length && !attachmentEntries.length) return <span className="tag-empty">无字段</span>
 
     const preview = entries.slice(0, 2)
-    const more = entries.length - 2
+    const attachmentPreview = attachmentEntries.slice(0, Math.max(0, 2 - preview.length))
+    const more = entries.length + attachmentEntries.length - preview.length - attachmentPreview.length
 
     return (
       <span
@@ -296,6 +310,11 @@ export default function DataRecordList({
         {preview.map(([k, v]) => (
           <span key={k} className="field-chip">
             {displayFieldKey(k, item.fieldAliases)}: {v.length > 30 ? v.slice(0, 30) + '…' : v}
+          </span>
+        ))}
+        {attachmentPreview.map(([k, att]) => (
+          <span key={k} className="field-chip field-chip-attachment">
+            {displayFieldKey(k, item.fieldAliases)}: {att.filename ?? att.attachmentId}
           </span>
         ))}
         {more > 0 && <span className="field-chip field-more">+{more} 项</span>}
@@ -500,6 +519,25 @@ export default function DataRecordList({
                       </tr>
                     )
                   })}
+                  {Object.entries(detailRecord.attachmentFields ?? {}).map(([key, att]) => (
+                    <tr key={key} className="detail-field-row">
+                      <td className="detail-field-key">{displayFieldKey(key, detailRecord.fieldAliases)}</td>
+                      <td className="detail-field-val">
+                        <div className="detail-attachment-field">
+                          <span>{att.filename ?? att.attachmentId}</span>
+                          {typeof att.fileSize === 'number' && (
+                            <span className="detail-attachment-size">{formatFileSize(att.fileSize)}</span>
+                          )}
+                          <button
+                            className="btn btn-secondary btn-sm"
+                            onClick={() => downloadAttachmentFile(att.attachmentId)}
+                          >
+                            下载
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
 
